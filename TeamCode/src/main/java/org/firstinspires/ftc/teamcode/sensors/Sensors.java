@@ -27,12 +27,13 @@ public class Sensors {
 
     private Pose2d currentPose = new Pose2d(0, 0, 0), lastPose;
     private long currentTime, lastTime = System.currentTimeMillis();
+    public double loopTime;
     private Vector2 vel = new Vector2();
 
     // 426 mm (16.772 in) is belt circumference
     // start: 42638
     // end: 43062
-    private double flywheelVelocity, ticksToInches = 16.772 / (43062 - 42638);
+    private double flywheelVelocity, ticksToInches = 16.772 / (43062 - 42638), flywheelVelo2, flywheelLastPos = 0;
 
     /*
     Index Key
@@ -58,6 +59,7 @@ public class Sensors {
 
     public Sensors(Robot robot) {
         this.robot = robot;
+        currentTime = System.nanoTime();
 
         odometry = robot.hardwareMap.get(GoBildaPinpointDriver.class, "pinpoint");
         odometry.setOffsets(70, 65);
@@ -81,18 +83,23 @@ public class Sensors {
     }
 
     public void update() {
+        lastTime = currentTime;
+        currentTime = System.nanoTime();
+        loopTime = (currentTime - lastTime) / 1e9;
+
         odometry.update();
 
         lastPose = currentPose.clone();
         currentPose = odometry.getPosition();
 
-        currentTime = System.currentTimeMillis();
-        vel.x = (currentPose.x - lastPose.x) / (currentTime - lastTime);
-        vel.y = (currentPose.y - lastPose.y) / (currentTime - lastTime);
-        lastTime = currentTime;
+        vel.x = (currentPose.x - lastPose.x) / loopTime;
+        vel.y = (currentPose.y - lastPose.y) / loopTime;
         stopConfidence();
 
+        double flywheelPos = robot.shooter.flywheel.motor[0].getCurrentPosition();
         flywheelVelocity = robot.shooter.flywheel.getVelocity() * ticksToInches;
+        flywheelVelo2 = (flywheelPos - flywheelLastPos) / loopTime * ticksToInches;
+        flywheelLastPos = flywheelPos;
 
         /*
         if(colorToggle){
@@ -196,9 +203,7 @@ public class Sensors {
 
     public void toggleColor (boolean on) {colorToggle = on;}
 
-    // Shooter
-
-    public double getFlywheelVelocity () {return flywheelVelocity;}
+    public double getFlywheelVelocity () { return flywheelVelocity; }
 
     public double getVoltage() {
         return voltage;
@@ -206,13 +211,15 @@ public class Sensors {
 
     private void updateTelemetry() {
         TelemetryUtil.packet.put("voltage", voltage);
-        TelemetryUtil.packet.put("Shooter : flywheel velocity", flywheelVelocity);
+        TelemetryUtil.packet.put("Shooter : Flywheel velocity", flywheelVelocity);
+        TelemetryUtil.packet.put("Shooter : Flywheel velocity 2", flywheelVelo2);
         TelemetryUtil.packet.put("Pinpoint : X", currentPose.x);
         TelemetryUtil.packet.put("Pinpoint : Y", currentPose.y);
         TelemetryUtil.packet.put("Pinpoint : Angle (deg)", Math.toDegrees(currentPose.heading));
         TelemetryUtil.packet.put("Pinpoint : Velocity X (in/s)", vel.x);
         TelemetryUtil.packet.put("Pinpoint : Velocity Y (in/s)", vel.y);
         TelemetryUtil.packet.put("Pinpoint : Velocity Angle (deg/s)", Math.toDegrees(Math.atan2(vel.x, vel.y)));
+        TelemetryUtil.packet.put("Balls", balls.toString());
 
         Canvas fieldOverlay = TelemetryUtil.packet.fieldOverlay();
         DashboardUtil.drawRobot(fieldOverlay, currentPose, "#00ff00");

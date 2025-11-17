@@ -48,10 +48,15 @@ public class Teleop extends LinearOpMode {
 
             if (b1.isClicked(gamepad1.b)) {
                 flywheelOn = !flywheelOn;
-                robot.shooter.setTargetVelocity(flywheelOn ? 100 : 0);
+                robot.shooter.setTargetVelocity(flywheelOn ? 85 : 0);
             }
-            if (gamepad1.right_bumper) robot.intake.feed.setTargetPower(0.5);
-            else robot.intake.feed.setTargetPower(0);
+            if (gamepad1.right_bumper) {
+                robot.intake.feed.setTargetPower(0.5);
+                robot.shooter.setShooterBlocker(0);
+            } else {
+                robot.intake.feed.setTargetPower(0);
+                robot.shooter.setShooterBlocker(1);
+            }
 
             robot.drivetrain.drive(gamepad1);
 

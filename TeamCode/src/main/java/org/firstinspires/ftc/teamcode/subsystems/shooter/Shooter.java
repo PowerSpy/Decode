@@ -1,10 +1,10 @@
 package org.firstinspires.ftc.teamcode.subsystems.shooter;
 
 import com.acmerobotics.dashboard.config.Config;
+import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.Servo;
 
-import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.teamcode.Robot;
 import org.firstinspires.ftc.teamcode.utils.LogUtil;
 import org.firstinspires.ftc.teamcode.utils.PID;
@@ -20,8 +20,18 @@ public class Shooter {
     private final nPriorityServo flywheelBlocker, turret, hood/*, cloth*/;
 
     // velocity is in inches / second
-    public static PID velocityPID = new PID (0.005, 0.03, 0.0005);
+    public static PID velocityPID = new PID (0.0, 0.001, 0.001);
+    public static double velocityFFm = 0.0086733;
+    public static double velocityFFb = 0.0414964;
+    public static double velocityFilterLow = 0.05;
+    public static double velocityFilterHigh = 0.5;
+    public static double velocityFilterThresh = 10;
+    public static double velocityHighPowerThresh = 5;
+    public static double velocityNoSkipThresh = 40;
+    public static double velocityNoSkipAccel = 0.7;
     private double targetVelocity = 0.0;
+    private double filteredVelocity = 0.0;
+    private double prevPow = 0;
 
     public Shooter(Robot robot) {
         this.robot = robot;
@@ -51,31 +61,47 @@ public class Shooter {
         turret = new nPriorityServo(
             new Servo[]{robot.hardwareMap.get(Servo.class, "turret1"), robot.hardwareMap.get(Servo.class,"turret2")},
             "turret", nPriorityServo.ServoType.AXON_MINI,
-            0.176, 0.755, 0.46,
+            0.18, 0.74, 0.46,
             new boolean[] {false, false},
             2, 5
         );
+        turret.maxPower = 0.2;
 
         flywheelBlocker = new nPriorityServo(
                 new Servo[]{robot.hardwareMap.get(Servo.class, "flywheelBlocker")},
                 "flywheelBlocker", nPriorityServo.ServoType.AXON_MICRO,
-                0, 0.724, 0.36,
+                0, 0.7, 0.1,
                 new boolean[] {false},
                 2, 5
         );
         robot.hardwareQueue.addDevices(flywheel/*, cloth*/, hood, turret, flywheelBlocker);
+        flywheel.motor[0].setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        flywheel.motor[0].setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
     }
 
     public void update() {
-        if (targetVelocity <= 0) velocityPID.resetIntegral();
-        double error = targetVelocity - robot.sensors.getFlywheelVelocity();
-        double pow = velocityPID.update(error, 0.0, 1.0);
+        if (targetVelocity <= 1) velocityPID.resetIntegral();
+        else velocityPID.clipIntegral(-1, 1);
+        double actualVelocity = robot.sensors.getFlywheelVelocity();
+        if (Math.abs(actualVelocity - filteredVelocity) < velocityFilterThresh) {
+            filteredVelocity = filteredVelocity * (1 - velocityFilterLow) + actualVelocity * velocityFilterLow;
+        } else {
+            filteredVelocity = filteredVelocity * (1 - velocityFilterHigh) + actualVelocity * velocityFilterHigh;
+        }
+        double error = targetVelocity - filteredVelocity;
+        double pow = velocityPID.update(error, 0.0, 1.0) + targetVelocity * velocityFFm + velocityFFb;
+        if (error > velocityHighPowerThresh) pow = 1;
+        if (filteredVelocity < velocityNoSkipThresh) {
+            pow = Math.min(pow, prevPow + velocityNoSkipAccel * robot.sensors.loopTime);
+        }
         setShooterPower(pow);
+        prevPow = pow;
 
-        TelemetryUtil.packet.put("Flywheel Current Velocity", robot.sensors.getFlywheelVelocity());
-        TelemetryUtil.packet.put("Flywheel Target Velocity", targetVelocity);
-        TelemetryUtil.packet.put("Flywheel Velocity Error", error);
-        TelemetryUtil.packet.put("Flywheel PID Power", pow);
+        TelemetryUtil.packet.put("Shooter : Flywheel Filtered Velocity", filteredVelocity);
+        TelemetryUtil.packet.put("Shooter : Flywheel Target Velocity", targetVelocity);
+        //TelemetryUtil.packet.put("Shooter : Flywheel Velocity Error", error);
+        TelemetryUtil.packet.put("Shooter : Flywheel PID Power", pow * 100);
+        //TelemetryUtil.packet.put("Shooter : Flywheel PID Integral", velocityPID.getIntegral());
     }
 
     /**

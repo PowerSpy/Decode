@@ -42,6 +42,7 @@ public class nPriorityServo extends PriorityDevice {
     private long lastLoopTime = Globals.LOOP_START;
     private boolean first = true; // Priority servo has a problem when the servos won't get set at the start if theyre set to 0
     private boolean forceUpdate = false;
+    public double maxPower = 1.0;
 
     /**
      * Basic initializer
@@ -95,11 +96,12 @@ public class nPriorityServo extends PriorityDevice {
 
     public void setTargetAngle(double angle) {
         this.targetAngle = Utils.minMaxClip(angle, convertPosToAngle(minPos), convertPosToAngle(maxPos));
+        this.power = this.maxPower;
     }
 
     public void setTargetAngle(double angle, double power) {
         this.targetAngle = Utils.minMaxClip(angle, convertPosToAngle(minPos), convertPosToAngle(maxPos));
-        this.power = power;
+        this.power = Utils.minMaxClip(power, 0, this.maxPower);
     }
 
     public double getTargetAngle() {
@@ -112,7 +114,7 @@ public class nPriorityServo extends PriorityDevice {
 
     public void setTargetPos(double pos, double power) {
         this.targetAngle = convertPosToAngle(Math.max(Math.min(pos, maxPos), minPos));
-        this.power = power;
+        this.power = Utils.minMaxClip(power, 0, this.maxPower);
     }
 
     public double getTargetPos() {

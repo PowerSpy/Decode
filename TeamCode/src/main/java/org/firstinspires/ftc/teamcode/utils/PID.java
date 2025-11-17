@@ -8,22 +8,26 @@ public class PID {
     public double p;
     public double i;
     public double d;
-    public PID(double P, double I, double D){
+    public PID(double P, double I, double D) {
         p=P;
         i=I;
         d=D;
     }
-    double integral = 0;
-    long lastLoopTime = System.nanoTime();
-    double lastError = 0;
-    int counter = 0;
-    double loopTime = 0.0;
+    private double integral = 0;
+    private long lastLoopTime = System.nanoTime();
+    private double lastError = 0;
+    private int counter = 0;
+    private double loopTime = 0.0;
 
     public void resetIntegral() {
         integral = 0;
     }
+    public double getIntegral() { return integral; }
+    public void clipIntegral(double min, double max) {
+        integral = Utils.minMaxClip(integral, min, max);
+    }
 
-    public double update(double error, double min, double max){
+    public double update(double error, double min, double max) {
         if (counter == 0) {
             lastLoopTime = System.nanoTime() - 10000000;
         }
