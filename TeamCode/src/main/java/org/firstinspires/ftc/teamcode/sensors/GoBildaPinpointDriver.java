@@ -429,7 +429,7 @@ public class GoBildaPinpointDriver extends I2cDeviceSynchDevice<I2cDeviceSynchSi
     public Pose2d getPosition(){
         return new Pose2d(
                 xPosition / 25.4,
-                yPosition * goBILDA_SWINGARM_POD / goBILDA_4_BAR_POD / 25.4,
+                yPosition * (goBILDA_SWINGARM_POD / goBILDA_4_BAR_POD) / 25.4,
                 hOrientation);
     }
     /**
@@ -438,7 +438,7 @@ public class GoBildaPinpointDriver extends I2cDeviceSynchDevice<I2cDeviceSynchSi
     public Pose2d getVelocity(){
         return new Pose2d(
                 xVelocity / 25.4,
-                yVelocity * goBILDA_SWINGARM_POD / goBILDA_4_BAR_POD / 25.4,
+                yVelocity * (goBILDA_SWINGARM_POD / goBILDA_4_BAR_POD) / 25.4,
                 hVelocity / 25.4);
     }
 }

@@ -24,7 +24,7 @@ import java.util.ArrayList;
 public class ServoTester extends LinearOpMode {
 
     public static boolean usePosition = false;
-    public static double position = Math.toRadians(60);
+    public static double position = 0.5;
 
     @Override
     public void runOpMode() throws InterruptedException {
@@ -97,19 +97,15 @@ public class ServoTester extends LinearOpMode {
 
             // if the servoIndex exceeds servoSize wrap around
             servoIndex = (servoIndex + servoSize) % servoSize;
+
             telemetry.addData("if the servo is reversed, the pos will be reversed too", "lol");
             telemetry.addData("servoName", servos.get(servoIndex).name);
             telemetry.addData("servoIndex", servoIndex);
             telemetry.addData("servoPos", servoPos[servoIndex]);
             telemetry.addData("servoAngle", servos.get(servoIndex).getCurrentAngle());
-            telemetry.addData("averageServoTime", totalTime/numLoops);
-            //telemetry.addData("v4Encoder", v4Bar);
             telemetry.addData("targetAngle", servos.get(servoIndex).getTargetAngle());
+            telemetry.addData("averageServoTime", totalTime/numLoops);
             telemetry.addData("adjustment speed", speed);
-            /*if (servos.get(servoIndex) instanceof PriorityServoAxonEnc) {
-                telemetry.addData("voltage", " " + ((PriorityServoAxonEnc) servos.get(servoIndex)).getEncoderVoltage());
-                telemetry.addData("angle", " " + ((PriorityServoAxonEnc) servos.get(servoIndex)).getEncoderAngle());
-            }*/
 
             TelemetryUtil.packet.put("Loop Time", GET_LOOP_TIME());
             TelemetryUtil.sendTelemetry();

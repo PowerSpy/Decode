@@ -71,6 +71,7 @@ public class Teleop extends LinearOpMode {
             telemetry.addData("intakeOn", flywheelOn);
             telemetry.addData("intakeReversed", intakeReversed);
             telemetry.addData("intakePower", robot.intake.roller.getPower());
+            telemetry.addData("turretPos", robot.shooter.turret.getCurrentAngle());
             telemetry.update();
         }
     }

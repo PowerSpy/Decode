@@ -62,8 +62,8 @@ public class Sensors {
         currentTime = System.nanoTime();
 
         odometry = robot.hardwareMap.get(GoBildaPinpointDriver.class, "pinpoint");
-        odometry.setOffsets(70, 65);
-        odometry.setEncoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_SWINGARM_POD);
+        odometry.setOffsets(70, -160);
+        odometry.setEncoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD);
         odometry.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.REVERSED, GoBildaPinpointDriver.EncoderDirection.REVERSED);
 
         /*
@@ -96,8 +96,8 @@ public class Sensors {
         vel.y = (currentPose.y - lastPose.y) / loopTime;
         stopConfidence();
 
-        double flywheelPos = robot.shooter.flywheel.motor[0].getCurrentPosition();
-        flywheelVelocity = robot.shooter.flywheel.getVelocity() * ticksToInches;
+        double flywheelPos = robot.drivetrain.rightRear.motor[0].getCurrentPosition();
+        flywheelVelocity = robot.drivetrain.rightRear.getVelocity() * ticksToInches;
         flywheelVelo2 = (flywheelPos - flywheelLastPos) / loopTime * ticksToInches;
         flywheelLastPos = flywheelPos;
 

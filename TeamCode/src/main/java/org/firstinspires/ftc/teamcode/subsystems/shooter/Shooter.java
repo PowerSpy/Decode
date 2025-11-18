@@ -17,7 +17,7 @@ public class Shooter {
     private final Robot robot;
     private final DcMotorEx ms1, ms2;
     public final PriorityMotor flywheel;
-    private final nPriorityServo flywheelBlocker, turret, hood/*, cloth*/;
+    public final nPriorityServo flywheelBlocker, turret, hood/*, cloth*/;
 
     // velocity is in inches / second
     public static PID velocityPID = new PID (0.0, 0.001, 0.001);
@@ -69,7 +69,7 @@ public class Shooter {
         turret = new nPriorityServo(
             new Servo[]{robot.hardwareMap.get(Servo.class, "turret1"), robot.hardwareMap.get(Servo.class,"turret2")},
             "turret", nPriorityServo.ServoType.AXON_MINI,
-            0, 1, 0.46,
+            0.1, 0.7, 0.4,
             new boolean[] {false, false},
             2, 5
         );

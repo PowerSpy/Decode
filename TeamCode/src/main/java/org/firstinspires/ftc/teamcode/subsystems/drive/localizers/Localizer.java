@@ -55,9 +55,9 @@ public class Localizer {
 
         encoders = new Encoder[3];
 
-        encoders[2] = new Encoder(new Pose2d(0,8.21115101123045),  -1); // left
-        encoders[1] = new Encoder(new Pose2d(0,-6.476406995507813),-1); // right
-        encoders[0] = new Encoder(new Pose2d(-9.621159418359376, 0),  -1); // back
+        encoders[2] = new Encoder(new Pose2d(0,2.7),  1); // left
+        encoders[1] = new Encoder(new Pose2d(0,-2.7),-1); // right
+        encoders[0] = new Encoder(new Pose2d(-6.7, 0),  -1); // back
 
         relHistory.add(new Pose2d(0,0,0));
         poseHistory.add(new Pose2d(0,0,0));
