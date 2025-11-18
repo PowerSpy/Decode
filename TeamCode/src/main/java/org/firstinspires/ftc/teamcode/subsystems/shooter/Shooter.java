@@ -69,7 +69,7 @@ public class Shooter {
         turret = new nPriorityServo(
             new Servo[]{robot.hardwareMap.get(Servo.class, "turret1"), robot.hardwareMap.get(Servo.class,"turret2")},
             "turret", nPriorityServo.ServoType.AXON_MINI,
-            0.1, 0.7, 0.4,
+            0.12, 0.7, 0.402,
             new boolean[] {false, false},
             2, 5
         );
