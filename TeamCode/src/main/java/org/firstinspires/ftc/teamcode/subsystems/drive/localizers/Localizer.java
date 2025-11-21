@@ -55,7 +55,7 @@ public class Localizer {
 
         encoders = new Encoder[3];
 
-        // 1 / (ticks / mm) / (mm / in)
+        // 1 / (ticks / mm * mm / in)
         encoders[0] = new Encoder(new Pose2d(0,2.388949419),  1, 1 / (13.26291192 * 25.4)); // left
         encoders[1] = new Encoder(new Pose2d(0,-2.967208064),-1, 1 / (13.26291192 * 25.4)); // right
         encoders[2] = new Encoder(new Pose2d(-5.69004724, 0),  1, 1 / (19.89436789 * 25.4)); // back

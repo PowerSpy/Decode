@@ -1,180 +1,85 @@
 package org.firstinspires.ftc.teamcode.subsystems.drive;
 
 import org.firstinspires.ftc.teamcode.utils.Pose2d;
-
-import java.util.ArrayList;
-
-class SplinePose2d extends Pose2d {
-    public final boolean reversed;
-    public final double radius;
-    public final double power;
-
-    public SplinePose2d(Pose2d p, boolean reversed, double radius) {
-        this(p.x, p.y, p.heading, reversed, radius, 1.0);
-    }
-
-    public SplinePose2d(Pose2d p, boolean reversed, double radius, double power) {
-        this(p.x, p.y, p.heading, reversed, radius, power);
-    }
-
-    public SplinePose2d(double x, double y, double heading, boolean reversed, double radius, double power) {
-        super(x, y, heading);
-        this.reversed = reversed;
-        this.radius = radius;
-        this.power = power;
-    }
-}
+import org.firstinspires.ftc.teamcode.utils.Vector2;
 
 public class Spline {
-    public ArrayList<SplinePose2d> poses = new ArrayList<>();
+    public final static double MAX_RADIUS = 144.0;
 
-    public final double inchesPerNewPointGenerated;
-    private boolean reversed = false;
+    double[] xCoeff = new double [4];
+    double[] yCoeff = new double [4];
 
+    public double t = 0;
 
-    public Spline(Pose2d p, double inchesPerNewPointGenerated) {
-        poses.add(new SplinePose2d(p, false, 100));
+    public Spline(Pose2d start, Pose2d end) {
+        double arbitraryVelo = 1.5 * Math.sqrt(Math.pow(end.x - start.x, 2) + Math.pow(end.y - start.y, 2));
 
-        this.inchesPerNewPointGenerated = inchesPerNewPointGenerated;
+        xCoeff[0] = start.x;
+        xCoeff[1] = arbitraryVelo * Math.cos(start.heading);
+        xCoeff[2] = 3*end.x - arbitraryVelo * Math.cos(end.heading) - 2 * xCoeff[1] - 3 * xCoeff[0];
+        xCoeff[3] = end.x - xCoeff[0] - xCoeff[1] - xCoeff[2];
+
+        yCoeff[0] = start.y;
+        yCoeff[1] = arbitraryVelo * Math.sin(start.heading);
+        yCoeff[2] = 3 * end.y - arbitraryVelo * Math.sin(end.heading) - 2 * yCoeff[1] - 3 * yCoeff[0];
+        yCoeff[3] = end.y - yCoeff[0] - yCoeff[1] - yCoeff[2];
     }
 
-    public Spline(double x, double y, double heading, double inchesPerNewPointGenerated) {
-        this(new Pose2d(x,y,heading), inchesPerNewPointGenerated);
-    }
+    public double getT (Pose2d pos) {
+        double last_t = t;
+        double shift = 1.0;
 
-    double[] xCoefficents = new double[4];
-    double[] yCoefficents = new double[4];
+        // Newton's method to determine the closest point
+        // Min-Max Clip of -0.2 to 0.2 to avoid drastic shifts domain of t is 0 to 1
+        for(int i = 0; i < 10; i++) {
+            Vector2 p = getPos (last_t);
+            Vector2 v = getVel (last_t);
+            Vector2 a = getAccel (last_t);
 
-    public double findR(double time){
-        // gets the velocity because the derivative of position = velocity
-        double velX = xCoefficents[1] + 2.0*xCoefficents[2]*time + 3.0*xCoefficents[3]*time*time;
-        double velY = yCoefficents[1] + 2.0*yCoefficents[2]*time + 3.0*yCoefficents[3]*time*time;
+            shift = (v.x * (p.x - pos.x) + v.y * (p.y - pos.y)) / (v.x * v.x + a.x * (p.x - pos.x) + v.y * v.y + a.y * (p.y - pos.y));
+            t = last_t - Math.max(Math.min(shift, 0.2), -0.2);
+            t = Math.max(Math.min(t,  1), 0);
+            last_t = t;
 
-        // gets the acceleration which is second derivative of position
-        double accelX = 2.0*xCoefficents[2] + 6.0*xCoefficents[3]*time;
-        double accelY = 2.0*yCoefficents[2] + 6.0*yCoefficents[3]*time;
-        if ((accelY * velX - accelX * velY) != 0) {
-            return Math.min(Math.abs(Math.pow(velX * velX + velY * velY, 1.5) / (accelY * velX - accelX * velY)),100);
-        }
-        return 100; // straight line
-    }
-
-    public Spline addPoint(Pose2d p) {
-        return this.addPoint(p, 1.0);
-    }
-
-    public Spline addPoint(Pose2d p, double power) {
-        p = p.clone();
-        if (reversed) {
-            p.heading += Math.PI;
-        }
-
-        // https://www.desmos.com/calculator/yi3jovk0hp
-        Pose2d point = new Pose2d(0,0,0);
-
-        Pose2d lastPoint = poses.get(poses.size()-1); // when you add a new spline the last point becomes the starting point for the new spline
-
-        double arbitraryVelocity = 1.25*Math.sqrt(Math.pow((lastPoint.x - p.x),2) + Math.pow((lastPoint.y - p.y),2));
-        xCoefficents[0] = lastPoint.x;
-        xCoefficents[1] = arbitraryVelocity * Math.cos(lastPoint.heading);
-        xCoefficents[2] = 3*p.x - arbitraryVelocity*Math.cos(p.heading) - 2*xCoefficents[1] - 3*xCoefficents[0];
-        xCoefficents[3] = p.x - xCoefficents[0] - xCoefficents[1] - xCoefficents[2];
-
-        yCoefficents[0] = lastPoint.y;
-        yCoefficents[1] = arbitraryVelocity * Math.sin(lastPoint.heading);
-        yCoefficents[2] = 3*p.y - arbitraryVelocity*Math.sin(p.heading) - 2*yCoefficents[1] - 3*yCoefficents[0];
-        yCoefficents[3] = p.y - yCoefficents[0] - yCoefficents[1] - yCoefficents[2];
-
-        point.x = xCoefficents[0];
-        point.y = yCoefficents[0];
-
-        double firstR = findR(0);
-        if (Double.isNaN(firstR) || Double.isInfinite(firstR)) {
-            System.out.println("HOLY JESUS SOMETHING BAD HAPPENED (FIRST TEMPR IS BRICKED)");
-        }
-
-        poses.set(0, new SplinePose2d(poses.get(0).x, poses.get(0).y, poses.get(0).heading, poses.get(0).reversed, firstR, power));
-
-        for (double time = 0.0; time < 1.0; time+=0.001) {
-            point = new Pose2d(0,0,0);
-
-            point.x = xCoefficents[0] + xCoefficents[1]*time + xCoefficents[2]*time*time + xCoefficents[3]*time*time*time;
-            point.y = yCoefficents[0] + yCoefficents[1]*time + yCoefficents[2]*time*time + yCoefficents[3]*time*time*time;
-
-            if(lastPoint.getDistanceFromPoint(point) > inchesPerNewPointGenerated) { // new point every two inches
-
-                // gets the velocity because the derivative of position = velocity
-                double velX = xCoefficents[1] + 2.0*xCoefficents[2]*time + 3.0*xCoefficents[3]*time*time;
-                double velY = yCoefficents[1] + 2.0*yCoefficents[2]*time + 3.0*yCoefficents[3]*time*time;
-                // heading is equal to the inverse tangent of velX and velY because velX and velY have a magnitude and a direction and soh cah toa
-                point.heading = Math.atan2(velY,velX);
-                point.clipAngle();
-
-                poses.add(new SplinePose2d(point, reversed, findR(time), power));
-                System.out.println("pathIndex: " + poses.size() + " radius: " + findR(time));
-
-                lastPoint = point;
+            // if there's reduced impact of shifts no need to keep on iterating
+            if(Math.abs(shift) < 0.001) {
+                break;
             }
         }
 
-        poses.add(new SplinePose2d(p, reversed, findR(1.0), power));
-
-        return this;
+        return t;
     }
 
-    public Spline addPoint(double x, double y, double heading) {
-        return this.addPoint(new Pose2d(x, y, heading), 1.0);
-    }
+    public double getR (double t) {
+        Vector2 v = getVel (t);
+        Vector2 a = getAccel (t);
 
-    public Spline addPoint(double x, double y, double heading, double power) {
-        return this.addPoint(new Pose2d(x, y, heading), power);
-    }
-
-    public Pose2d getLastPoint() {
-        if (poses.size() > 0) {
-            return poses.get(poses.size() - 1);
+        if(a.y * v.x - a.x * v.y != 0) {
+            double r = Math.pow(v.x*v.x + v.y*v.y, 1.5)/(a.y*v.x - a.x*v.y); // radius of curvature in planar motion formula
+            return Math.max(Math.min(r, MAX_RADIUS), -MAX_RADIUS);
         }
-        return null;
+
+        return MAX_RADIUS;
     }
 
-    /*public void setPoint(int index, Pose2d point, boolean reversed, double radius) {
-        poses.set(index, new SplinePose2d(point, reversed, radius));
+    public Vector2 getPos (double t) {
+        return new Vector2 (
+                xCoeff[0] + xCoeff[1] * t + xCoeff[2] * t * t + xCoeff[3] * t * t * t,
+                yCoeff[0] + yCoeff[1] * t + yCoeff[2] * t * t + yCoeff[3] * t * t * t
+        );
     }
 
-    public void setPoint(int index, SplinePose2d point, double heading) {
-        poses.set(index, new SplinePose2d(point.x, point.y, heading, point.reversed, point.radius));
-    }*/
-
-
-    /**
-     * Ideally the path should be behind it otherwise it would break
-     * So if you do it wrong its your fault!
-     * @param reversed
-     * @return
-     */
-    public Spline setReversed(boolean reversed) {
-        if (reversed) {
-            poses.get(poses.size() - 1).heading += Math.PI;
-        }
-        this.reversed = reversed;
-        return this;
+    public Vector2 getVel (double t) {
+        return new Vector2 (
+                xCoeff[1] + 2 * xCoeff[2] * t + 3 * xCoeff[3] * t * t,
+                yCoeff[1] + 2 * yCoeff[2] * t + 3 * yCoeff[3] * t * t
+        );
     }
 
-    /*public static Spline reflecth(Spline spline) {
-        Spline temp = new Spline(new Pose2d(0,0,0), spline.inchesPerNewPointGenerated);
-        temp.poses = new ArrayList<>();
-        for (SplinePose2d point : spline.poses) {
-            temp.poses.add(new SplinePose2d(point.x,-point.y, AngleUtil.clipAngle(point.heading + Math.PI),point.reversed,point.radius));
-        }
-        return temp;
+    public Vector2 getAccel (double t) {
+        return new Vector2 (
+                2 * xCoeff[2] + 6 * xCoeff[3] * t,
+                2 * yCoeff[2] + 6 * yCoeff[3] * t
+        );
     }
-
-    public static Spline reflect(Spline spline) {
-        Spline temp = new Spline(new Pose2d(0,0,0), spline.inchesPerNewPointGenerated);
-        temp.poses = new ArrayList<>();
-        for (SplinePose2d point : spline.poses) {
-            temp.poses.add(new SplinePose2d(point.x,-point.y,point.heading,point.reversed,point.radius));
-        }
-        return temp;
-    }*/
 }

@@ -423,6 +423,9 @@ public class GoBildaPinpointDriver extends I2cDeviceSynchDevice<I2cDeviceSynchSi
      * @return the user-set offset for the Y (strafe) pod
      */
     public float getYOffset(){return readFloat(Register.Y_POD_OFFSET);}
+
+    // Modifications below are to return the position in inches rather than mm
+
     /**
      * @return a Pose2D containing the estimated position of the robot
      */
