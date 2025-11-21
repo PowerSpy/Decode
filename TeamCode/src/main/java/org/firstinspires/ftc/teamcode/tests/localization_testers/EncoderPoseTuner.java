@@ -15,26 +15,23 @@ public class EncoderPoseTuner extends LinearOpMode {
         Drivetrain drivetrain = robot.drivetrain;
         Sensors sensors = robot.sensors;
 
-        double ticksPerRotation = 8192.0;
-        double wheelRadius = 0.984252; //for 50mm wheels
-        double ticksToInches = (wheelRadius * Math.PI * 2.0) / ticksPerRotation;
-
-        int[] odometry;
+        double leftInitial = robot.drivetrain.leftRear.motor[0].getCurrentPosition();
+        double rightInitial = robot.drivetrain.rightRear.motor[0].getCurrentPosition();
+        double backInitial = robot.drivetrain.rightFront.motor[0].getCurrentPosition();
         double theta;
 
         waitForStart();
 
         while (!isStopRequested()) {
             drivetrain.drive(gamepad1);
-            // odometry = sensors.getOdometry();
             theta = Math.PI * 20; // 10 rotations
 
             robot.update();
 
-//            telemetry.addData("leftOdoRadius", (odometry[0]*ticksToInches)/theta + "");
-//            telemetry.addData("rightOdoRadius", (odometry[1]*ticksToInches)/theta + "");
-//            telemetry.addData("backOdoRadius", (odometry[2]*ticksToInches)/theta + "");
-//            telemetry.update();
+            telemetry.addData("leftOdoRadius", (robot.drivetrain.leftRear.motor[0].getCurrentPosition() - leftInitial) * robot.drivetrain.localizers[0].encoders[0].ticksToInches/theta + "");
+            telemetry.addData("rightOdoRadius", (robot.drivetrain.leftFront.motor[0].getCurrentPosition() - rightInitial) * robot.drivetrain.localizers[0].encoders[1].ticksToInches/theta + "");
+            telemetry.addData("backOdoRadius", (robot.drivetrain.rightFront.motor[0].getCurrentPosition() - backInitial) * robot.drivetrain.localizers[0].encoders[2].ticksToInches/theta + "");
+            telemetry.update();
         }
     }
 }

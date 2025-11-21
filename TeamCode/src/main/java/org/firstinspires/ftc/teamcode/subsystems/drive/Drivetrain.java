@@ -13,17 +13,11 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.Gamepad;
 import com.qualcomm.robotcore.hardware.HardwareMap;
-import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.configuration.typecontainers.MotorConfigurationType;
 
 import org.firstinspires.ftc.teamcode.Robot;
 import org.firstinspires.ftc.teamcode.sensors.Sensors;
-import org.firstinspires.ftc.teamcode.subsystems.drive.localizers.IMULocalizer;
-import org.firstinspires.ftc.teamcode.subsystems.drive.localizers.IMUMergeLocalizer;
-import org.firstinspires.ftc.teamcode.subsystems.drive.localizers.IMUMergeSoloLocalizer;
 import org.firstinspires.ftc.teamcode.subsystems.drive.localizers.Localizer;
-import org.firstinspires.ftc.teamcode.subsystems.drive.localizers.OneHundredMSIMULocalizer;
-import org.firstinspires.ftc.teamcode.subsystems.drive.localizers.TwoWheelLocalizer;
 import org.firstinspires.ftc.teamcode.utils.DashboardUtil;
 import org.firstinspires.ftc.teamcode.utils.LogUtil;
 import org.firstinspires.ftc.teamcode.utils.PID;
@@ -102,13 +96,8 @@ public class Drivetrain {
 
         localizers = new Localizer[]{
             new Localizer(hardwareMap, sensors, this, "#00c000", "#00c00060"),
-            new IMUMergeSoloLocalizer(hardwareMap, sensors, this, "#ff00ff", "#ff00ff60"),
-            new IMULocalizer(hardwareMap, sensors, this, "#ff0000", "#ff000060"),
-            new IMUMergeLocalizer(hardwareMap, sensors, this, "#ffff00", "#ffff0060"),
-            new OneHundredMSIMULocalizer(hardwareMap, sensors, this, "#0000ff", "#0000ff60"),
-            new TwoWheelLocalizer(hardwareMap, sensors, this, "#00ffff", "#00ffff60")
         };
-//        setMinPowersToOvercomeFriction();
+        setMinPowersToOvercomeFriction();
     }
 
     // leftFront, leftRear, rightRear, rightFront
@@ -663,7 +652,6 @@ public class Drivetrain {
         for (Localizer l : localizers) {
             l.setPoseEstimate(pose2d);
         }
-        sensors.setOdometryPosition(pose2d);
     }
 
     public boolean isBusy() {
@@ -680,6 +668,7 @@ public class Drivetrain {
         }
 
         setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
         leftFront.motor[0].setDirection(DcMotor.Direction.REVERSE);
@@ -707,11 +696,9 @@ public class Drivetrain {
 
     public void updateTelemetry() {
         TelemetryUtil.packet.put("Drivetrain : state", state);
-        TelemetryUtil.packet.put("driveState", state);
         LogUtil.driveState.set(state.toString());
 
         TelemetryUtil.packet.put("Drivetrain : atPoint", atPoint());
-        TelemetryUtil.packet.put("Drivetrain : intakeDriveMode", intakeDriveMode);
         TelemetryUtil.packet.put("Drivetrain : xError", xError);
         TelemetryUtil.packet.put("Drivetrain : yError", yError);
         TelemetryUtil.packet.put("Drivetrain : turnError (deg)", Math.toDegrees(turnError));

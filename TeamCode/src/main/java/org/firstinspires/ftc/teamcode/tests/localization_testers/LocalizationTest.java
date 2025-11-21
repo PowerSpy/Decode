@@ -23,7 +23,6 @@ public class LocalizationTest extends LinearOpMode {
     Robot robot;
     @Override
     public void runOpMode() throws InterruptedException {
-//        Vision vision = new Vision(hardwareMap, telemetry, false, false, false);
         robot = new Robot(hardwareMap);
         Globals.RUNMODE = RunMode.TESTER;
         ButtonToggle bty = new ButtonToggle();
@@ -45,10 +44,9 @@ public class LocalizationTest extends LinearOpMode {
             robot.drivetrain.drive(gamepad1);
 
             Pose2d pos = robot.drivetrain.getPoseEstimate();
-            TelemetryUtil.packet.put("pinpoint x: ", pos.x);
-            TelemetryUtil.packet.put("pinpoint y: ", pos.y);
-            TelemetryUtil.packet.put("pinpoint heading: ", pos.heading);
-
+            TelemetryUtil.packet.put("Localizer x: ", pos.x);
+            TelemetryUtil.packet.put("Localizer y: ", pos.y);
+            TelemetryUtil.packet.put("Localizer heading: ", pos.heading / Math.PI * 180);
             TelemetryUtil.packet.put("odo encoder 0", ((PriorityMotor) robot.hardwareQueue.getDevice("rightFront")).motor[0].getCurrentPosition());
             TelemetryUtil.packet.put("odo encoder 1", ((PriorityMotor) robot.hardwareQueue.getDevice("leftRear")).motor[0].getCurrentPosition());
             TelemetryUtil.packet.put("odo encoder 2", ((PriorityMotor) robot.hardwareQueue.getDevice("leftFront")).motor[0].getCurrentPosition());

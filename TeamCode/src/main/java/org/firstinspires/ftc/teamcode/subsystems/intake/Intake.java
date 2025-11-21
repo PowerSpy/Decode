@@ -50,9 +50,6 @@ public class Intake {
                 roller.setTargetPower(0.0);
                 feed.setTargetPower(0.0);
 
-                // TODO Disable Color Detection?
-                robot.sensors.toggleColor(false);
-
                 if (requestIntake) {
                     requestIntake = false;
                     state = State.INTAKE;
@@ -63,8 +60,6 @@ public class Intake {
             case INTAKE: {
                 roller.setTargetPower(1.0);
                 feed.setTargetPower(0.3);
-
-                // TODO Toggle Color Detection?
 
                 if (requestShoot) {
                     requestShoot = false;
@@ -77,11 +72,6 @@ public class Intake {
             case SHOOT_FEED: {
                 roller.setTargetPower(1.0);
                 feed.setTargetPower(0.7);
-
-                // Add launch time requirement because last ball theoretically will not trigger color sensor
-                if (!robot.sensors.isBall() && System.currentTimeMillis() - launchTime >= 150) {
-                    state = State.IDLE;
-                }
             }
             case TEST: {
                 break;

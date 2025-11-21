@@ -56,9 +56,9 @@ public class Localizer {
         encoders = new Encoder[3];
 
         // 1 / (ticks / mm) / (mm / in)
-        encoders[0] = new Encoder(new Pose2d(0,72 / 25.4),  1, 1 / 13.26291192 / 25.4); // left
-        encoders[1] = new Encoder(new Pose2d(0,-72 / 25.4),-1, 1 / 13.26291192 / 25.4); // right
-        encoders[2] = new Encoder(new Pose2d(-160 / 25.4, 0),  1, 1/ 19.89436789 / 25.4); // back
+        encoders[0] = new Encoder(new Pose2d(0,2.388949419),  1, 1 / (13.26291192 * 25.4)); // left
+        encoders[1] = new Encoder(new Pose2d(0,-2.967208064),-1, 1 / (13.26291192 * 25.4)); // right
+        encoders[2] = new Encoder(new Pose2d(-5.69004724, 0),  1, 1 / (19.89436789 * 25.4)); // back
 
         relHistory.add(new Pose2d(0,0,0));
         poseHistory.add(new Pose2d(0,0,0));
@@ -70,6 +70,7 @@ public class Localizer {
             this.encoders[i].update(encoders[i]);
         }
     }
+
     double headingOffset = 0;
     public void setPose(double x, double y, double h) {
         this.x = x;

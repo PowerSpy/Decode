@@ -7,7 +7,6 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 
 import org.firstinspires.ftc.teamcode.Robot;
 import org.firstinspires.ftc.teamcode.sensors.Sensors;
-import org.firstinspires.ftc.teamcode.subsystems.drive.localizers.IMUMergeLocalizer;
 import org.firstinspires.ftc.teamcode.subsystems.drive.localizers.Localizer;
 import org.firstinspires.ftc.teamcode.utils.Globals;
 import org.firstinspires.ftc.teamcode.utils.Pose2d;
@@ -27,7 +26,7 @@ public class MinimumPowerToOvercomeFrictionDrivetrainTuner extends LinearOpMode 
     public void runOpMode() throws InterruptedException {
         Robot robot = new Robot(hardwareMap);
         Sensors sensors = robot.sensors;
-        Localizer localizer = new IMUMergeLocalizer(hardwareMap, sensors, robot.drivetrain, "ff00ff", "ffff00");
+        Localizer localizer = new Localizer(hardwareMap, sensors, robot.drivetrain, "ff00ff", "ffff00");
         HardwareQueue hardwareQueue = robot.hardwareQueue;
 
         ArrayList<PriorityMotor> motors = new ArrayList<>();
@@ -47,7 +46,6 @@ public class MinimumPowerToOvercomeFrictionDrivetrainTuner extends LinearOpMode 
         for (int i = 0; i < 4; i++) {
 
             for (int a = 0; a < iterations; a++) {
-                sensors.setOdometryPosition(new Pose2d(0, 0, 0));
                 long start = System.currentTimeMillis();
                 for (double j = 0; j < 1; j = (double) (System.currentTimeMillis() - start) / (15000.0)) {
                     Globals.START_LOOP();
