@@ -107,22 +107,6 @@ public class Sensors {
         flywheelVelo2 = (flywheelPos - flywheelLastPos) / loopTime * ticksToInches;
         flywheelLastPos = flywheelPos;
 
-        /*
-        if(colorToggle){
-            colors = colorSensorV3.readLSRGBRAW();
-        }
-         */
-
-        ballConfidence();
-        if(!fullChamber){
-            // so ugly but i dont want to write a loop :/
-            balls.set(balls.get(2) == 0 ? 2 : (balls.get(1) == 0 ? 1 : 0), greenCounter == 3 ? 1 : (purpleCounter == 3 ? 1 : 0));
-            // reset to check case of same color in a row
-            greenCounter = greenCounter == 3 ? 0 : greenCounter;
-            purpleCounter = purpleCounter == 3 ? 0 : purpleCounter;
-            fullChamber = balls.get(0) != 0;
-        }
-
         if (System.currentTimeMillis() - lastVoltageUpdatedTime > voltageUpdateTime) {
             voltage = robot.hardwareMap.voltageSensor.iterator().next().getVoltage();
             lastVoltageUpdatedTime = System.currentTimeMillis() ;
@@ -132,16 +116,6 @@ public class Sensors {
     }
 
     // Odometry
-
-    public void resetPosAndIMU() {
-        odometry.resetPosAndIMU();
-    }
-
-    public void recalibrate() { odometry.recalibrateIMU(); }
-
-    public void setOdometryPosition(Pose2d pose2d) {
-        odometry.setPosition(pose2d);
-    }
 
     public Pose2d getOdometryPosition() { return currentPose; }
 
@@ -165,48 +139,6 @@ public class Sensors {
 
     public boolean stopped() {return isStopped;}
 
-    // Indexing
-
-    // TODO: Probably need differnet alpha values, I'm thinking ~3 loops of detection should yield a positive
-    double greenConfidence = 0.0, purpleConfidence = 0.0, greenCounter = 0.0, purpleCounter = 0.0;
-    final double greenAlpha = 0.125, purpleAlpha = 0.125, greenThresh = 0.75, purpleThresh = 0.75;
-    boolean isGreen = false, isPurple = false;
-
-    public void ballConfidence() {
-        greenConfidence *= (1 - greenAlpha);
-        purpleConfidence *= (1 - purpleAlpha);
-
-        // TODO: Tune these values to be accurate to balls
-        // TODO: Consider integrating in ball-chasing camera detected values as a way to increase / decrease confidence
-        if(colors[1] >= 192) {
-            greenConfidence += greenConfidence;
-        }
-
-        if(colors[0] >= 128 && colors[2] >= 128) {
-            purpleConfidence += purpleAlpha;
-        }
-
-        isGreen = greenConfidence >= greenThresh;
-        isPurple = purpleConfidence >= purpleThresh;
-
-        greenCounter = isGreen ? Math.min(greenCounter + 1, 3) : 0;
-        purpleCounter = isPurple ? Math.min(purpleCounter + 1, 3) : 0;
-    }
-
-    public boolean isBall(){
-        return greenConfidence >= greenThresh || purpleConfidence >= purpleThresh;
-    }
-
-    public void shot(){
-        balls.set(2, balls.get(1));
-        balls.set(1, balls.get(0));
-        balls.set(0, 0);
-
-        fullChamber = false;
-    }
-
-    public void toggleColor (boolean on) {colorToggle = on;}
-
     public double getFlywheelVelocity () { return flywheelVelocity; }
 
     public double getVoltage() {
@@ -214,16 +146,9 @@ public class Sensors {
     }
 
     private void updateTelemetry() {
-        TelemetryUtil.packet.put("voltage", voltage);
+        TelemetryUtil.packet.put("Voltage", voltage);
         TelemetryUtil.packet.put("Shooter : Flywheel velocity", flywheelVelocity);
         TelemetryUtil.packet.put("Shooter : Flywheel velocity 2", flywheelVelo2);
-        TelemetryUtil.packet.put("Pinpoint : X", currentPose.x);
-        TelemetryUtil.packet.put("Pinpoint : Y", currentPose.y);
-        TelemetryUtil.packet.put("Pinpoint : Angle (deg)", Math.toDegrees(currentPose.heading));
-        TelemetryUtil.packet.put("Pinpoint : Velocity X (in/s)", vel.x);
-        TelemetryUtil.packet.put("Pinpoint : Velocity Y (in/s)", vel.y);
-        TelemetryUtil.packet.put("Pinpoint : Velocity Angle (deg/s)", Math.toDegrees(Math.atan2(vel.x, vel.y)));
-        TelemetryUtil.packet.put("Balls", balls.toString());
 
         Canvas fieldOverlay = TelemetryUtil.packet.fieldOverlay();
         DashboardUtil.drawRobot(fieldOverlay, currentPose, "#00ff00");

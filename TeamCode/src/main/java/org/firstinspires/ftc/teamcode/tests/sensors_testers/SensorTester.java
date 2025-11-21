@@ -26,7 +26,6 @@ public class SensorTester extends LinearOpMode {
         Robot robot = new Robot(hardwareMap);
         Sensors sensors = robot.sensors;
 
-        robot.sensors.setOdometryPosition(new Pose2d(48.0 - Globals.ROBOT_REVERSE_LENGTH, 72.0 - Globals.ROBOT_WIDTH / 2, Math.PI));
         robot.update();
 
         waitForStart();
