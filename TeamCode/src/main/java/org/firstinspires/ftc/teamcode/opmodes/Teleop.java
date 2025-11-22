@@ -13,12 +13,19 @@ import org.firstinspires.ftc.teamcode.utils.RunMode;
 
 @TeleOp(name = "A. Teleop")
 public class Teleop extends LinearOpMode {
+    public enum State{
+        CLOSE,
+        MID,
+        FAR
+    } State state = State.FAR;
+
     public void runOpMode() {
         Globals.RUNMODE = RunMode.TELEOP;
         Robot robot = new Robot(hardwareMap);
         robot.setStopChecker(this::isStopRequested);
 
         ButtonToggle lb1 = new ButtonToggle();
+        ButtonToggle rb1 = new ButtonToggle();
         ButtonToggle a1 = new ButtonToggle();
         ButtonToggle b1 = new ButtonToggle();
         ButtonToggle x1 = new ButtonToggle();
@@ -59,15 +66,19 @@ public class Teleop extends LinearOpMode {
                 flywheelOn = true;
                 robot.shooter.setTargetVelocity(60);
                 robot.shooter.setHoodAngle(0.7);
+                state = State.CLOSE;
             } else if (y1.isClicked(gamepad1.y)) { // Middle
                 flywheelOn = true;
                 robot.shooter.setTargetVelocity(70);
                 robot.shooter.setHoodAngle(1.0);
+                state = State.MID;
             } else if (x1.isClicked(gamepad1.x)) { // Far
                 flywheelOn = true;
                 robot.shooter.setTargetVelocity(95);
                 robot.shooter.setHoodAngle(1.34);
+                state = State.FAR;
             }
+
             if (gamepad1.right_bumper) {
                 robot.intake.feed.setTargetPower(0.6);
                 robot.shooter.setShooterBlocker(0);
@@ -75,13 +86,7 @@ public class Teleop extends LinearOpMode {
                 robot.intake.feed.setTargetPower(0);
                 robot.shooter.setShooterBlocker(1.5);
             }
-            if (gamepad1.dpad_left) {
-                turretAngle -= 0.05;
-                robot.shooter.setTurretAngle(turretAngle);
-            } else if (gamepad1.dpad_right) {
-                turretAngle += 0.05;
-                robot.shooter.setTurretAngle(turretAngle);
-            }
+
 
             if (gamepad1.left_stick_button) {
                 robot.drivetrain.setPoseEstimate(new Pose2d(0, 0, 0));

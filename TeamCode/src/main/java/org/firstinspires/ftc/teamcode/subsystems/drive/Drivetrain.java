@@ -224,6 +224,8 @@ public class Drivetrain {
             case IDLE:
                 break;
         }
+
+        updateTelemetry();
     }
 
     public void setPath (Path p) {
@@ -294,32 +296,16 @@ public class Drivetrain {
     }
 
     public void updateTelemetry() {
-        /*
         TelemetryUtil.packet.put("Drivetrain : state", state);
-        LogUtil.driveState.set(state.toString());
-
-        TelemetryUtil.packet.put("Drivetrain : atPoint", atPoint());
-        TelemetryUtil.packet.put("Drivetrain : xError", xError);
-        TelemetryUtil.packet.put("Drivetrain : yError", yError);
-        TelemetryUtil.packet.put("Drivetrain : turnError (deg)", Math.toDegrees(turnError));
-        TelemetryUtil.packet.put("Drivetrain : xTarget", targetPoint.x);
-        TelemetryUtil.packet.put("Drivetrain : yTarget", targetPoint.y);
-        TelemetryUtil.packet.put("Drivetrain : turnTarget (deg)", Math.toDegrees(targetPoint.heading));
-        LogUtil.driveTargetX.set(targetPoint.x);
-        LogUtil.driveTargetY.set(targetPoint.y);
-        LogUtil.driveTargetAngle.set(targetPoint.heading);
-
-        Canvas canvas = TelemetryUtil.packet.fieldOverlay();
-        DashboardUtil.drawRobot(canvas, targetPoint, "#8000ff");
 
         if (path != null) {
-            Pose2d last = path.poses.get(0);
-            for (int i = 1; i < path.poses.size(); i++) {
-                Pose2d next = path.poses.get(i);
-                canvas.strokeLine(last.x, last.y, next.x, next.y);
-                last = next;
+            Canvas canvas = TelemetryUtil.packet.fieldOverlay();
+            DashboardUtil.drawRobot(canvas, new Pose2d(ROBOT_POSITION.x + robot.sensors.loopTime * pd.vel.x, ROBOT_POSITION.y + robot.sensors.loopTime * pd.vel.y, Math.atan2(pd.vel.x, pd.vel.y)), "#8000ff");
+            Spline s = path.pathSegments.get(pd.index).spline;
+
+            for(double t = 0; t < 1; t = t + 0.001){
+                canvas.strokeLine(s.getPos(t).x, s.getPos(t).y, s.getPos(t + 0.001).x, s.getPos(t + 0.001).y);
             }
         }
-        */
     }
 }
