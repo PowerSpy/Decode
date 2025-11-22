@@ -31,7 +31,7 @@ public class MaxSpeedYoinker extends LinearOpMode {
             Vector3 sV = new Vector3(
                     velocity.x,
                     velocity.y,
-                    Math.atan2(velocity.x, velocity.y) * Globals.ROBOT_WIDTH / 2
+                    Math.atan2(velocity.x, velocity.y) * Globals.TRACK_WIDTH / 2
             );
 
             if (sV.x > maxXSpeed) {

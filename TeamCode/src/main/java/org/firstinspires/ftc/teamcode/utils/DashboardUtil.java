@@ -52,6 +52,7 @@ public class DashboardUtil {
     }
 
     public static void drawSampledPath(Canvas canvas, Spline spline) {
+        /*
         // JANK
         if (spline == null) {
             return;
@@ -68,6 +69,7 @@ public class DashboardUtil {
         canvas.setStroke("#000000");
         canvas.strokePolyline(xPoints, yPoints);
         canvas.strokeCircle(spline.getLastPoint().x, spline.getLastPoint().y, 6);
+        */
     }
 
     public static void drawRobot(Canvas canvas, Pose2d pose, String color) {

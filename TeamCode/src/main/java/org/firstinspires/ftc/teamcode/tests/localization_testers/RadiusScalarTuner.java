@@ -1,6 +1,6 @@
 package org.firstinspires.ftc.teamcode.tests.localization_testers;
 
-import static org.firstinspires.ftc.teamcode.utils.Globals.ROBOT_WIDTH;
+import static org.firstinspires.ftc.teamcode.utils.Globals.TRACK_WIDTH;
 
 import android.util.Log;
 
@@ -40,7 +40,7 @@ public class RadiusScalarTuner extends LinearOpMode {
         long startTime = System.currentTimeMillis();
         targetFwd /= 2;
         while (System.currentTimeMillis() < startTime + 250 && opModeIsActive()) {
-            double targetTurn = (value * (ROBOT_WIDTH / radius)) * targetFwd;
+            double targetTurn = (value * (TRACK_WIDTH / radius)) * targetFwd;
         //double centripetal = centripetalTune*targetFwd*targetFwd/radius;
             double[] motorPowers = {
                 targetFwd - targetTurn,// - centripetal,
@@ -65,8 +65,8 @@ public class RadiusScalarTuner extends LinearOpMode {
             double sumTheta = 0;
 
             while (System.currentTimeMillis() < startTime + 500) {
-                double targetTurn = (value * (ROBOT_WIDTH / radius)) * targetFwd;
-                double centripetal = 0.5*Math.pow(robot.sensors.getVelocity().x / Globals.MAX_X_SPEED, 2)/radius;
+                double targetTurn = (value * (TRACK_WIDTH / radius)) * targetFwd;
+                double centripetal = /*0.5*Math.pow(robot.sensors.getVelocity().x / Globals.MAX_X_SPEED, 2)/radius*/0;
                 double[] motorPowers = new double[] {
                     targetFwd - targetTurn - centripetal,
                     targetFwd - targetTurn + centripetal,

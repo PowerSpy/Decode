@@ -54,7 +54,7 @@ public class Pose2d implements Cloneable {
     }
 
     public Vector3 toVec3() {
-        return new Vector3(x, y, heading * Globals.ROBOT_WIDTH / 2);
+        return new Vector3(x, y, heading * Globals.TRACK_WIDTH / 2);
     }
 
     @NonNull

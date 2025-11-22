@@ -11,6 +11,7 @@ import org.firstinspires.ftc.teamcode.utils.PID;
 import org.firstinspires.ftc.teamcode.utils.TelemetryUtil;
 import org.firstinspires.ftc.teamcode.utils.priority.PriorityMotor;
 import org.firstinspires.ftc.teamcode.utils.priority.nPriorityServo;
+import org.firstinspires.ftc.teamcode.vision.LLGoalDetector;
 
 @Config
 public class Shooter {
@@ -18,6 +19,10 @@ public class Shooter {
     private final DcMotorEx ms1, ms2;
     public final PriorityMotor flywheel;
     public final nPriorityServo flywheelBlocker, turret, hood/*, cloth*/;
+
+    private LLGoalDetector goalDetector;
+    private double turretError;
+    public static PID turretPID = new PID (0.1, 0, 0.001);
 
     // velocity is in inches / second
     public static PID velocityPID = new PID (0.0, 0.001, 0.001);
@@ -86,6 +91,8 @@ public class Shooter {
 
         flywheel.motor[0].setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         flywheel.motor[0].setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+
+        //goalDetector = new LLGoalDetector(robot);
     }
 
     public void update() {
@@ -106,11 +113,14 @@ public class Shooter {
         setShooterPower(pow);
         prevPow = pow;
 
+        if(goalDetector.isTagDetected()){
+            double turretPow = turretPID.update(goalDetector.getTx(), -1, 1);
+
+        }
+
         TelemetryUtil.packet.put("Shooter : Flywheel Filtered Velocity", filteredVelocity);
         TelemetryUtil.packet.put("Shooter : Flywheel Target Velocity", targetVelocity);
-        //TelemetryUtil.packet.put("Shooter : Flywheel Velocity Error", error);
         TelemetryUtil.packet.put("Shooter : Flywheel PID Power", pow * 100);
-        //TelemetryUtil.packet.put("Shooter : Flywheel PID Integral", velocityPID.getIntegral());
     }
 
     /**
