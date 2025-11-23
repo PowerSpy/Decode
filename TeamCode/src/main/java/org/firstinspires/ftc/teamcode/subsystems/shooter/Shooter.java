@@ -118,6 +118,8 @@ public class Shooter {
         if(goalDetector.isTagDetected() && Math.abs(goalDetector.getTx()) > limelightThresh && System.currentTimeMillis() - lastUpdateTime >= limelightTimeDelay){
             turretError = turret.getCurrentAngle() - Math.signum(goalDetector.getTx()) * limelightScalar;
             lastUpdateTime = System.currentTimeMillis();
+        } else if (!goalDetector.isTagDetected()){
+            turretError = 0;
         }
         turret.setTargetAngle(turretError);
 

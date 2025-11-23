@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode.subsystems.intake;
 
 import com.qualcomm.robotcore.hardware.CRServo;
+import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 
 import org.firstinspires.ftc.teamcode.Robot;
@@ -26,6 +27,9 @@ public class Intake {
 
     public Intake(Robot robot) {
         this.robot = robot;
+
+        robot.hardwareMap.get(DcMotorEx.class, "roller").setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        robot.hardwareMap.get(DcMotorEx.class, "feed").setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
         roller = new PriorityMotor(
             new DcMotorEx[] {robot.hardwareMap.get(DcMotorEx.class, "roller")},

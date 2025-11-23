@@ -31,6 +31,7 @@ public class Teleop extends LinearOpMode {
         ButtonToggle x1 = new ButtonToggle();
         ButtonToggle y1 = new ButtonToggle();
 
+        ButtonToggle a2 = new ButtonToggle();
         ButtonToggle b2 = new ButtonToggle();
         ButtonToggle x2 = new ButtonToggle();
         ButtonToggle y2 = new ButtonToggle();
@@ -51,15 +52,15 @@ public class Teleop extends LinearOpMode {
         while (!isStopRequested()) {
             robot.update();
 
-            if (lb1.isClicked(gamepad1.left_bumper)) intakeOn = !intakeOn;
+            if (lb1.isClicked(gamepad1.left_bumper)){
+                intakeOn = !intakeOn;
+                robot.intake.roller.setTargetPower(intakeOn ? (intakeReversed ? -1 : 1) : 0);
+            }
             if (a1.isClicked(gamepad1.a)) {
                 intakeReversed = intakeOn && !intakeReversed;
                 intakeOn = true;
+                robot.intake.roller.setTargetPower(intakeReversed ? -1 : 1);
             }
-            if (intakeOn) {
-                if (intakeReversed) robot.intake.roller.setTargetPower(-1);
-                else robot.intake.roller.setTargetPower(1);
-            } else robot.intake.roller.setTargetPower(0);
 
             if (b1.isHeld(gamepad1.b, 500) || b2.isHeld(gamepad2.b, 500)) { // Close
                 flywheelOn = false;
@@ -103,7 +104,16 @@ public class Teleop extends LinearOpMode {
                 robot.shooter.setShooterBlocker(1.5);
             }
 
+            // toggle alliance
+
+            if(a2.isClicked(gamepad2.a)){
+                Globals.isRed = !Globals.isRed;
+                robot.shooter.goalDetector.updatePipeline();
+            }
+
             robot.drivetrain.drive(gamepad1);
+
+            telemetry.addData("Alliance", Globals.isRed ? "Red" : "Blue");
 
             telemetry.addData("intakeOn", intakeOn);
             telemetry.addData("intakeReversed", intakeReversed);

@@ -22,7 +22,7 @@ public class LLGoalDetector {
     }
 
     public void start(){
-        ll.pipelineSwitch(Globals.isRed ? 0 : 1);
+        updatePipeline();
         ll.start();
     }
 
@@ -78,5 +78,9 @@ public class LLGoalDetector {
 
     public double getStaleness(){
         return staleness;
+    }
+
+    public void updatePipeline(){
+        ll.pipelineSwitch(Globals.isRed ? 0 : 1);
     }
 }

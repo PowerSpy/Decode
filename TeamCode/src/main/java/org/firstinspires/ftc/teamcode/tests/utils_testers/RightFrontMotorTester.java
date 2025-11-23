@@ -18,7 +18,7 @@ public class RightFrontMotorTester extends LinearOpMode {
         DcMotorEx m3 = robot.hardwareMap.get(DcMotorEx.class, "leftFront");
         DcMotorEx m4 = robot.hardwareMap.get(DcMotorEx.class, "rightRear");
 
-        DcMotorEx m5 = robot.hardwareMap.get(DcMotorEx.class, "feed");
+        DcMotorEx m5 = robot.hardwareMap.get(DcMotorEx.class, "roller");
 
         while(!isStopRequested()){
             m1.setPower(0.5);
