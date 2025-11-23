@@ -9,7 +9,7 @@ public class Globals {
     public static double LOOP_TIME = 0.0;
     public static RunMode RUNMODE = RunMode.TESTER;
     public static boolean TESTING_DISABLE_CONTROL = true;
-    public static boolean isRed = false;
+    public static boolean isRed = true;
     public static long autoStartTime = -1;
     public static boolean autoHang = true;
     public static boolean gotBloodyAnnihilated = false; // STOP DELETEING THIS FOR GODS SAKE

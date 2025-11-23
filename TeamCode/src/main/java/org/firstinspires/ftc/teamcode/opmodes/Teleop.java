@@ -68,7 +68,7 @@ public class Teleop extends LinearOpMode {
                 robot.shooter.setHoodAngle(0);
             } else if (b1.isClicked(gamepad1.b) || b2.isClicked(gamepad2.b)) {
                 flywheelOn = true;
-                robot.shooter.setTargetVelocity(60);
+                robot.shooter.setTargetVelocity(65);
                 robot.shooter.setHoodAngle(0.7);
                 state = State.CLOSE;
             }
@@ -79,7 +79,7 @@ public class Teleop extends LinearOpMode {
                 robot.shooter.setHoodAngle(0);
             } else if (y1.isClicked(gamepad1.y) || y2.isClicked(gamepad2.y)){
                 flywheelOn = true;
-                robot.shooter.setTargetVelocity(70);
+                robot.shooter.setTargetVelocity(75);
                 robot.shooter.setHoodAngle(1.0);
                 state = State.MID;
             }
@@ -90,14 +90,14 @@ public class Teleop extends LinearOpMode {
                 robot.shooter.setHoodAngle(0);
             } else if (x1.isClicked(gamepad1.x) || x2.isClicked(gamepad2.x)) {
                 flywheelOn = true;
-                robot.shooter.setTargetVelocity(95);
+                robot.shooter.setTargetVelocity(100);
                 robot.shooter.setHoodAngle(1.34);
                 state = State.FAR;
             }
 
             // activate feed / toggling flywheel blocker
             if (gamepad1.right_bumper) {
-                robot.intake.feed.setTargetPower(0.6);
+                robot.intake.feed.setTargetPower(0.8);
                 robot.shooter.setShooterBlocker(0);
             } else {
                 robot.intake.feed.setTargetPower(0);
