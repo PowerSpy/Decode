@@ -3,121 +3,64 @@ package org.firstinspires.ftc.teamcode.vision;
 import android.util.Log;
 import android.util.Size;
 
+import com.qualcomm.hardware.limelightvision.LLResult;
+import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
-import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.controls.ExposureControl;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.controls.GainControl;
+import org.firstinspires.ftc.teamcode.utils.Globals;
+import org.firstinspires.ftc.teamcode.utils.TelemetryUtil;
 import org.firstinspires.ftc.vision.VisionPortal;
-import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
 
 import java.util.concurrent.TimeUnit;
 
 public class Vision {
     VisionPortal visionPortal;
-    public AprilTagProcessor tagProcessor;
+    public Limelight3A limelight;
+    private LLResult result = null;
+    public double cameraAngle = Math.toRadians(15);
+    public double cameraHeight = 10.0;
 
-    int cameraWidth = 640;
-    int cameraHeight = 360;
+    int visionWidth = 480;
+    int visionHeight = 360;
 
-    public Vision (HardwareMap hardwareMap, Telemetry telemetry, boolean isRed, boolean initTeamProp, boolean initAprilTag) {
-        if (initAprilTag) {
-            Log.e("USING APRIL TAGS", "");
-        } else {
-            Log.e("NOT --- USING APRIL TAGS", "");
-        }
-
-        initAprilTagCrashProtection(hardwareMap, telemetry);
-
-        if (initTeamProp && initAprilTag) {
-            initTeamPropAndAprilTag(hardwareMap, telemetry, isRed);
-        } else if (initAprilTag) {
-            initAprilTag(hardwareMap);
-        } else {
-            initTeamProp(hardwareMap, telemetry, isRed);
-        }
-
-        telemetry.addData("Finished", "initializing");
-        telemetry.update();
-    }
-
-    public void initAprilTagCrashProtection(HardwareMap hardwareMap, Telemetry telemetry) {
-        initAprilTag(hardwareMap);
-        long start = System.currentTimeMillis();
-        while (System.currentTimeMillis() - start < 2000) {
-            telemetry.addData("Initializing", "please wait for crash protection to finish.");
-            telemetry.update();
-        }
-        visionPortal.close();
-    }
-
-    public void initTeamProp(HardwareMap hardwareMap, Telemetry telemetry, boolean isRed) {
+    public Vision (HardwareMap hardwareMap) {
+        limelight = hardwareMap.get(Limelight3A.class, "limelight");
+        limelight.setPollRateHz(100);
+        limelight.pipelineSwitch(Globals.isRed ? 0 : 1);
 
         visionPortal = new VisionPortal.Builder()
-                .setCamera(hardwareMap.get(WebcamName.class, "Webcam 1")) // the camera on your robot is named "Webcam 1" by default
-                .setCameraResolution(new Size(cameraWidth, cameraHeight))
+                .setCamera(hardwareMap.get(WebcamName.class, "limelight")) // i think this may work? need to test in the garage. I just want the video feed and limelight is registered as a camera
+                .setCameraResolution(new Size(visionWidth, visionHeight))
                 .setStreamFormat(VisionPortal.StreamFormat.MJPEG)
                 .build();
 
-        // waiting for camera to start streaming
-        while (visionPortal.getCameraState() != VisionPortal.CameraState.STREAMING) {
-            Log.e("initializing camera....", "");
-        }
-
-        setCameraSettings(1,206); // setCameraSettings(9,255);
-
+        setCameraSettings(8, 145);
     }
 
-    public void initAprilTag(HardwareMap hardwareMap) {
-        tagProcessor = new AprilTagProcessor.Builder()
-                .setDrawAxes(true)
-                .setDrawCubeProjection(true)
-                .setDrawTagID(true)
-                .setDrawTagOutline(true)
-                .build();
-
-
-        visionPortal = new VisionPortal.Builder()
-                .setCamera(hardwareMap.get(WebcamName.class, "Webcam 1")) // the camera on your robot is named "Webcam 1" by default
-                .setCameraResolution(new Size(cameraWidth, cameraHeight))
-                .setStreamFormat(VisionPortal.StreamFormat.MJPEG)
-                .addProcessors(tagProcessor)
-                .build();
-
-        // waiting for camera to start streaming
-        while (visionPortal.getCameraState() != VisionPortal.CameraState.STREAMING) {
-            Log.e("initializing camera....", "");
+    public void update(){
+        if(!limelight.isConnected()){
+            TelemetryUtil.packet.put("Limelight : Status", "Oops! Something broke :blehhh:");
+            result = null;
+        }else{
+            result = limelight.getLatestResult();
         }
-
-        setCameraSettings(2,255);
-
-        visionPortal.setProcessorEnabled(tagProcessor, true);
     }
 
-    public void initTeamPropAndAprilTag(HardwareMap hardwareMap, Telemetry telemetry, boolean isRed) {
-        tagProcessor = new AprilTagProcessor.Builder()
-                .setDrawAxes(true)
-                .setDrawCubeProjection(true)
-                .setDrawTagID(true)
-                .setDrawTagOutline(true)
-                .build();
+    public LLResult getResult(){ return result;}
 
+    public boolean isDetected(){ return result.isValid() && result != null; }
 
-        visionPortal = new VisionPortal.Builder()
-                .setCamera(hardwareMap.get(WebcamName.class, "Webcam 1")) // the camera on your robot is named "Webcam 1" by default
-                .setCameraResolution(new Size(cameraWidth, cameraHeight))
-                .setStreamFormat(VisionPortal.StreamFormat.MJPEG)
-                .build();
+    // visionPortal methods
 
-        // waiting for camera to start streaming
-        while (visionPortal.getCameraState() != VisionPortal.CameraState.STREAMING) {
-            Log.e("initializing camera....", "");
-        }
+    public void startStreaming () {
+        visionPortal.resumeStreaming();
+    }
 
-        setCameraSettings(8,145); // setCameraSettings(9,255);
-
-        visionPortal.setProcessorEnabled(tagProcessor, true);
+    public void stopStreaming () {
+        visionPortal.stopStreaming();
     }
 
     public void setCameraSettings(int exposureVal, int gainVal) {
@@ -130,23 +73,4 @@ public class Vision {
         GainControl gain = visionPortal.getCameraControl(GainControl.class);
         gain.setGain(gainVal);
     }
-
-    public void start () {
-        visionPortal.resumeStreaming();
-    }
-
-    public void stop () {
-        visionPortal.stopStreaming();
-    }
-
-    public void enableAprilTag () {
-        setCameraSettings(2,255);
-        visionPortal.setProcessorEnabled(tagProcessor, true);
-    }
-
-    public void disableAprilTag () {
-        visionPortal.setProcessorEnabled(tagProcessor, false);
-    }
-
-
 }

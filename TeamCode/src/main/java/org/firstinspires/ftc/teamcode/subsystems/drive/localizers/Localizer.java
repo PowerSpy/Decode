@@ -47,7 +47,7 @@ public class Localizer {
     protected String color;
     protected String expectedColor;
 
-    public Localizer(HardwareMap hardwareMap, Sensors sensors, Drivetrain drivetrain, String color, String expectedColor) {
+    public Localizer(Sensors sensors, Drivetrain drivetrain, String color, String expectedColor) {
         this.sensors = sensors;
         this.drivetrain = drivetrain;
         this.color = color;
@@ -174,72 +174,6 @@ public class Localizer {
         }
     }
 
-    double headingDif = 0.0;
-    boolean firstLoop = true;
-    double lastImuHeading;
-    double lastOdoHeading;
-
-    double imuMerge = 0;
-
-    public void updateHeadingWithIMU(double imuHeading) {
-    }
-
-    double leftDist = 0.0;
-    double rightDist = 0.0;
-
-    double leftXOffset = 5.5;
-    double leftYOffset = 2.625;
-    double rightXOffset = 5.5;
-    double rightYOffset = -2.625;
-
-    double lastLeftDist = 0.0;
-    double lastRightDist = 0.0;
-
-    /*public void mergeUltrasonics() {
-        //leftDist = sensors.getDistLeft();
-        //rightDist = sensors.getDistRight();
-
-        double x_sign = Math.abs(Utils.headingClip(heading)) < Math.toRadians(90) ? 1 : -1;
-        double y_sign = Math.signum(Utils.headingClip(heading));
-
-        Pose2d relativeWallLocationLeft = new Pose2d(leftXOffset + leftDist, leftYOffset);
-        Pose2d globalWallLocationLeft = new Pose2d(
-                x + Math.cos(heading)*relativeWallLocationLeft.x - Math.sin(heading)*relativeWallLocationLeft.y,
-                y + Math.sin(heading)*relativeWallLocationLeft.x + Math.cos(heading)*relativeWallLocationLeft.y
-        );
-
-        Pose2d relativeWallLocationRight = new Pose2d(rightXOffset + rightDist, rightYOffset);
-        Pose2d globalWallLocationRight = new Pose2d(
-                x + Math.cos(heading)*relativeWallLocationRight.x - Math.sin(heading)*relativeWallLocationRight.y,
-                y + Math.sin(heading)*relativeWallLocationRight.x + Math.cos(heading)*relativeWallLocationRight.y
-        );
-
-        if (Globals.mergeUltrasonics && leftDist != lastLeftDist && rightDist != lastRightDist) { // actually merging localization
-            if (Math.abs(globalWallLocationLeft.x - 70.5 * x_sign) < 4) {
-                x += (70.5 * x_sign - globalWallLocationLeft.x) * 0.1;
-            }
-            if (Math.abs(globalWallLocationLeft.y - 70.5 * y_sign) < 4) {
-                y += (70.5 * y_sign - globalWallLocationLeft.y) * 0.1;
-            }
-
-            if (Math.abs(globalWallLocationRight.x - 70.5 * x_sign) < 4) {
-                x += (70.5 * x_sign - globalWallLocationRight.x) * 0.1;
-            }
-            if (Math.abs(globalWallLocationRight.y - 70.5 * y_sign) < 4) {
-                y += (70.5 * y_sign - globalWallLocationRight.y) * 0.1;
-            }
-        }
-
-        lastLeftDist = leftDist;
-        lastRightDist = rightDist;
-
-        TelemetryUtil.packet.fieldOverlay().setStroke("green");
-        TelemetryUtil.packet.fieldOverlay().strokeCircle(globalWallLocationLeft.x, globalWallLocationLeft.y, 1);
-
-        TelemetryUtil.packet.fieldOverlay().setStroke("blue");
-        TelemetryUtil.packet.fieldOverlay().strokeCircle(globalWallLocationRight.x, globalWallLocationRight.y, 1);
-    }*/
-
     public void updatePowerVector(double[] p){
         for (int i = 0; i < p.length; i ++){
             p[i] = Math.max(Math.min(p[i],1),-1);
@@ -335,10 +269,6 @@ public class Localizer {
         TelemetryUtil.packet.put(this.getClass().getSimpleName()+" y", y);
         TelemetryUtil.packet.put(this.getClass().getSimpleName()+" heading (deg)", Math.toDegrees(heading));
         TelemetryUtil.packet.put(this.getClass().getSimpleName()+" distance", distanceTraveled);
-
-//        TelemetryUtil.packet.put("x speed", relCurrentVel.x);
-//        TelemetryUtil.packet.put("y speed", relCurrentVel.y);
-//        TelemetryUtil.packet.put("turn speed (deg)", Math.toDegrees(relCurrentVel.heading));
 
         Canvas fieldOverlay = TelemetryUtil.packet.fieldOverlay();
         DashboardUtil.drawRobot(fieldOverlay, getPoseEstimate(), color);

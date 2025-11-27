@@ -36,20 +36,6 @@ public class Sensors {
     // end: 43062
     private double flywheelVelocity, ticksToInches = 16.772 / (43062 - 42638), flywheelVelo2, flywheelLastPos = 0;
 
-    /*
-    Index Key
-    0 -> intake side
-    2 -> shooter side
-
-    Color Key
-    0 -> no ball
-    1 -> green ball
-    2 -> purple ball
-     */
-    private ArrayList<Integer> balls;
-    private int[] colors = {0, 0, 0};
-    private REVColorSensorV3 colorSensorV3;
-    private boolean colorToggle = false, fullChamber = false;
 
     private double voltage;
     private final double voltageUpdateTime = 5000;
@@ -66,19 +52,6 @@ public class Sensors {
         odometry.setOffsets(72, -160);
         odometry.setEncoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_SWINGARM_POD);
         odometry.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.REVERSED, GoBildaPinpointDriver.EncoderDirection.REVERSED);
-
-        /*
-        colorSensorV3 = robot.hardwareMap.get(REVColorSensorV3.class, "indexSensor");
-        colorSensorV3.configureLS(REVColorSensorV3.LSResolution.SIXTEEN, REVColorSensorV3.LSMeasureRate.m25s, REVColorSensorV3.LSGain.THREE);
-        colorSensorV3.sendControlRequest(new REVColorSensorV3.ControlRequest()
-                .enableFlag(REVColorSensorV3.ControlFlag.LIGHT_SENSOR_ENABLED)
-                .enableFlag(REVColorSensorV3.ControlFlag.RGB_ENABLED));
-        */
-
-        balls = new ArrayList<Integer>();
-        balls.add(0);
-        balls.add(0);
-        balls.add(0);
 
         voltage = robot.hardwareMap.voltageSensor.iterator().next().getVoltage();
     }

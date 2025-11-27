@@ -50,7 +50,7 @@ public class Drivetrain {
     private final HardwareQueue hardwareQueue;
     private final Sensors sensors;
 
-    public Drivetrain(Robot robot) {
+    public Drivetrain(Robot robot, Vision vision) {
         this.robot = robot;
         this.hardwareQueue = robot.hardwareQueue;
         this.sensors = robot.sensors;
@@ -81,7 +81,7 @@ public class Drivetrain {
         configureMotors();
 
         localizers = new Localizer[]{
-            new Localizer(robot.hardwareMap, sensors, this, "#00c000", "#00c00060"),
+            new Localizer(robot.sensors, this, "#00c000", "#00c00060"),
         };
 
         setMinPowersToOvercomeFriction(1.0);

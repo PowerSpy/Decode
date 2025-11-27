@@ -39,7 +39,7 @@ public class Robot {
         hardwareQueue = new HardwareQueue();
 
         sensors = new Sensors(this);
-        drivetrain = new Drivetrain(this);
+        drivetrain = new Drivetrain(this, vision);
         intake = new Intake(this);
         shooter = new Shooter(this);
 

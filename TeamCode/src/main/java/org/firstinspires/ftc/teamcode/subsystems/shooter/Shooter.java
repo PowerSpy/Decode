@@ -11,7 +11,6 @@ import org.firstinspires.ftc.teamcode.utils.PID;
 import org.firstinspires.ftc.teamcode.utils.TelemetryUtil;
 import org.firstinspires.ftc.teamcode.utils.priority.PriorityMotor;
 import org.firstinspires.ftc.teamcode.utils.priority.nPriorityServo;
-import org.firstinspires.ftc.teamcode.vision.LLGoalDetector;
 
 @Config
 public class Shooter {
@@ -34,7 +33,6 @@ public class Shooter {
     public final PriorityMotor flywheel;
     public final nPriorityServo flywheelBlocker, turret, hood/*, cloth*/;
 
-    public LLGoalDetector goalDetector;
     private double turretError;
     private long lastUpdateTime = System.currentTimeMillis();
     public static double limelightThresh = 5.0, limelightTimeDelay = 10, limelightScalar = 0.05;

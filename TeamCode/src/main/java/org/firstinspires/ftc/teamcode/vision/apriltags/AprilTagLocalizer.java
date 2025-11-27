@@ -24,7 +24,7 @@ public class AprilTagLocalizer {
     private ArrayList<AprilTagDetection> tags = new ArrayList<AprilTagDetection>();
 
     public AprilTagLocalizer(Vision vision, Localizer localizer) {
-        this.tagProcessor = vision.tagProcessor;
+        // this.tagProcessor = vision.tagProcessor;
         this.localizer = localizer;
     }
 
