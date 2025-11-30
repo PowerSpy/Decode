@@ -22,6 +22,8 @@ public class Vision {
     private LLResult result = null;
     public double cameraAngle = Math.toRadians(15);
     public double cameraHeight = 10.0;
+    public boolean obelisk = true;
+    public int greenPosition = -1;
 
     int visionWidth = 480;
     int visionHeight = 360;
@@ -29,7 +31,7 @@ public class Vision {
     public Vision (HardwareMap hardwareMap) {
         limelight = hardwareMap.get(Limelight3A.class, "limelight");
         limelight.setPollRateHz(100);
-        limelight.pipelineSwitch(Globals.isRed ? 0 : 1);
+        limelight.pipelineSwitch(2);
 
         visionPortal = new VisionPortal.Builder()
                 .setCamera(hardwareMap.get(WebcamName.class, "limelight")) // i think this may work? need to test in the garage. I just want the video feed and limelight is registered as a camera
@@ -43,15 +45,25 @@ public class Vision {
     public void update(){
         if(!limelight.isConnected()){
             TelemetryUtil.packet.put("Limelight : Status", "Oops! Something broke :blehhh:");
-            result = null;
         }else{
             result = limelight.getLatestResult();
+
+            if(obelisk && result != null && result.isValid()){
+                // 21 = GPP
+                greenPosition = result.getFiducialResults().get(0).getFiducialId() - 21;
+                startAprilTagDetection();
+            }
         }
     }
 
     public LLResult getResult(){ return result;}
 
-    public boolean isDetected(){ return result.isValid() && result != null; }
+    public boolean isDetected(){ return result != null && result.isValid(); }
+
+    public void startAprilTagDetection () {
+        limelight.pipelineSwitch(Globals.isRed ? 0 : 1);
+        obelisk = false;
+    }
 
     // visionPortal methods
 

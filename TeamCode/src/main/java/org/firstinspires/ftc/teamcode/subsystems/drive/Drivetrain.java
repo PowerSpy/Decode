@@ -16,6 +16,7 @@ import org.firstinspires.ftc.teamcode.Robot;
 import org.firstinspires.ftc.teamcode.sensors.Sensors;
 import org.firstinspires.ftc.teamcode.subsystems.drive.localizers.LimelightLocalizer;
 import org.firstinspires.ftc.teamcode.subsystems.drive.localizers.Localizer;
+import org.firstinspires.ftc.teamcode.subsystems.drive.localizers.MergeLocalizer;
 import org.firstinspires.ftc.teamcode.subsystems.drive.localizers.PinpointLocalizer;
 import org.firstinspires.ftc.teamcode.utils.AngleUtil;
 import org.firstinspires.ftc.teamcode.utils.DashboardUtil;
@@ -83,9 +84,10 @@ public class Drivetrain {
         configureMotors();
 
         localizers = new Localizer[]{
-                new Localizer(robot.sensors, this, "#00c000", "#00c00060"),
-                new LimelightLocalizer(robot.sensors, this, "00c000", "#00c00060"),
-                new PinpointLocalizer(robot.hardwareMap, robot.sensors, this, "00c000", "#00c00060")
+                new Localizer(robot.sensors, this, "#0000ff", "#ff00ff"),
+                new LimelightLocalizer(robot.sensors, this, "#ff0000", "#00ff00"),
+                new MergeLocalizer (robot.sensors, this, "#ffff00", "#00ffff"),
+                new PinpointLocalizer(robot.hardwareMap, robot.sensors, this, "#aa0000", "#00ee00")
         };
 
         setMinPowersToOvercomeFriction(1.0);
@@ -150,12 +152,23 @@ public class Drivetrain {
         }
     }
 
+    private boolean pinpointOverride = false;
+
+    public void togglePinpoint (boolean toggle) { pinpointOverride = toggle;}
 
     public void updateLocalizers() {
-        for (Localizer l : localizers) {
-            l.updateEncoders(sensors.getOdometry());
-            l.update();
+
+        localizers[0].updateEncoders (sensors.getOdometry());
+
+        if(!vision.obelisk){
+            localizers[1].updateEncoders(sensors.getOdometry());
+            localizers[1].update();
         }
+
+        localizers[2].updateEncoders(sensors.getOdometry());
+        localizers[2].update();
+
+        if(pinpointOverride) { localizers[3].update();}
     }
 
     public void setPoseEstimate(Pose2d pose2d) {
@@ -194,8 +207,9 @@ public class Drivetrain {
             return;
         }
 
-        ROBOT_POSITION = localizers[0].getPoseEstimate();
-        ROBOT_VELOCITY = localizers[0].getRelativePoseVelocity();
+        updateLocalizers();
+        ROBOT_POSITION = localizers[pinpointOverride ? 3 : 2].getPoseEstimate();
+        ROBOT_VELOCITY = localizers[pinpointOverride ? 3 : 2].getRelativePoseVelocity();
 
         if(path != null) {
             state = State.FOLLOW_SPLINE;

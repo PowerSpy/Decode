@@ -15,9 +15,9 @@ public class LimelightLocalizer extends Localizer{
     }
 
     private LLResult res = null;
-    private final Pose2d redTag = new Pose2d(-58, 58);
-    private final Pose2d blueTag = new Pose2d(-58, -58);
-    private final double tagHeight = 29.5, staleness = 0.0;
+    private final Pose2d redTag = new Pose2d(-58.3414795, 55.6424675);
+    private final Pose2d blueTag = new Pose2d(-58.3414795, -55.6424675);
+    private final double tagHeight = 29.5;
 
     @Override
     public void update(){
@@ -50,4 +50,6 @@ public class LimelightLocalizer extends Localizer{
         updateExpected();
         updateField();
     }
+
+    public double getStaleness() {return res.getStaleness();}
 }
