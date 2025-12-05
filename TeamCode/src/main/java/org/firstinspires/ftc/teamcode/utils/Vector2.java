@@ -55,6 +55,12 @@ public class Vector2 {
         magcache = 0;
     }
 
+    public void subtract(Vector2 a) {
+        x -= a.x;
+        y -= a.y;
+        magcache = 0;
+    }
+
     public String toString() {
         return String.format("(%f, %f)", x, y);
     }
@@ -78,6 +84,10 @@ public class Vector2 {
         double vy = vector.y-y;
         Vector2 temp = Vector2.rotate(new Vector2(vx,vy), angle);
         return new Vector2(temp.x+x, temp.y+y);
+    }
+
+    public static Vector2 subtract(Vector2 a, Vector2 b) {
+        return new Vector2(a.x - b.x, a.y - b.y);
     }
 
     public static double distance(Vector2 v0, Vector2 v1) {
