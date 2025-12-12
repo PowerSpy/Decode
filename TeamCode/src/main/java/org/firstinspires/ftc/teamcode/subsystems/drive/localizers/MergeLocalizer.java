@@ -16,19 +16,21 @@ public class MergeLocalizer extends Localizer{
     public MergeLocalizer (HardwareMap hardwareMap, Sensors sensors, Drivetrain drivetrain, String color, String expectedColor){
         super(sensors, drivetrain, color, expectedColor);
 
-        pinpoint = hardwareMap.get(GoBildaPinpoint2Driver.class, "pinpoint");
+        pinpoint = hardwareMap.get(GoBildaPinpointDriver.class, "pinpoint");
         pinpoint.setOffsets(72, -160, DistanceUnit.MM);
-        pinpoint.setEncoderResolution(GoBildaPinpoint2Driver.GoBildaOdometryPods.goBILDA_SWINGARM_POD);
-        pinpoint.setEncoderDirections(GoBildaPinpoint2Driver.EncoderDirection.FORWARD, GoBildaPinpoint2Driver.EncoderDirection.FORWARD);
+        pinpoint.setEncoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_SWINGARM_POD);
+        pinpoint.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.FORWARD, GoBildaPinpointDriver.EncoderDirection.FORWARD);
     }
 
     // Pinpoint
-    private GoBildaPinpoint2Driver pinpoint;
+    private Thread ppUpdate = new Thread();
+    private GoBildaPinpointDriver pinpoint;
     private boolean ppUpdateRequest = false;
     private long ppLastUpdateTime;
     private Pose2d ppLastPose;
 
     // Limelight
+    private Thread llUpdate = new Thread();
     private LLResult res = null;
     private final Pose2d redTag = new Pose2d(-58.3414795, 55.6424675);
     private final Pose2d blueTag = new Pose2d(-58.3414795, -55.6424675);

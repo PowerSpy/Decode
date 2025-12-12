@@ -48,12 +48,12 @@ import java.util.stream.Stream;
 
 @I2cDeviceType
 @DeviceProperties(
-        name = "goBILDA® Pinpoint v2",
-        xmlTag = "goBILDAPinpoint2",
-        description ="goBILDA® Pinpoint Odometry Computer v2 (IMU Sensor Fusion for 2 Wheel Odometry)"
+        name = "goBILDA® Pinpoint Odometry Computer",
+        xmlTag = "goBILDAPinpoint",
+        description ="goBILDA® Pinpoint Odometry Computer (IMU Sensor Fusion for 2 Wheel Odometry)"
 )
 
-public class GoBildaPinpoint2Driver extends I2cDeviceSynchDevice<I2cDeviceSynchSimple> {
+public class GoBildaPinpointDriver extends I2cDeviceSynchDevice<I2cDeviceSynchSimple> {
 
     private int deviceID       = 0;
     private int deviceVersion  = 0;
@@ -105,7 +105,7 @@ public class GoBildaPinpoint2Driver extends I2cDeviceSynchDevice<I2cDeviceSynchS
     //i2c address of the device
     public static final byte DEFAULT_ADDRESS = 0x31;
 
-    public GoBildaPinpoint2Driver(I2cDeviceSynchSimple deviceClient, boolean deviceClientIsOwned) {
+    public GoBildaPinpointDriver(I2cDeviceSynchSimple deviceClient, boolean deviceClientIsOwned) {
         super(deviceClient, deviceClientIsOwned);
 
         this.deviceClient.setI2cAddress(I2cAddr.create7bit(DEFAULT_ADDRESS));
@@ -206,12 +206,12 @@ public class GoBildaPinpoint2Driver extends I2cDeviceSynchDevice<I2cDeviceSynchS
 
     public enum EncoderDirection{
         FORWARD,
-        REVERSED
+        REVERSED;
     }
 
     public enum GoBildaOdometryPods {
         goBILDA_SWINGARM_POD,
-        goBILDA_4_BAR_POD
+        goBILDA_4_BAR_POD;
     }
 
     /**
