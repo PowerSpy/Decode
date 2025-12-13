@@ -957,6 +957,8 @@ public class GoBildaPinpointDriver extends I2cDeviceSynchDevice<I2cDeviceSynchSi
         return distanceUnit.fromMm(xPosition);
     }
 
+    public double getPosX() { return DistanceUnit.INCH.fromMm(xPosition); }
+
     /**
      * @return the estimated Y (Strafe) position of the robot in specified unit
      * @param distanceUnit the unit that the estimated position will return in
@@ -965,6 +967,7 @@ public class GoBildaPinpointDriver extends I2cDeviceSynchDevice<I2cDeviceSynchSi
         return distanceUnit.fromMm(yPosition);
     }
 
+    public double getPosY() { return DistanceUnit.INCH.fromMm(yPosition); }
 
     /**
      * @return the normalized estimated H (heading) position of the robot in specified unit
@@ -973,6 +976,8 @@ public class GoBildaPinpointDriver extends I2cDeviceSynchDevice<I2cDeviceSynchSi
     public double getHeading(AngleUnit angleUnit){
         return angleUnit.fromRadians(hOrientation);
     }
+
+    public double getHeading () {return AngleUnit.RADIANS.fromRadians(hOrientation); }
 
     /**
      * @return the unnormalized estimated H (heading) position of the robot in specified unit

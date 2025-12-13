@@ -1,33 +1,40 @@
 package org.firstinspires.ftc.teamcode.tests.utils_testers;
 
+import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.teamcode.Robot;
 import org.firstinspires.ftc.teamcode.utils.TelemetryUtil;
 
 @TeleOp
+@Config
 public class RightFrontMotorTester extends LinearOpMode {
+    public static double power = 0.5;
 
+    // ticksToInches = 0.3860 * 2pi inch / 384 ticks
+    double ticksToInches = 0.006316;
     public void runOpMode(){
-        Robot robot = new Robot(hardwareMap);
+        DcMotorEx m = hardwareMap.get(DcMotorEx.class, "testMotor");
 
-        DcMotorEx m1 = robot.hardwareMap.get(DcMotorEx.class, "rightFront");
-        DcMotorEx m2 = robot.hardwareMap.get(DcMotorEx.class, "leftRear");
-        DcMotorEx m3 = robot.hardwareMap.get(DcMotorEx.class, "leftFront");
-        DcMotorEx m4 = robot.hardwareMap.get(DcMotorEx.class, "rightRear");
-        DcMotorEx m5 = robot.hardwareMap.get(DcMotorEx.class, "roller");
-        DcMotorEx m6 = robot.hardwareMap.get(DcMotorEx.class, "feed");
+        m.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        m.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
         waitForStart();
+
         while (!isStopRequested()) {
-            m1.setPower(gamepad1.y ? 0.5 : 0);
-            m2.setPower(gamepad1.a ? 0.5 : 0);
-            m3.setPower(gamepad1.x ? 0.5 : 0);
-            m4.setPower(gamepad1.b ? 0.5 : 0);
-            m5.setPower(gamepad1.left_bumper ? 0.5 : 0);
-            m6.setPower(gamepad1.right_bumper ? 0.5 : 0);
+            m.setPower(power);
+
+            telemetry.addData("Motor Power", m.getPower());
+            telemetry.addData("Motor Pos (ticks)", m.getCurrentPosition());
+            telemetry.addData("Motor Pos (inch)", m.getCurrentPosition() * ticksToInches);
+            telemetry.addData("Motor Vel (ticks/sec)", m.getVelocity());
+            telemetry.addData("Motor Vel (rads/sec)", m.getVelocity(AngleUnit.RADIANS));
+
+            telemetry.update();
         }
     }
 }

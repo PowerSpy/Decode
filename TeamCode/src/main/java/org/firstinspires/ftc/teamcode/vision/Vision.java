@@ -48,11 +48,16 @@ public class Vision {
         }else{
             result = limelight.getLatestResult();
 
+            /*
+
+            James let this be a reminder to never write important code past 1am - James 12/12/25
+
             if(obelisk && result != null && result.isValid()){
                 // 21 = GPP
                 greenPosition = (result.getFiducialResults().get(0).getFiducialId() - 21 + 2) % 3;
                 startAprilTagDetection();
             }
+            */
         }
     }
 
@@ -60,9 +65,9 @@ public class Vision {
 
     public boolean isDetected(){ return result != null && result.isValid(); }
 
-    public void startAprilTagDetection () {
-        limelight.pipelineSwitch(Globals.isRed ? 0 : 1);
-        obelisk = false;
+    public void togglePipeline (boolean obelisk) {
+        limelight.pipelineSwitch(obelisk ? 2 : (Globals.isRed ? 0 : 1));
+        this.obelisk = obelisk;
     }
 
     // visionPortal methods
