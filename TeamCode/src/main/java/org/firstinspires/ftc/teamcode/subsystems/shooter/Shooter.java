@@ -17,6 +17,7 @@ import org.firstinspires.ftc.teamcode.utils.Complex;
 import org.firstinspires.ftc.teamcode.utils.Globals;
 import org.firstinspires.ftc.teamcode.utils.LogUtil;
 import org.firstinspires.ftc.teamcode.utils.PID;
+import org.firstinspires.ftc.teamcode.utils.Polynomial;
 import org.firstinspires.ftc.teamcode.utils.TelemetryUtil;
 import org.firstinspires.ftc.teamcode.utils.Vector2;
 import org.firstinspires.ftc.teamcode.utils.Vector3;
@@ -25,6 +26,7 @@ import org.firstinspires.ftc.teamcode.utils.priority.PriorityMotor;
 import org.firstinspires.ftc.teamcode.utils.priority.nPriorityServo;
 
 import java.util.ArrayList;
+import java.util.List;
 
 @Config
 public class Shooter {
@@ -72,6 +74,8 @@ public class Shooter {
     public Vector3 rVel = new Vector3(0, 0, 0);
     public Vector3 vel = new Vector3(0, 0, 0);
     private final PID turretPID = new PID(0.5, 0.01, 0.01);
+    public double minV0 = 0.0;
+    public double minV0Superthresh = 6.0; // TODO: need to tune this, controls how much over minV0 we make the v0 strive for
 
     public Shooter(Robot robot) {
         this.robot = robot;
@@ -207,6 +211,58 @@ public class Shooter {
         LogUtil.turretAngle.set(targetAngle + Math.PI / 2);
     }
 
+    public boolean aimLauncherV8() {
+        Vector3 P = new Vector3(-58.3414785, 55.6424675, 39.25 + 1); // TODO: change this hardcoded target to account for team color & distance
+        P.subtract(new Vector3(ROBOT_POSITION.x, ROBOT_POSITION.y, launcherHeight));
+        Vector3 V = new Vector3(-ROBOT_VELOCITY.x, -ROBOT_VELOCITY.y, 0); // TODO: need to subtract robot angular vel component thing to this
+
+        double a = g * g / 4;
+        // double b = 0;
+        double c = V.x * V.x + V.y + V.y + g * P.z;
+        double d = 2 * Vector3.dot(P, V);
+        double e = P.x * P.x + P.y * P.y + P.z * P.z;
+        List<Double> tRoots = Polynomial.findRealRoots(new double[]{1, 0.0, 0.0, -d/(2 * a), -e/a}, 1e-4);
+        for (int i = 0; i < tRoots.size(); i++) {
+            if(tRoots.get(i) < 0) {
+                tRoots.remove(i);
+                i--;
+            }
+        }
+        if (tRoots.isEmpty()) {
+            return false;
+        }
+
+        double minPhiT0 = -1.0;
+        double[] thetas = new double[tRoots.size() + 1];
+        double[] phis = new double[tRoots.size() + 1];
+        for (int i = 0; i < tRoots.size(); i++) {
+            double t0 = tRoots.get(i);
+            Vector3 pf = new Vector3(P.x + V.x * t0, P.y + V.y * t0, P.z + g * t0 * t0 / 2);
+            thetas[i] = pf.theta();
+            phis[i] = pf.phi();
+            if (i == 0) {
+                thetas[tRoots.size()] = thetas[0];
+                phis[tRoots.size()] = phis[0];
+                minPhiT0 = t0;
+            } else {
+                if (phis[i] < phis[tRoots.size()]) {
+                    phis[tRoots.size()] = phis[i];
+                    thetas[tRoots.size()] = thetas[i];
+                    minPhiT0 = t0;
+                }
+            }
+
+        }
+
+        minV0 = Math.sqrt(2 * a * minPhiT0 * minPhiT0 + c + d / 2 / minPhiT0) + minV0Superthresh;
+        turret.setTargetAngle((thetas[tRoots.size()] - ROBOT_POSITION.heading)); // converts from global to difference with heading
+        hood.setTargetAngle(phis[tRoots.size()]);
+        return true;
+        // currently doesn't solve the thing twice, where the v0 is set to minV0 + superThresh
+        // may cause some deviations from target
+
+    }
+
     /**
      * Treat turret angle as difference from heading
      * Phi is angle with respect to vertical
@@ -217,7 +273,7 @@ public class Shooter {
         Complex[] t = new Complex[4];
         int n = 0;
         double S = 1; // safety margin for clearing lip
-        Vector3 P = new Vector3(-58.3414785, 55.6424675, 39.25 + S);
+        Vector3 P = new Vector3(-58.3414785, 55.6424675, 39.25 + S); // TODO: change this hardcoded target to account for team color
         P.subtract(new Vector3(ROBOT_POSITION.x, ROBOT_POSITION.y, launcherHeight));
         Vector3 V = new Vector3(-ROBOT_VELOCITY.x, -ROBOT_VELOCITY.y, 0); // TODO: need to subtract robot angular vel component thing to this
         // accel vector is irrelevant since the target is only accelerating constantly in upwards by g
