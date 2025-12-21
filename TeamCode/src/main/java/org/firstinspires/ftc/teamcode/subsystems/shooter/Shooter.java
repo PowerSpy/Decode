@@ -137,11 +137,12 @@ public class Shooter {
     public void update() {
         switch (state) {
             case IDLE:
-                setShooterBlocker(true);
                 aimLauncherV8();
                 setTargetVelocity(0.0);
                 setTurretAngle(targetTurretAngle);
                 setHoodAngle(targetHoodAngle);
+                setShooterBlocker(true);
+
 
                 if (aimRequest) {
                     aimRequest = false;
@@ -150,12 +151,12 @@ public class Shooter {
                 break;
             case AIMING:
                 setShooterBlocker(true);
-                setTargetVelocity(minV0);
 
                 if (aimLauncherV8()) {
                     state = State.READY;
                 }
 
+                setTargetVelocity(minV0);
                 setTurretAngle(targetTurretAngle);
                 setHoodAngle(targetHoodAngle);
 
@@ -169,6 +170,7 @@ public class Shooter {
                 break;
             case READY:
                 setShooterBlocker(false);
+
                 aimLauncherV8();
                 setTargetVelocity(minV0);
                 setTurretAngle(targetTurretAngle);
@@ -189,6 +191,7 @@ public class Shooter {
                 break;
             case SHOOT:
                 setShooterBlocker(false);
+
                 aimLauncherV8();
                 setTargetVelocity(minV0);
                 setTurretAngle(targetTurretAngle);
