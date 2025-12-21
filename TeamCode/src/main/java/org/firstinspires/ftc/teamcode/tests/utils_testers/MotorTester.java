@@ -76,8 +76,16 @@ public class MotorTester extends LinearOpMode {
                 motorPower -= 0.01;
             }
 
-            if (gamepad1.right_trigger > 0.1) {
+            if (gamepad1.right_trigger > 0.1 || gamepad1.touchpad_finger_1) {
                 motorPower = 0;
+            }
+
+            if (gamepad1.touchpad) {
+                motorPower = gamepad1.touchpad_finger_1_x * 1.2;
+            }
+
+            if (Math.abs(gamepad1.right_stick_x) > 0.05) {
+                motorPower = gamepad1.right_stick_x;
             }
 
             motorPower = Utils.minMaxClip(motorPower, -1.0, 1.0);

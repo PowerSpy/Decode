@@ -1,13 +1,11 @@
 package org.firstinspires.ftc.teamcode.subsystems.intake;
 
-import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 
 import org.firstinspires.ftc.teamcode.Robot;
 import org.firstinspires.ftc.teamcode.utils.LogUtil;
 import org.firstinspires.ftc.teamcode.utils.TelemetryUtil;
-import org.firstinspires.ftc.teamcode.utils.priority.PriorityCRServo;
 import org.firstinspires.ftc.teamcode.utils.priority.PriorityMotor;
 
 public class Intake {
@@ -111,7 +109,7 @@ public class Intake {
 
     public void reqOff (boolean req) { requestOff = req; }
 
-    public void toggleDirection (boolean reversed) { this.reversed = reversed; }
+    public void setRollerDirection(boolean reversed) { this.reversed = reversed; }
 
     private void updateTelemetry() {
         TelemetryUtil.packet.put("Intake : state", this.state);

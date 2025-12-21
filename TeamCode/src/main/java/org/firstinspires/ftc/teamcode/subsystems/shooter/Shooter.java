@@ -6,22 +6,18 @@ import static org.firstinspires.ftc.teamcode.utils.Globals.blueTag;
 import static org.firstinspires.ftc.teamcode.utils.Globals.redTag;
 
 import com.acmerobotics.dashboard.config.Config;
-import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.Servo;
 
 import org.firstinspires.ftc.teamcode.Robot;
 import org.firstinspires.ftc.teamcode.sensors.Sensors;
-import org.firstinspires.ftc.teamcode.utils.Complex;
 import org.firstinspires.ftc.teamcode.utils.Globals;
 import org.firstinspires.ftc.teamcode.utils.LogUtil;
 import org.firstinspires.ftc.teamcode.utils.PID;
 import org.firstinspires.ftc.teamcode.utils.Polynomial;
 import org.firstinspires.ftc.teamcode.utils.TelemetryUtil;
-import org.firstinspires.ftc.teamcode.utils.Vector2;
 import org.firstinspires.ftc.teamcode.utils.Vector3;
-import org.firstinspires.ftc.teamcode.utils.priority.PriorityCRServo;
 import org.firstinspires.ftc.teamcode.utils.priority.PriorityMotor;
 import org.firstinspires.ftc.teamcode.utils.priority.nPriorityServo;
 
@@ -50,15 +46,16 @@ public class Shooter {
     private boolean aimRequest = false, shootRequest = false, stopRequest = false;
 
     // velocity is in inches / second
-    public static PID velocityPID = new PID (0.0, 0.001, 0.001);
-    public static double velocityFFm = 0.0086733;
-    public static double velocityFFb = 0.0414964;
+    public static PID velocityPID = new PID (0.0, 0.0001, 0.0001);
+    public static double velocityFFm = 0.000838827;
+    public static double velocityFFb = 0.0530646;
     public static double velocityFilterLow = 0.05;
     public static double velocityFilterHigh = 0.5;
-    public static double velocityFilterThresh = 10;
-    public static double velocityHighPowerThresh = 4;
-    public static double velocityNoSkipThresh = 45;
-    public static double velocityNoSkipAccel = 0.7;
+    public static double velocityFilterThresh = 100;
+    public static double velocityHighPowerThresh = 25;
+    public static double velocityNoSkipThresh = 400;
+    public static double velocityNoSkipAccel = 0.8;
+    public static double latchBlockAngle = 2.7;
     private double targetVelocity = 0.0;
     private double filteredVelocity = 0.0;
     private double prevPow = 0;
@@ -88,7 +85,7 @@ public class Shooter {
         hood = new nPriorityServo(
             new Servo[]{robot.hardwareMap.get(Servo.class, "hood1")},
             "hood", nPriorityServo.ServoType.AXON_MINI,
-            0.0, 0.41, 0.412,
+            0.0, 0.4, 0.02,
             new boolean[] {false},
             2, 5
         );
@@ -96,10 +93,11 @@ public class Shooter {
         turret = new nPriorityServo(
             new Servo[]{robot.hardwareMap.get(Servo.class, "turret1"), robot.hardwareMap.get(Servo.class,"turret2")},
             "turret", nPriorityServo.ServoType.AXON_MINI,
-            0, 1.0, 0.5,
+            0.1, 0.78, 0.5,
             new boolean[] {false, false},
             2, 5
         );
+        //turret.maxPower = 0.8;
 
         nanoTimes = new ArrayList<>();
         turretHistory = new ArrayList<>();
@@ -115,7 +113,7 @@ public class Shooter {
         net = new nPriorityServo(
                 new Servo[] {robot.hardwareMap.get(Servo.class, "net")},
                 "net", nPriorityServo.ServoType.AXON_MINI,
-                0, 1.0, 0.5,
+                0.42, 0.95, 0.5,
                 new boolean [] {false},
                 2, 5
         );
@@ -127,10 +125,10 @@ public class Shooter {
     }
 
     public void update() {
-        switch (state){
+        switch (state) {
             case IDLE:
-                setFlywheelBlocker(true);
-                setTurretAngle(Math.tan((ROBOT_POSITION.y - (Globals.isRed ? redTag.y : blueTag.y)) / (ROBOT_POSITION.x - (Globals.isRed ? redTag.x : blueTag.x))));
+                setShooterBlocker(true);
+                aimLauncherV8();
                 setTargetVelocity(0.0);
 
                 if (aimRequest) {
@@ -138,7 +136,7 @@ public class Shooter {
                 }
                 break;
             case AIMING:
-                setFlywheelBlocker(true);
+                setShooterBlocker(true);
                 setTargetVelocity(minV0);
 
                 if (aimLauncherV8() && atVel()) {
@@ -151,7 +149,7 @@ public class Shooter {
                 }
                 break;
             case READY:
-                setFlywheelBlocker(false);
+                setShooterBlocker(false);
                 aimLauncherV8();
                 setTargetVelocity(minV0);
 
@@ -166,7 +164,7 @@ public class Shooter {
                 }
                 break;
             case SHOOT:
-                setFlywheelBlocker(false);
+                setShooterBlocker(false);
                 aimLauncherV8();
                 setTargetVelocity(minV0);
 
@@ -181,16 +179,18 @@ public class Shooter {
         }
 
         // Flywheel Velocity PID
-        if (targetVelocity <= 1) velocityPID.resetIntegral();
-        else velocityPID.clipIntegral(-1, 1);
-        double actualVelocity = robot.sensors.getFlywheelAngularVel();
-        if (Math.abs(actualVelocity - filteredVelocity) < velocityFilterThresh) {
+        double actualVelocity = robot.sensors.getFlywheelVelocity();
+        if (Math.abs(actualVelocity - filteredVelocity) <= velocityFilterThresh) {
             filteredVelocity = filteredVelocity * (1 - velocityFilterLow) + actualVelocity * velocityFilterLow;
         } else {
             filteredVelocity = filteredVelocity * (1 - velocityFilterHigh) + actualVelocity * velocityFilterHigh;
         }
         double error = targetVelocity - filteredVelocity;
-        double pow = velocityPID.update(error, 0.0, 1.0) + targetVelocity * velocityFFm + velocityFFb;
+        if (targetVelocity <= 1 || error > velocityFilterThresh) velocityPID.resetIntegral();
+        else velocityPID.clipIntegral(-1, 1);
+        double pidpow = velocityPID.update(error, -1.0, 1.0);
+        double ffpow = targetVelocity * velocityFFm + velocityFFb;
+        double pow = pidpow + ffpow;
         if (error > velocityHighPowerThresh) pow = 1;
         if (filteredVelocity < velocityNoSkipThresh) {
             pow = Math.min(pow, prevPow + velocityNoSkipAccel * robot.sensors.loopTime);
@@ -204,8 +204,12 @@ public class Shooter {
 
         TelemetryUtil.packet.put("Shooter : Flywheel Filtered Velocity", filteredVelocity);
         TelemetryUtil.packet.put("Shooter : Flywheel Target Velocity", targetVelocity);
-        TelemetryUtil.packet.put("Shooter : Flywheel PID Power", pow * 100);
+        TelemetryUtil.packet.put("Shooter : Flywheel PID Power", pidpow * 100);
+        TelemetryUtil.packet.put("Shooter : Flywheel FF Power", ffpow * 100);
+        TelemetryUtil.packet.put("Shooter : Flywheel Applied Power", pow * 100);
         TelemetryUtil.packet.put("Shooter : Turret Target Angle", turret.getTargetAngle());
+        TelemetryUtil.packet.put("Shooter : state", this.state);
+        LogUtil.shooterState.set(this.state.toString());
     }
 
     public void reqShoot (boolean req) { shootRequest = req; }
@@ -265,7 +269,7 @@ public class Shooter {
         }
 
         minV0 = Math.sqrt(2 * a * minPhiT0 * minPhiT0 + c + d / 2 / minPhiT0) + minV0Superthresh;
-        turret.setTargetAngle((thetas[tRoots.size()] - ROBOT_POSITION.heading)); // converts from global to difference with heading
+        setTurretAngle((thetas[tRoots.size()] - ROBOT_POSITION.heading)); // converts from global to difference with heading
         hood.setTargetAngle(phis[tRoots.size()]);
         return true;
         // currently doesn't solve the thing twice, where the v0 is set to minV0 + superThresh
@@ -294,8 +298,7 @@ public class Shooter {
 
     public double getFilteredVelocity() { return filteredVelocity; }
 
-    // TODO: Re-tune blocker positions
-    public void setFlywheelBlocker (boolean active) { flywheelBlocker.setTargetAngle (active ? 2.1 : -0.2);}
+    public void setShooterBlocker(boolean active) { flywheelBlocker.setTargetAngle(active ? latchBlockAngle : -0.2);}
 
     public boolean atVel () {return Math.abs(targetVelocity - filteredVelocity) < 1.0;}
 }

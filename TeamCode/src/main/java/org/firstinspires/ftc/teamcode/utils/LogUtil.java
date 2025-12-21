@@ -37,6 +37,7 @@ public class LogUtil {
     // Note that order here is NOT important. The order is important in the setFields() call below
     //public static Datalogger.GenericField loopTime = new Datalogger.GenericField("loopTime");
     public static StateField intakeState = new StateField("intakeState");
+    public static StateField shooterState = new StateField("shooterState");
     public static Datalogger.GenericField turretAngle = new Datalogger.GenericField("turretAngle");
     public static Datalogger.GenericField flywheelVelocity = new Datalogger.GenericField("flywheelVelocity");
     public static Datalogger.GenericField hoodAngle = new Datalogger.GenericField("hoodAngle");
@@ -82,16 +83,14 @@ public class LogUtil {
             // the fields is the order in which they will appear in the log.
             .setFields(
                 intakeState,
+                shooterState,
                 turretAngle,
                 flywheelVelocity,
                 hoodAngle,
                 driveCurrentX,
                 driveCurrentY,
                 driveCurrentAngle,
-                driveState,
-                driveTargetX,
-                driveTargetY,
-                driveTargetAngle
+                driveState
             )
             .build();
     }

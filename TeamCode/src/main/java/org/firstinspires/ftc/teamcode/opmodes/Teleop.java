@@ -7,12 +7,10 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
 import org.firstinspires.ftc.teamcode.Robot;
-import org.firstinspires.ftc.teamcode.subsystems.intake.Intake;
 import org.firstinspires.ftc.teamcode.subsystems.shooter.Shooter;
 import org.firstinspires.ftc.teamcode.utils.ButtonToggle;
 import org.firstinspires.ftc.teamcode.utils.Globals;
 import org.firstinspires.ftc.teamcode.utils.LogUtil;
-import org.firstinspires.ftc.teamcode.utils.Pose2d;
 import org.firstinspires.ftc.teamcode.utils.RunMode;
 
 @Config
@@ -48,21 +46,20 @@ public class Teleop extends LinearOpMode {
 
             // INTAKE
             if (lb1.isClicked(gamepad1.left_bumper)) {
-                if (intakeOn) {
-                    robot.intake.reqOff(true);
-                } else {
-                    robot.intake.reqIntake(true);
-                }
                 intakeOn = !intakeOn;
-                robot.intake.toggleDirection(false);
+                if (intakeOn) {
+                    robot.intake.reqIntake(true);
+                } else {
+                    robot.intake.reqOff(true);
+                }
+                robot.intake.setRollerDirection(false);
             }
 
             if (a1.isClicked(gamepad1.a)) {
-                robot.intake.reqIntake(true);
-                robot.intake.toggleDirection(intakeOn && !intakeReversed);
-
-                intakeOn = true;
                 intakeReversed = intakeOn && !intakeReversed;
+                intakeOn = true;
+                robot.intake.reqIntake(true);
+                robot.intake.setRollerDirection(intakeReversed);
             }
 
             // SHOOTER
@@ -79,7 +76,7 @@ public class Teleop extends LinearOpMode {
             }
 
             if (rb1.isClicked(gamepad1.right_bumper)) {
-                if (robot.shooter.state == Shooter.State.SHOOT){
+                if (robot.shooter.state == Shooter.State.SHOOT) {
                     robot.shooter.reqStop(true);
                 } else {
                     robot.shooter.reqShoot(true);

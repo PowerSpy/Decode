@@ -27,8 +27,7 @@ public class SensorTester extends LinearOpMode {
         Robot robot = new Robot(hardwareMap);
         Sensors sensors = robot.sensors;
 
-        robot.update();
-
+        //robot.update();
         waitForStart();
 
         while (!isStopRequested()) {

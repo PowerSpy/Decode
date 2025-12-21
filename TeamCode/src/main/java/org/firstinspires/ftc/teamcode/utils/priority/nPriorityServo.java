@@ -206,7 +206,7 @@ public class nPriorityServo extends PriorityDevice {
 //        Log.e(this.name + "_currentIntermediateTargetAngle" , currentIntermediateTargetAngle + "");
 
         currentAngle += deltaAngle;
-        TelemetryUtil.packet.put("currentPos " + name, currentAngle);
+        TelemetryUtil.packet.put("currentAngle " + name, currentAngle);
 
         // Clamp
         //Log.i("SLCI", deltaAngle + " is delta angle for servo " + name);

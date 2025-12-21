@@ -178,11 +178,6 @@ public class Drivetrain {
             return;
         }
 
-        mergeLocalizer.updateEncoders(sensors.getOdometry());
-
-        ROBOT_POSITION = mergeLocalizer.getPoseEstimate();
-        ROBOT_VELOCITY = mergeLocalizer.getRelativePoseVelocity();
-
         if(path != null) {
             state = State.FOLLOW_SPLINE;
         }

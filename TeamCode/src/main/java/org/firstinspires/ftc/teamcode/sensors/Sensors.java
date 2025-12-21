@@ -1,11 +1,15 @@
 package org.firstinspires.ftc.teamcode.sensors;
 
+import static org.firstinspires.ftc.teamcode.utils.Globals.ROBOT_POSITION;
+import static org.firstinspires.ftc.teamcode.utils.Globals.ROBOT_VELOCITY;
+
 import com.acmerobotics.dashboard.canvas.Canvas;
 import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.robotcore.hardware.AnalogInput;
 
 import org.firstinspires.ftc.teamcode.Robot;
 import org.firstinspires.ftc.teamcode.utils.DashboardUtil;
+import org.firstinspires.ftc.teamcode.utils.Globals;
 import org.firstinspires.ftc.teamcode.utils.LogUtil;
 import org.firstinspires.ftc.teamcode.utils.Pose2d;
 import org.firstinspires.ftc.teamcode.utils.TelemetryUtil;
@@ -15,11 +19,12 @@ import org.firstinspires.ftc.teamcode.utils.Vector2;
 public class Sensors {
     private final Robot robot;
     public double loopTime;
+    private long currentTime, lastTime;
 
-    private int[] odoWheelPositions = {0, 0, 0};
+    private final int[] odoWheelPositions = {0, 0, 0};
 
     // Enocder Resolution: 28 PPR
-    private double flywheelAngularVel = 0, flywheelLastPos = 0;
+    private double flywheelAngularVel = 0, flywheelVelocity = 0;
 
     private double voltage;
     private final double voltageUpdateTime = 5000;
@@ -27,10 +32,15 @@ public class Sensors {
 
     public Sensors(Robot robot) {
         this.robot = robot;
+        currentTime = System.nanoTime();
         voltage = robot.hardwareMap.voltageSensor.iterator().next().getVoltage();
     }
 
     public void update() {
+        lastTime = currentTime;
+        currentTime = System.nanoTime();
+        loopTime = (currentTime - lastTime) / 1e9;
+
         odoWheelPositions[0] = robot.drivetrain.rightFront.motor[0].getCurrentPosition(); // left
         odoWheelPositions[1] = robot.drivetrain.leftRear.motor[0].getCurrentPosition(); // right
         odoWheelPositions[2] = robot.drivetrain.leftFront.motor[0].getCurrentPosition(); // back
@@ -38,12 +48,16 @@ public class Sensors {
         double flywheelPos = robot.drivetrain.rightRear.motor[0].getCurrentPosition();
 
         // (flywheelPos - flywheelLastPos) / 28.0 = delta revolutions
-        flywheelAngularVel = (((flywheelPos - flywheelLastPos) / 28.0) / (2 * Math.PI)) / loopTime;
-        flywheelLastPos = flywheelPos;
+        flywheelAngularVel = robot.drivetrain.rightRear.getVelocity() / 28.0;
+        flywheelVelocity = flywheelAngularVel * 96.0 * Math.PI / 25.4;
+
+        robot.drivetrain.mergeLocalizer.updateEncoders(odoWheelPositions);
+        ROBOT_POSITION = robot.drivetrain.mergeLocalizer.getPoseEstimate();
+        ROBOT_VELOCITY = robot.drivetrain.mergeLocalizer.getRelativePoseVelocity();
 
         if (System.currentTimeMillis() - lastVoltageUpdatedTime > voltageUpdateTime) {
             voltage = robot.hardwareMap.voltageSensor.iterator().next().getVoltage();
-            lastVoltageUpdatedTime = System.currentTimeMillis() ;
+            lastVoltageUpdatedTime = System.currentTimeMillis();
         }
 
         updateTelemetry();
@@ -58,6 +72,8 @@ public class Sensors {
      */
     public double getFlywheelAngularVel () { return flywheelAngularVel;}
 
+    public double getFlywheelVelocity() { return flywheelVelocity; }
+
     public double getVoltage() {
         return voltage;
     }
@@ -65,5 +81,16 @@ public class Sensors {
     private void updateTelemetry() {
         TelemetryUtil.packet.put("Voltage", voltage);
         TelemetryUtil.packet.put("Shooter : Flywheel Angular Velocity", flywheelAngularVel);
+        TelemetryUtil.packet.put("Shooter : Flywheel Current Velocity", flywheelVelocity);
+        TelemetryUtil.packet.put("Shooter : Hood top angle (deg)", Math.toDegrees(robot.shooter.hood.getCurrentAngle()) * 30 / 48 + 34);
+
+        Pose2d currentPose = Globals.ROBOT_POSITION;
+        Canvas fieldOverlay = TelemetryUtil.packet.fieldOverlay();
+        DashboardUtil.drawRobot(fieldOverlay, currentPose, "#00ff00");
+
+        LogUtil.flywheelVelocity.set(flywheelVelocity);
+        LogUtil.driveCurrentX.set(currentPose.x);
+        LogUtil.driveCurrentY.set(currentPose.y);
+        LogUtil.driveCurrentAngle.set(currentPose.heading);
     }
 }
