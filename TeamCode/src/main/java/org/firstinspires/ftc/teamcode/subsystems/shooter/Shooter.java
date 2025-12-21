@@ -14,12 +14,16 @@ import com.qualcomm.robotcore.hardware.Servo;
 
 import org.firstinspires.ftc.teamcode.Robot;
 import org.firstinspires.ftc.teamcode.sensors.Sensors;
+import org.firstinspires.ftc.teamcode.subsystems.drive.localizers.MergeLocalizer;
 import org.firstinspires.ftc.teamcode.utils.AngleUtil;
 import org.firstinspires.ftc.teamcode.utils.Globals;
 import org.firstinspires.ftc.teamcode.utils.LogUtil;
 import org.firstinspires.ftc.teamcode.utils.PID;
 import org.firstinspires.ftc.teamcode.utils.Polynomial;
+import org.firstinspires.ftc.teamcode.utils.Pose2d;
 import org.firstinspires.ftc.teamcode.utils.TelemetryUtil;
+import org.firstinspires.ftc.teamcode.utils.Utils;
+import org.firstinspires.ftc.teamcode.utils.Vector2;
 import org.firstinspires.ftc.teamcode.utils.Vector3;
 import org.firstinspires.ftc.teamcode.utils.priority.PriorityMotor;
 import org.firstinspires.ftc.teamcode.utils.priority.nPriorityServo;
@@ -332,4 +336,67 @@ public class Shooter {
     public void setShooterBlocker(boolean active) { flywheelBlocker.setTargetAngle(active ? latchBlockAngle : -0.2);}
 
     public boolean atVel () {return Math.abs(targetVelocity - filteredVelocity) < 1.0;}
+
+
+    // bootleg LM1 strat being used in LM2 code
+    public static double closeAngle = 0.7, closeVel = 65, midAngle = 1.0, midVel  = 77, farAngle = 1.34, farVel = 0.0;
+    public enum Dist {
+        CLOSE(closeAngle, closeVel),
+        MID(midAngle, midVel),
+        FAR(farAngle, farVel),
+        OFF(0.0, 0.0);
+
+        private double hoodAngle, flywheelVel;
+
+        Dist(double hoodAngle, double flywheelVel){
+            this.hoodAngle = hoodAngle;
+            this.flywheelVel = flywheelVel;
+        }
+
+        public static void setHoodAngle(Dist dist, double angle){
+            dist.hoodAngle = angle;
+        }
+
+        public static void setFlywheelVel (Dist dist, double vel){
+            dist.flywheelVel = vel;
+        }
+    } Dist dist = Dist.CLOSE;
+
+    public double error;
+    public void updateBootleg() {
+        if (targetVelocity <= 1) velocityPID.resetIntegral();
+        else velocityPID.clipIntegral(-1, 1);
+        double actualVelocity = robot.sensors.getFlywheelVelocity();
+        if (Math.abs(actualVelocity - filteredVelocity) < velocityFilterThresh) {
+            filteredVelocity = filteredVelocity * (1 - velocityFilterLow) + actualVelocity * velocityFilterLow;
+        } else {
+            filteredVelocity = filteredVelocity * (1 - velocityFilterHigh) + actualVelocity * velocityFilterHigh;
+        }
+        error = targetVelocity - filteredVelocity;
+        double pow = velocityPID.update(error, 0.0, 1.0) + targetVelocity * velocityFFm + velocityFFb;
+        if (error > velocityHighPowerThresh) pow = 1;
+        if (filteredVelocity < velocityNoSkipThresh) {
+            pow = Math.min(pow, prevPow + velocityNoSkipAccel * robot.sensors.loopTime);
+        }
+        flywheel.setTargetPower(pow);
+        prevPow = pow;
+
+        Vector2 d = Globals.isRed ? redTag.toVec2() : blueTag.toVec2();
+        d.subtract(new Vector2(ROBOT_POSITION.x, ROBOT_POSITION.y));
+        targetTurretAngle = Utils.minMaxClip(AngleUtil.clipAngle(Math.atan2(d.y, d.x) - ROBOT_POSITION.heading), -Math.PI / 2, Math.PI);
+        setTurretAngle(targetTurretAngle);
+        setHoodAngle(targetHoodAngle);
+
+        TelemetryUtil.packet.put("Shooter : Flywheel Filtered Velocity", filteredVelocity);
+        TelemetryUtil.packet.put("Shooter : Flywheel Target Velocity", targetVelocity);
+        TelemetryUtil.packet.put("Shooter : Flywheel PID Power", pow * 100);
+        TelemetryUtil.packet.put("Shooter : Turret Target Angle", turret.getTargetAngle());
+    }
+
+    public void setShooter(Dist mode) {
+        targetVelocity = mode.flywheelVel;
+        targetHoodAngle = mode.hoodAngle;
+    }
+
+    public boolean atVelBootleg() { return Math.abs(error) < 1.0; }
 }

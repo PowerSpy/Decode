@@ -54,7 +54,7 @@ public class Robot {
 
         drivetrain.update();
         intake.update();
-        shooter.update();
+        shooter.updateBootleg();
 
         hardwareQueue.update();
         this.updateTelemetry();
