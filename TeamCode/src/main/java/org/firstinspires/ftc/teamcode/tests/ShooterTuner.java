@@ -15,6 +15,7 @@ import org.firstinspires.ftc.teamcode.utils.RunMode;
 @TeleOp(group = "Test")
 public class ShooterTuner extends LinearOpMode {
     public static double turretAngle = 0.0, hoodAngle = 0.7, flywheelVelocity = 0.0, rollerPower = 0.8, feedPower = 0.6;
+    public static double flywheelEfficiency = 0.6367, minV0SuperThresh = 0.0, minV0Factor = 1.4;
     public static boolean latchBlock = false;
 
     public void runOpMode() {
@@ -35,6 +36,9 @@ public class ShooterTuner extends LinearOpMode {
         }
 
         while (!isStopRequested()) {
+            robot.shooter.minV0Superthresh = minV0SuperThresh;
+            robot.shooter.minV0factor = minV0Factor;
+            robot.shooter.flywheelEfficiency = flywheelEfficiency;
             robot.shooter.setTurretAngle(turretAngle);
             robot.shooter.setHoodAngle(hoodAngle);
             robot.intake.roller.setTargetPower(intakeBtn.isToggled(gamepad1.x) ? 0 : rollerPower);

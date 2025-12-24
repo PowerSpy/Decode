@@ -61,6 +61,10 @@ public class Vector2 {
         magcache = 0;
     }
 
+    public double theta() {
+        return Math.atan2(y, x);
+    }
+
     public String toString() {
         return String.format("(%f, %f)", x, y);
     }
