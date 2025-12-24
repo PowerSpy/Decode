@@ -79,7 +79,7 @@ public class Shooter {
     public double flywheelEfficiency = 0.6367;
     public double targetTurretAngle = 0.0;
     public double targetHoodAngle = 0.0;
-    public double phiLim = Math.atan(0.875);
+    public double phiLim = 34.0 * Math.PI / 180;
     private final double c1 = (58.3414785 - 72) / (55.6424675 - 48);
     private final double c2 = c1 * 48 - 72;
 
@@ -103,7 +103,7 @@ public class Shooter {
         turret = new nPriorityServo(
             new Servo[]{robot.hardwareMap.get(Servo.class, "turret1"), robot.hardwareMap.get(Servo.class,"turret2")},
             "turret", nPriorityServo.ServoType.AXON_MINI,
-            0.49, 0.51, 0.5,
+            0.0, 1.0, 0.5,
                 //0.1, 0.78, 0.5,
             new boolean[] {false, false},
             2, 5
@@ -280,6 +280,7 @@ public class Shooter {
             }
         }
         if (tRoots.isEmpty()) {
+            Log.i("MinV0", "none");
             return false;
         }
 
@@ -296,7 +297,10 @@ public class Shooter {
                 double B = 4 * dist2 * v0 * v0 * (g * P.z - v0 * v0);
                 double C = dist2 * dist2 * g * g;
                 tRoots = Polynomial.findRealRoots(new double[]{A, B, C}, 1e-4);
-                if (tRoots.isEmpty()) return false;
+                if (tRoots.isEmpty()) {
+                    Log.i("Static Shot", "not possible");
+                    return false;
+                }
                 phis = new double[tRoots.size() + 1];
                 thetas = new double[phis.length];
 
@@ -327,7 +331,10 @@ public class Shooter {
             } else {
                 c -= v0 * v0;
                 tRoots = Polynomial.findRealRoots(new double[]{1, 0, c/a, d/a, e/a}, 1e-4);
-                if (tRoots.isEmpty()) return false;
+                if (tRoots.isEmpty()) {
+                    Log.i("Moving Shot", "not possible");
+                    return false;
+                }
 
                 phis = new double[tRoots.size() + 1];
                 thetas = new double[phis.length];
@@ -353,12 +360,19 @@ public class Shooter {
 
                 }
             }
-        } else return false;
+        } else {
+            Log.i("shot possible by current V0", "no");
+            return false;
+        }
 
 
-        if (phis[tRoots.size()] == 100) return false;
+        if (phis[tRoots.size()] == 100) {
+            Log.i("phis", "cooked");
+            return false;
+        }
         targetTurretAngle = AngleUtil.clipAngle(thetas[tRoots.size()] - ROBOT_POSITION.heading); // converts from global to difference with heading
         targetHoodAngle = Math.PI / 2 - phis[tRoots.size()] - phiLim; // first part converts angle from vertical to angle from horizontal && then subtracts the sweep of the hood
+        Log.i("Shot", "Possible");
         return true;
     }
 
