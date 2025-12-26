@@ -42,9 +42,9 @@ public class Sensors {
         currentTime = System.nanoTime();
         loopTime = (currentTime - lastTime) / 1e9;
 
-        odoWheelPositions[0] = robot.drivetrain.leftRear.motor[0].getCurrentPosition(); // left
-        odoWheelPositions[1] = robot.drivetrain.leftFront.motor[0].getCurrentPosition(); // right
-        odoWheelPositions[2] = robot.drivetrain.rightFront.motor[0].getCurrentPosition(); // back
+        odoWheelPositions[0] = robot.drivetrain.leftFront.motor[0].getCurrentPosition(); // left
+        odoWheelPositions[1] = robot.drivetrain.rightFront.motor[0].getCurrentPosition(); // right
+        odoWheelPositions[2] = robot.drivetrain.leftRear.motor[0].getCurrentPosition(); // back
 
         double flywheelPos = robot.drivetrain.rightRear.motor[0].getCurrentPosition();
 
