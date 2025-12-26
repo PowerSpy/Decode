@@ -74,12 +74,6 @@ public class Sensors {
     // Odometry
     public int[] getOdometry() {return odoWheelPositions;}
 
-    /**
-     *
-     * @return radians / sec
-     */
-    public double getFlywheelAngularVel () { return flywheelAngularVel;}
-
     public double getFlywheelVelocity() { return flywheelVelocity; }
 
     public double getVoltage() {
@@ -88,13 +82,10 @@ public class Sensors {
 
     private void updateTelemetry() {
         TelemetryUtil.packet.put("Voltage", voltage);
-        TelemetryUtil.packet.put("Shooter : Flywheel Angular Velocity", flywheelAngularVel);
-        TelemetryUtil.packet.put("Shooter : Flywheel Current Velocity", flywheelVelocity);
-        TelemetryUtil.packet.put("Shooter : Hood top angle (deg)", Math.toDegrees(robot.shooter.hood.getCurrentAngle()) * 30 / 48 + 34);
 
         Pose2d currentPose = Globals.ROBOT_POSITION;
         Canvas fieldOverlay = TelemetryUtil.packet.fieldOverlay();
-        DashboardUtil.drawRobot(fieldOverlay, currentPose, "#00ff00");
+        DashboardUtil.drawRobot(fieldOverlay, currentPose, "#ff0000");
 
         LogUtil.flywheelVelocity.set(flywheelVelocity);
         LogUtil.driveCurrentX.set(currentPose.x);

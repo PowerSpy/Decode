@@ -40,8 +40,6 @@ public class Localizer {
     protected ArrayList<Pose2d> relHistory = new ArrayList<Pose2d>();
     protected ArrayList<Long> nanoTimes = new ArrayList<Long>();
 
-    protected Pose2d aprilTagPose = new Pose2d(0,0,0);
-
     protected double maxVel = 0.0;
     protected double startHeadingOffset = 0;
     protected String color;
@@ -54,7 +52,6 @@ public class Localizer {
         this.expectedColor = expectedColor;
 
         encoders = new Encoder[3];
-
 
         // 1 / (ticks / mm * mm / in)
         encoders[0] = new Encoder(new Pose2d(0, 2.755905511 * (64.3169) / (20 * Math.PI) * (20 * Math.PI) / (62.5501)),  -1, 1 / (19.89436789 * 25.4)); // left
@@ -265,7 +262,7 @@ public class Localizer {
         return movingAverage.getMovingAverageForNum();
     }
 
-    public void updateField() {
+    public void updateField () {
         TelemetryUtil.packet.put(this.getClass().getSimpleName()+" x", x);
         TelemetryUtil.packet.put(this.getClass().getSimpleName()+" y", y);
         TelemetryUtil.packet.put(this.getClass().getSimpleName()+" heading (deg)", Math.toDegrees(heading));
@@ -273,6 +270,5 @@ public class Localizer {
 
         Canvas fieldOverlay = TelemetryUtil.packet.fieldOverlay();
         DashboardUtil.drawRobot(fieldOverlay, getPoseEstimate(), color);
-        //DashboardUtil.drawRobot(fieldOverlay, expected, expectedColor);
     }
 }

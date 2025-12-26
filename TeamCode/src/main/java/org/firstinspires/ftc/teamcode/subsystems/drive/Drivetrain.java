@@ -352,15 +352,12 @@ public class Drivetrain {
     public void updateTelemetry() {
         TelemetryUtil.packet.put("Drivetrain : state", state);
 
-        TelemetryUtil.packet.put("Drivetrain : TargetPoint", "(" + targetPoint.x + ", " + targetPoint.y + ", " + targetPoint.heading + ")");
-
-        TelemetryUtil.packet.put("Drivetrain : PID xError", xError);
-        TelemetryUtil.packet.put("Drivetrain : PID yError", yError);
-        TelemetryUtil.packet.put("Drivetrain : PID hError", hError);
+//        TelemetryUtil.packet.put("Drivetrain : TargetPoint", "(" + targetPoint.x + ", " + targetPoint.y + ", " + targetPoint.heading + ")");
+//        TelemetryUtil.packet.put("Drivetrain : PID xError", xError);
+//        TelemetryUtil.packet.put("Drivetrain : PID yError", yError);
+//        TelemetryUtil.packet.put("Drivetrain : PID hError", hError);
 
         Canvas canvas = TelemetryUtil.packet.fieldOverlay();
-        DashboardUtil.drawRobot(canvas, targetPoint, "#c000ff");
-
         if (path != null) {
             DashboardUtil.drawRobot(canvas, new Pose2d(ROBOT_POSITION.x + robot.sensors.loopTime * pd.vel.x, ROBOT_POSITION.y + robot.sensors.loopTime * pd.vel.y, Math.atan2(pd.vel.x, pd.vel.y)), "#8000ff");
             Spline s = path.pathSegments.get(pd.index).spline;
