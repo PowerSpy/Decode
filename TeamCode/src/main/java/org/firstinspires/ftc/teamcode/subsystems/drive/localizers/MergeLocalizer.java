@@ -107,6 +107,7 @@ public class MergeLocalizer extends Localizer{
 
             lastPinpointMergePose = globalPinpointEstimate.clone();
             currentPose = globalPinpointEstimate.clone();
+            pinpoint.setPosition(new Pose2D(DistanceUnit.INCH, currentPose.x, currentPose.y, AngleUnit.RADIANS, currentPose.heading));
             lastPinpointUpdate = timeStamp;
         }
 
