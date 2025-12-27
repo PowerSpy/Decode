@@ -337,17 +337,17 @@ public class Shooter {
     }
 
     public boolean turretTrackTarget() {
-        if (ROBOT_POSITION != null) targetTurretAngle = AngleUtil.clipAngle(Math.atan2(P.getY(), P.getX()) - ROBOT_POSITION.heading);
-        else return false;
-        return true;
+        if (ROBOT_POSITION == null || ROBOT_VELOCITY == null) return false;
+        // targetTurretAngle = AngleUtil.clipAngle(Math.atan2(P.getY(), P.getX()) - ROBOT_POSITION.heading);
         // above works
-        // below needs testing, meant to fit the 90 left, 270 right angle turret configuration
-        // targetTurretAngle = AngleUtil.clipAngle(Math.atan2(P.getY(), P.getX()) - ROBOT_POSITION.heading - Math.PI / 2) + Math.PI / 2;
+        // below needs testing
+        targetTurretAngle = AngleUtil.clipAngle(Math.atan2(P.getY(), P.getX()) - ROBOT_POSITION.heading - Math.PI / 2) + Math.PI / 2;
+        return true;
     }
 
     public void updateAimingConstants() {
         if (ROBOT_POSITION == null || ROBOT_VELOCITY == null) return;
-        P = new Vector3(ballTarget); // TODO: change this target to account for distance
+        P = new Vector3(ballTarget); // we'll figure out whether we need to change this target based on distance
         P.subtract(new Vector3(ROBOT_POSITION.x, ROBOT_POSITION.y, launcherHeight));
         V = new Vector3(-ROBOT_VELOCITY.x, -ROBOT_VELOCITY.y, 0); // TODO: need to subtract robot angular vel component thing to this
 
@@ -409,9 +409,16 @@ public class Shooter {
                     thetas[tRoots.size()] = thetas[0];
                     phis[tRoots.size()] = phis[0];
                 } else {
-                    if (phis[i] > phis[tRoots.size()]) {
-                        phis[tRoots.size()] = phis[i];
-                        thetas[tRoots.size()] = thetas[i];
+                    if (phis[i] != 100) {
+                        if (phis[tRoots.size()] != 100) {
+                            if (phis[i] > phis[tRoots.size()]) {
+                                phis[tRoots.size()] = phis[i];
+                                thetas[tRoots.size()] = thetas[i];
+                            }
+                        } else {
+                            phis[tRoots.size()] = phis[i];
+                            thetas[tRoots.size()] = thetas[i];
+                        }
                     }
                 }
             }
@@ -445,14 +452,16 @@ public class Shooter {
                 phis[i] = pf.phi();
 
 
-                double slope = c1 * (ROBOT_VELOCITY.y + v0 * Math.sin(thetas[i]) * Math.sin(phis[i])) - (ROBOT_VELOCITY.x + v0 * Math.cos(thetas[i]) * Math.sin(phis[i]));
-                if ((int)slope == 0) {
-                    phis[i] = 100;
+                double vel = Math.pow(ROBOT_VELOCITY.y + v0 * Math.sin(thetas[i]) * Math.sin(phis[i]), 2) + Math.pow(ROBOT_VELOCITY.x + v0 * Math.cos(thetas[i]) * Math.sin(phis[i]), 2);
+                vel = Math.sqrt(vel);
+                double dist = Math.pow(-60 - ROBOT_POSITION.x, 2) + Math.pow(ballTarget.y - ROBOT_POSITION.y, 2);
+                dist = Math.sqrt(dist);
+                double t = dist / vel;
+                if (t <= 0) {
+                    phis[i] = 100; // this makes sure the ball goes into the target through the restricted diagonal plane
                 } else {
-                    double t = (c1 * (48 - ROBOT_POSITION.y) + 72 + ROBOT_POSITION.x) / slope;
-                    if (t <= 0) {
-                        phis[i] = 100;
-                    } else if (launcherHeight + v0 * Math.cos(phis[i]) * t - g * t * t / 2 < 38.75 + 3) {
+                    double heightAtWall = launcherHeight + v0 * Math.cos(phis[i]) * t - g * t * t / 2;
+                    if (heightAtWall < 38.75 + 3) {
                         phis[i] = 100;
                     }
                 }
@@ -462,9 +471,18 @@ public class Shooter {
                 if (i == 0) {
                     thetas[tRoots.size()] = thetas[0];
                     phis[tRoots.size()] = phis[0];
-                } else if (phis[i] > phis[tRoots.size()]) {
-                    phis[tRoots.size()] = phis[i];
-                    thetas[tRoots.size()] = thetas[i];
+                } else {
+                    if (phis[i] != 100) {
+                        if (phis[tRoots.size()] != 100) {
+                            if (phis[i] > phis[tRoots.size()]) {
+                                phis[tRoots.size()] = phis[i];
+                                thetas[tRoots.size()] = thetas[i];
+                            }
+                        } else {
+                            phis[tRoots.size()] = phis[i];
+                            thetas[tRoots.size()] = thetas[i];
+                        }
+                    }
                 }
             }
 
