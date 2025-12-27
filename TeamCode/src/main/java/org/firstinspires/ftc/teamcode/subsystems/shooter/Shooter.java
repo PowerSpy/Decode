@@ -38,6 +38,9 @@ public class Shooter {
         AIMING,
         READY,
         SHOOT,
+        INDEX,
+        INDEXING,
+        MANUAL,
         TEST
     } public State state = State.IDLE;
 
@@ -45,12 +48,12 @@ public class Shooter {
     private final Sensors sensors;
     private final DcMotorEx ms1, ms2;
     public final PriorityMotor flywheel;
-    public final nPriorityServo turret, hood, flywheelBlocker, net;
+    public final nPriorityServo turret, hood, flywheelBlocker, net, kicker;
 
     public static ArrayList<Long> nanoTimes;
     public static ArrayList<Double> turretHistory;
 
-    private boolean aimRequest = false, shootRequest = false, stopRequest = false;
+    private boolean aimRequest = false, shootRequest = false, stopRequest = false, reAimRequest = false, manualRequest = false, indexRequest = false;
 
     // velocity is in inches / second
     public static PID velocityPID = new PID (0.0, 0.0002, 0.0001);
@@ -84,6 +87,8 @@ public class Shooter {
     public double phiLim = 34.0 * Math.PI / 180;
     private final double c1 = (58.3414785 + 72) / (55.6424675 - 48);
     private final double c2 = c1 * 48 - 72;
+    private int moves;
+    private boolean index;
 
     public Shooter(Robot robot) {
         this.robot = robot;
@@ -100,6 +105,14 @@ public class Shooter {
             0.027, 0.4, 0.03,
             new boolean[] {false},
             2, 5
+        );
+
+        kicker = new nPriorityServo(
+                new Servo[]{robot.hardwareMap.get(Servo.class, "kicker")},
+                "kicker", nPriorityServo.ServoType.AXON_MICRO,
+                0.027, 0.4, 0.03,
+                new boolean[] {false},
+                2, 5
         );
 
         turret = new nPriorityServo(
@@ -154,6 +167,14 @@ public class Shooter {
                     aimRequest = false;
                     state = State.AIMING;
                 }
+                if (manualRequest) {
+                    manualRequest = false;
+                    state = State.MANUAL;
+                }
+                if (indexRequest) {
+                    indexRequest = false;
+                    state = State.INDEX;
+                }
                 break;
             case AIMING:
                 setShooterBlocker(true);
@@ -161,7 +182,6 @@ public class Shooter {
                 if (aimLauncherV8()) {
                     state = State.READY;
                 }
-
                 setTargetVelocity(minFlywheelVelocity);
                 setTurretAngle(targetTurretAngle);
                 setHoodAngle(targetHoodAngle);
@@ -171,7 +191,6 @@ public class Shooter {
                     aimRequest = false;
                     shootRequest = false;
                     state = State.IDLE;
-                    setTargetVelocity(0.0);
                 }
                 break;
             case READY:
@@ -197,11 +216,20 @@ public class Shooter {
                 break;
             case SHOOT:
                 setShooterBlocker(false);
-
-                aimLauncherV8();
-                setTargetVelocity(minFlywheelVelocity);
-                setTurretAngle(targetTurretAngle);
-                setHoodAngle(targetHoodAngle);
+                if (index) {
+                    setTargetVelocity(60); //test optimal
+                    setHoodAngle(0.8); //test optimal
+                    setKicker(4.0); //test optimal
+                    index = false;
+                    if(kicker.inPosition()){
+                        state = State.INDEXING;
+                    }
+                } else {
+                    aimLauncherV8();
+                    setTargetVelocity(minFlywheelVelocity);
+                    setTurretAngle(targetTurretAngle);
+                    setHoodAngle(targetHoodAngle);
+                }
 
                 if (stopRequest) {
                     stopRequest = false;
@@ -212,9 +240,34 @@ public class Shooter {
                     setTargetVelocity(0.0);
                     robot.intake.reqOff(true);
                 }
+                if (reAimRequest) {
+                    reAimRequest = false;
+                    state = State.AIMING;
+                    robot.intake.reqShoot(false);
+                }
                 break;
+            case MANUAL:
+                setShooter(dist);
             case TEST: // LEAVE THIS EMPTY AT ALL TIMES
                 break;
+            case INDEX:
+                calcIndexPosition(0,0); // get values from LL
+                state = State.INDEXING;
+                break;
+            case INDEXING:
+                setShooterBlocker(true);
+                setKicker(0);
+                // have the feeder and whatever contraption push balls forward
+                if(moves > 0){
+                    moves--;
+                    index = true;
+                    state = State.SHOOT;
+                    break;
+                }
+                reqIndex(false);
+                state = State.IDLE;
+                break;
+
         }
 
         // Flywheel Velocity PID
@@ -250,6 +303,12 @@ public class Shooter {
 
     public void reqStop (boolean req) { stopRequest = req; }
 
+    public void reqReAim (boolean req) { reAimRequest = req; }
+
+    public void reqManual (boolean req) { manualRequest = req; }
+
+    public void reqIndex (boolean req) { indexRequest = req; }
+
     public void setTurretAngle (double targetAngle) {
         turret.setTargetAngle(targetAngle);
 
@@ -271,6 +330,11 @@ public class Shooter {
     public double getFilteredVelocity() { return filteredVelocity; }
 
     public void setShooterBlocker(boolean active) { flywheelBlocker.setTargetAngle(active ? latchBlockAngle : -0.2);}
+
+    public int calcIndexPosition(int greenPos, int motifPos){
+        moves = (motifPos - greenPos)%3;
+        return moves;
+    }
 
     public boolean turretTrackTarget() {
         if (ROBOT_POSITION != null) targetTurretAngle = AngleUtil.clipAngle(Math.atan2(P.getY(), P.getX()) - ROBOT_POSITION.heading);
@@ -668,6 +732,10 @@ public class Shooter {
     public void setShooter(Dist mode) {
         targetVelocity = mode.flywheelVel;
         targetHoodAngle = mode.hoodAngle;
+    }
+
+    public void setKicker(double angle){
+        kicker.setTargetAngle(angle);
     }
 
     public boolean atVel() { return Math.abs(targetVelocity - filteredVelocity) <= atVelThresh; }
