@@ -28,7 +28,8 @@ public class MergeLocalizer extends Localizer{
         this.color = color;
 
         pinpoint = hardwareMap.get(GoBildaPinpointDriver.class, "pinpoint");
-        pinpoint.setOffsets(70, -124, DistanceUnit.MM);
+        // these offsets refer to the center of the turret
+        pinpoint.setOffsets(74.5, -69.14865, DistanceUnit.MM);
         pinpoint.setEncoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD);
         pinpoint.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.FORWARD, GoBildaPinpointDriver.EncoderDirection.REVERSED);
     }

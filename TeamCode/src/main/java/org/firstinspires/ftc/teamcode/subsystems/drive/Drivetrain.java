@@ -12,6 +12,7 @@ import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.Gamepad;
+import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.configuration.typecontainers.MotorConfigurationType;
 
 import org.firstinspires.ftc.teamcode.Robot;
@@ -47,36 +48,34 @@ public class Drivetrain {
     public PriorityMotor leftFront, leftRear, rightRear, rightFront;
     private final List<PriorityMotor> motors;
 
-    public Robot robot;
-    public Localizer localizer;
-    public MergeLocalizer mergeLocalizer;
+    // public Localizer localizer;
     public Vision vision;
+    public MergeLocalizer mergeLocalizer;
     private final HardwareQueue hardwareQueue;
     private final Sensors sensors;
 
-    public Drivetrain(Robot robot, Vision vision) {
+    public Drivetrain(HardwareMap hardwareMap, Sensors sensors, HardwareQueue hardwareQueue, Vision vision) {
         this.vision = vision;
-        this.robot = robot;
-        this.hardwareQueue = robot.hardwareQueue;
-        this.sensors = robot.sensors;
+        this.hardwareQueue = hardwareQueue;
+        this.sensors = sensors;
 
         leftFront = new PriorityMotor(
-            robot.hardwareMap.get(DcMotorEx.class, "leftFront"),
+            hardwareMap.get(DcMotorEx.class, "leftFront"),
             "leftFront", 4, 5,
             1.0, sensors
         );
         leftRear = new PriorityMotor(
-            robot.hardwareMap.get(DcMotorEx.class, "leftRear"),
+            hardwareMap.get(DcMotorEx.class, "leftRear"),
             "leftRear", 4, 5,
             1.0, sensors
         );
         rightRear = new PriorityMotor(
-            robot. hardwareMap.get(DcMotorEx.class, "rightRear"),
+            hardwareMap.get(DcMotorEx.class, "rightRear"),
             "rightRear", 4, 5,
             1.0, sensors
         );
         rightFront = new PriorityMotor(
-            robot.hardwareMap.get(DcMotorEx.class, "rightFront"),
+            hardwareMap.get(DcMotorEx.class, "rightFront"),
             "rightFront", 4, 5,
             1.0, sensors
         );
@@ -86,8 +85,8 @@ public class Drivetrain {
         configureMotors();
         setMinPowersToOvercomeFriction(1.0);
 
-        localizer = new Localizer (robot.sensors, this, "#00ff00", "#ff0000");
-        mergeLocalizer = new MergeLocalizer (robot.hardwareMap, robot.sensors, this, "#0000ff", "#ffffff");
+        // localizer = new Localizer (sensors, this, "#00ff00", "#ff0000");
+        mergeLocalizer = new MergeLocalizer (hardwareMap, sensors, this, "#0000ff", "#ffffff");
     }
 
     public void configureMotors() {
@@ -181,6 +180,16 @@ public class Drivetrain {
         if (!DRIVETRAIN_ENABLED) {
             return;
         }
+
+//        localizer.updateEncoders(odoWheelPositions);
+//        localizer.update();
+
+        mergeLocalizer.updateEncoders(sensors.getOdometry());
+        mergeLocalizer.update();
+
+        ROBOT_POSITION = mergeLocalizer.getPoseEstimate();
+        ROBOT_POSITION.heading = AngleUtil.clipAngle(ROBOT_POSITION.heading);
+        ROBOT_VELOCITY = mergeLocalizer.getRelativePoseVelocity();
 
         if(path != null) {
             state = State.FOLLOW_SPLINE;
@@ -376,7 +385,7 @@ public class Drivetrain {
 
         Canvas canvas = TelemetryUtil.packet.fieldOverlay();
         if (path != null) {
-            DashboardUtil.drawRobot(canvas, new Pose2d(ROBOT_POSITION.x + robot.sensors.loopTime * pd.vel.x, ROBOT_POSITION.y + robot.sensors.loopTime * pd.vel.y, Math.atan2(pd.vel.y, pd.vel.x)), "#8000ff");
+            DashboardUtil.drawRobot(canvas, new Pose2d(ROBOT_POSITION.x + sensors.loopTime * pd.vel.x, ROBOT_POSITION.y + sensors.loopTime * pd.vel.y, Math.atan2(pd.vel.y, pd.vel.x)), "#8000ff");
             Spline s = path.pathSegments.get(pd.index).spline;
 
             double n = 100;

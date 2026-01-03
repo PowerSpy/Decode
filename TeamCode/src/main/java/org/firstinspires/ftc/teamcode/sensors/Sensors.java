@@ -6,6 +6,8 @@ import static org.firstinspires.ftc.teamcode.utils.Globals.ROBOT_VELOCITY;
 import com.acmerobotics.dashboard.canvas.Canvas;
 import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.robotcore.hardware.AnalogInput;
+import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.HardwareMap;
 
 import org.firstinspires.ftc.teamcode.Robot;
 import org.firstinspires.ftc.teamcode.utils.AngleUtil;
@@ -15,10 +17,12 @@ import org.firstinspires.ftc.teamcode.utils.LogUtil;
 import org.firstinspires.ftc.teamcode.utils.Pose2d;
 import org.firstinspires.ftc.teamcode.utils.TelemetryUtil;
 import org.firstinspires.ftc.teamcode.utils.Vector2;
+import org.firstinspires.ftc.teamcode.utils.priority.PriorityMotor;
 
 @Config
 public class Sensors {
-    private final Robot robot;
+    private final HardwareMap hardwareMap;
+
     public double loopTime;
     private long currentTime, lastTime;
 
@@ -31,10 +35,11 @@ public class Sensors {
     private final double voltageUpdateTime = 5000;
     private long lastVoltageUpdatedTime = System.currentTimeMillis();
 
-    public Sensors(Robot robot) {
-        this.robot = robot;
+    public Sensors(HardwareMap hardwareMap) {
+        this.hardwareMap = hardwareMap;
+
         currentTime = System.nanoTime();
-        voltage = robot.hardwareMap.voltageSensor.iterator().next().getVoltage();
+        voltage = hardwareMap.voltageSensor.iterator().next().getVoltage();
     }
 
     public void update() {
@@ -42,29 +47,20 @@ public class Sensors {
         currentTime = System.nanoTime();
         loopTime = (currentTime - lastTime) / 1e9;
 
-        odoWheelPositions[0] = robot.drivetrain.leftFront.motor[0].getCurrentPosition(); // left
-        odoWheelPositions[1] = robot.drivetrain.rightFront.motor[0].getCurrentPosition(); // right
-        odoWheelPositions[2] = robot.drivetrain.leftRear.motor[0].getCurrentPosition(); // back
+        odoWheelPositions[0] = ((PriorityMotor) hardwareMap.get(DcMotorEx.class, "leftFront")).motor[0].getCurrentPosition();
+        odoWheelPositions[1] = ((PriorityMotor) hardwareMap.get(DcMotorEx.class, "rightFront")).motor[0].getCurrentPosition();
+        odoWheelPositions[2] = ((PriorityMotor) hardwareMap.get(DcMotorEx.class, "leftRear")).motor[0].getCurrentPosition();
 
-        double flywheelPos = robot.drivetrain.rightRear.motor[0].getCurrentPosition();
+        double flywheelPos = ((PriorityMotor) hardwareMap.get(DcMotorEx.class, "rightRear")).motor[0].getCurrentPosition();
 
         // (flywheelPos - flywheelLastPos) / 28.0 = delta revolutions
-        flywheelAngularVel = robot.drivetrain.rightRear.getVelocity() / 28.0;
+        flywheelAngularVel = ((PriorityMotor) hardwareMap.get(DcMotorEx.class, "rightRear")).motor[0].getVelocity() / 28.0;
         flywheelVelocity = flywheelAngularVel * 96.0 * Math.PI / 25.4;
 
-        robot.drivetrain.localizer.updateEncoders(odoWheelPositions);
-        robot.drivetrain.localizer.update();
 
-        robot.drivetrain.mergeLocalizer.updateEncoders(odoWheelPositions);
-        robot.drivetrain.mergeLocalizer.update();
-
-        ROBOT_POSITION = robot.drivetrain.mergeLocalizer.getPoseEstimate();
-        ROBOT_POSITION.heading = AngleUtil.clipAngle(ROBOT_POSITION.heading);
-
-        ROBOT_VELOCITY = robot.drivetrain.mergeLocalizer.getRelativePoseVelocity();
 
         if (System.currentTimeMillis() - lastVoltageUpdatedTime > voltageUpdateTime) {
-            voltage = robot.hardwareMap.voltageSensor.iterator().next().getVoltage();
+            voltage = hardwareMap.voltageSensor.iterator().next().getVoltage();
             lastVoltageUpdatedTime = System.currentTimeMillis();
         }
 

@@ -8,18 +8,21 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import org.firstinspires.ftc.teamcode.Robot;
 import org.firstinspires.ftc.teamcode.sensors.Sensors;
 import org.firstinspires.ftc.teamcode.subsystems.drive.Drivetrain;
+import org.firstinspires.ftc.teamcode.utils.priority.HardwareQueue;
+import org.firstinspires.ftc.teamcode.vision.Vision;
 
 @TeleOp
 public class EncoderPoseTuner extends LinearOpMode {
     @Override
     public void runOpMode() throws InterruptedException {
-        Robot robot = new Robot(hardwareMap);
-        Drivetrain drivetrain = robot.drivetrain;
-        Sensors sensors = robot.sensors;
+        Sensors sensors = new Sensors(hardwareMap);
+        HardwareQueue hardwareQueue = new HardwareQueue();
+        Vision vision = new Vision(hardwareMap);
+        Drivetrain drivetrain = new Drivetrain(hardwareMap, sensors, hardwareQueue, vision);
 
-        double leftInitial = robot.drivetrain.leftRear.motor[0].getCurrentPosition();
-        double rightInitial = robot.drivetrain.rightRear.motor[0].getCurrentPosition();
-        double backInitial = robot.drivetrain.rightFront.motor[0].getCurrentPosition();
+        double leftInitial = drivetrain.leftRear.motor[0].getCurrentPosition();
+        double rightInitial = drivetrain.rightRear.motor[0].getCurrentPosition();
+        double backInitial = drivetrain.rightFront.motor[0].getCurrentPosition();
         double theta;
 
         waitForStart();
@@ -28,11 +31,11 @@ public class EncoderPoseTuner extends LinearOpMode {
             drivetrain.drive(gamepad1);
             theta = Math.PI * 20; // 10 rotations
 
-            robot.update();
+            drivetrain.update();
 
-            telemetry.addData("leftOdoRadius", (robot.drivetrain.leftRear.motor[0].getCurrentPosition() - leftInitial) * robot.drivetrain.mergeLocalizer.encoders[0].ticksToInches/theta + "");
-            telemetry.addData("rightOdoRadius", (robot.drivetrain.leftFront.motor[0].getCurrentPosition() - rightInitial) * robot.drivetrain.mergeLocalizer.encoders[1].ticksToInches/theta + "");
-            telemetry.addData("backOdoRadius", (robot.drivetrain.rightFront.motor[0].getCurrentPosition() - backInitial) * robot.drivetrain.mergeLocalizer.encoders[2].ticksToInches/theta + "");
+            telemetry.addData("leftOdoRadius", (drivetrain.leftRear.motor[0].getCurrentPosition() - leftInitial) * drivetrain.mergeLocalizer.encoders[0].ticksToInches/theta + "");
+            telemetry.addData("rightOdoRadius", (drivetrain.leftFront.motor[0].getCurrentPosition() - rightInitial) * drivetrain.mergeLocalizer.encoders[1].ticksToInches/theta + "");
+            telemetry.addData("backOdoRadius", (drivetrain.rightFront.motor[0].getCurrentPosition() - backInitial) * drivetrain.mergeLocalizer.encoders[2].ticksToInches/theta + "");
             telemetry.addData("heading", ROBOT_POSITION.heading);
             telemetry.update();
         }
