@@ -21,7 +21,7 @@ public class Globals {
     public static double ROBOT_LENGTH = 18.0;
     public static Pose2d ROBOT_POSITION = new Pose2d(0,0,0);
     public static Pose2d ROBOT_VELOCITY = new Pose2d(0,0,0);
-    public static Pose2d AUTO_ENDING_POSE = new Pose2d(0,0, Math.toRadians(180));
+    public static Pose2d AUTO_ENDING_POSE = new Pose2d(0,0,0);
 
     // loop time methods
     public static void START_LOOP() {

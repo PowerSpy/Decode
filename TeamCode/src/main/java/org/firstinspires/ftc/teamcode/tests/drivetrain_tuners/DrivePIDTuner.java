@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.teamcode.tests;
+package org.firstinspires.ftc.teamcode.tests.drivetrain_tuners;
 
 import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
@@ -9,7 +9,7 @@ import org.firstinspires.ftc.teamcode.utils.Pose2d;
 
 @TeleOp
 @Config
-public class DrivetrainPIDFinder extends LinearOpMode {
+public class DrivePIDTuner extends LinearOpMode {
     private Robot robot;
     public static double targetX = 0.0, targetY = 0.0, targetH = 0.0;
     public static boolean updateNewPoint = false;

@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode.subsystems.drive;
 
+import android.util.Log;
+
 import org.firstinspires.ftc.teamcode.utils.Pose2d;
 import org.firstinspires.ftc.teamcode.utils.Vector2;
 
@@ -23,6 +25,9 @@ public class Spline {
         yCoeff[1] = arbitraryVelo * Math.sin(start.heading);
         yCoeff[2] = 3 * end.y - arbitraryVelo * Math.sin(end.heading) - 2 * yCoeff[1] - 3 * yCoeff[0];
         yCoeff[3] = end.y - yCoeff[0] - yCoeff[1] - yCoeff[2];
+
+        Log.i("Path Spline x-coeff", xCoeff[3] + " " + xCoeff[2] + " " + xCoeff[1] + " " + xCoeff[0]);
+        Log.i("Path Spline y-coeff", yCoeff[3] + " " + yCoeff[2] + " " + yCoeff[1] + " " + yCoeff[0]);
     }
 
     public double getT (Pose2d pos) {
@@ -31,7 +36,7 @@ public class Spline {
 
         // Newton's method to determine the closest point
         // Min-Max Clip of -0.2 to 0.2 to avoid drastic shifts domain of t is 0 to 1
-        for(int i = 0; i < 10; i++) {
+        for(int i = 0; i < 20; i++) {
             Vector2 p = getPos (last_t);
             Vector2 v = getVel (last_t);
             Vector2 a = getAccel (last_t);

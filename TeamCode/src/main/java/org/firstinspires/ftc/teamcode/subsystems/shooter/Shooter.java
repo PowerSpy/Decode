@@ -2,28 +2,20 @@ package org.firstinspires.ftc.teamcode.subsystems.shooter;
 
 import static org.firstinspires.ftc.teamcode.utils.Globals.ROBOT_POSITION;
 import static org.firstinspires.ftc.teamcode.utils.Globals.ROBOT_VELOCITY;
-import static org.firstinspires.ftc.teamcode.utils.Globals.blueTag;
-import static org.firstinspires.ftc.teamcode.utils.Globals.redTag;
 
 import android.util.Log;
 
 import com.acmerobotics.dashboard.config.Config;
-import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.Servo;
 
 import org.firstinspires.ftc.teamcode.Robot;
-import org.firstinspires.ftc.teamcode.sensors.Sensors;
-import org.firstinspires.ftc.teamcode.subsystems.drive.localizers.MergeLocalizer;
 import org.firstinspires.ftc.teamcode.utils.AngleUtil;
 import org.firstinspires.ftc.teamcode.utils.Globals;
 import org.firstinspires.ftc.teamcode.utils.LogUtil;
 import org.firstinspires.ftc.teamcode.utils.PID;
 import org.firstinspires.ftc.teamcode.utils.Polynomial;
-import org.firstinspires.ftc.teamcode.utils.Pose2d;
 import org.firstinspires.ftc.teamcode.utils.TelemetryUtil;
-import org.firstinspires.ftc.teamcode.utils.Utils;
-import org.firstinspires.ftc.teamcode.utils.Vector2;
 import org.firstinspires.ftc.teamcode.utils.Vector3;
 import org.firstinspires.ftc.teamcode.utils.priority.PriorityMotor;
 import org.firstinspires.ftc.teamcode.utils.priority.nPriorityServo;
@@ -38,19 +30,20 @@ public class Shooter {
         AIMING,
         READY,
         SHOOT,
+        INDEX,
+        INDEXING,
         TEST
     } public State state = State.IDLE;
 
-    private final Robot robot;
-    private final Sensors sensors;
-    private final DcMotorEx ms1, ms2;
-    public final PriorityMotor flywheel;
-    public final nPriorityServo turret, hood, flywheelBlocker, net;
+    private Robot robot;
+    private DcMotorEx ms1, ms2;
+    public PriorityMotor flywheel;
+    public nPriorityServo turret, hood, flywheelBlocker, net, kicker;
 
     public static ArrayList<Long> nanoTimes;
     public static ArrayList<Double> turretHistory;
 
-    private boolean aimRequest = false, shootRequest = false, stopRequest = false;
+    private boolean aimRequest = false, shootRequest = false, stopRequest = false, reAimRequest = false, manualRequest = false, indexRequest = false;
 
     // velocity is in inches / second
     public static PID velocityPID = new PID (0.0, 0.0002, 0.0001);
@@ -69,22 +62,27 @@ public class Shooter {
     private double prevPow = 0;
 
     // auto-aim
-    private final double dLauncher = Math.sqrt(66.632 * 66.632 + 229.61 * 229.61) / 25.4;
-    private final double g = 9.805 * 100 / 2.54;
-    private final double launcherHeight = 330.14203 / 25.4;
-    public Vector3 ballTarget;
-    public double minV0 = 0.0;
+    public final double dLauncher = Math.sqrt(66.632 * 66.632 + 229.61 * 229.61) / 25.4;
+    public final double g = 9.805 * 100 / 2.54;
+    public final double launcherHeight = 330.14203 / 25.4;
+    public Vector3 ballTarget, P, V;
+    public double a = g * g / 4, c, d, e;
+    public double v0, cv0;
+    public double minV0 = 0.0, minFlywheelVelocity = 0.0;
     public double minV0Superthresh = 0.0; // TODO: need to tune this, controls how much over minV0 we make the v0 strive for pre mult
-    public double minV0factor = 1.26; // TODO: tune this so that triple fire works; without this, 2nd & 3rd balls don't go in
-    public double flywheelEfficiency = 0.6367;
+    public double minV0factor = 1.07; // TODO: tune this so that triple fire works; without this, 2nd & 3rd balls don't go in
+    public double flywheelEfficiency = 0.63;
     public double targetTurretAngle = 0.0;
     public double targetHoodAngle = 0.0;
-    public double phiLim = Math.atan(0.875);
+    public double hoodSweep = Math.toRadians(34.0);
+    public static double hoodGearRatio = 48 / 30;
+    private final double c1 = (58.3414785 + 72) / (55.6424675 - 48);
+    private final double c2 = c1 * 48 - 72;
+    private int moves;
+    private boolean index;
 
     public Shooter(Robot robot) {
         this.robot = robot;
-
-        this.sensors = robot.sensors;
 
         this.ms1 = robot.hardwareMap.get(DcMotorEx.class, "shooter1");
         this.ms2 = robot.hardwareMap.get(DcMotorEx.class, "shooter2");
@@ -93,16 +91,25 @@ public class Shooter {
         hood = new nPriorityServo(
             new Servo[]{robot.hardwareMap.get(Servo.class, "hood1")},
             "hood", nPriorityServo.ServoType.AXON_MINI,
-            0.0, 0.4, 0.03,
+            0.027, 0.4, 0.03,
             new boolean[] {false},
             2, 5
         );
 
+        /*
+        kicker = new nPriorityServo(
+                new Servo[]{robot.hardwareMap.get(Servo.class, "kicker")},
+                "kicker", nPriorityServo.ServoType.AXON_MICRO,
+                0.027, 0.4, 0.03,
+                new boolean[] {false},
+                2, 5
+        );
+         */
+
         turret = new nPriorityServo(
             new Servo[]{robot.hardwareMap.get(Servo.class, "turret1"), robot.hardwareMap.get(Servo.class,"turret2")},
-            "turret", nPriorityServo.ServoType.AXON_MINI,
-            0.49, 0.51, 0.5,
-                //0.1, 0.78, 0.5,
+                "turret", nPriorityServo.ServoType.AXON_MINI,
+                0.1, 0.78, 0.5,
             new boolean[] {false, false},
             2, 5
         );
@@ -127,15 +134,26 @@ public class Shooter {
                 2, 5
         );
 
+        kicker = new nPriorityServo(
+                new Servo[] {robot.hardwareMap.get(Servo.class, "kicker")},
+                "kicker", nPriorityServo.ServoType.AXON_MINI,
+                0.0, 1.0, 0.5,
+                new boolean [] {false},
+                2, 5
+        );
+
         robot.hardwareQueue.addDevices(flywheel, hood, turret, flywheelBlocker, net);
 
-        flywheel.motor[0].setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        flywheel.motor[0].setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-
-        ballTarget = new Vector3(-70.5, 60 * (Globals.isRed ? 1 : -1), 38.75 + 3);
+        updateBallTarget();
     }
 
+    // FSM needs to be upgraded to allow for indexing, we won't need it till lm4+, but we be working on it
+    // idle -> aim req -> accel -> shoot
+    // idle -> index req -> accel -> index
+    // should be able to cancel into stop -> idle anytime
+    // should be able to cancel into aim req or index req within accel
     public void update() {
+        //updateAimingConstants(); the method exists dw
         switch (state) {
             case IDLE:
                 aimLauncherV8();
@@ -148,6 +166,27 @@ public class Shooter {
                     aimRequest = false;
                     state = State.AIMING;
                 }
+                if (indexRequest) {
+                    indexRequest = false;
+                    state = State.INDEX;
+                }
+                break;
+            case INDEX:
+                calcIndexPosition(0,0); // get values from LL
+                state = State.INDEXING;
+                break;
+            case INDEXING:
+                setShooterBlocker(true);
+                setKicker(0);
+                // have the feeder and whatever contraption push balls forward
+                if(moves > 0){
+                    moves--;
+                    index = true;
+                    state = State.SHOOT;
+                    break;
+                }
+                reqIndex(false);
+                state = State.IDLE;
                 break;
             case AIMING:
                 setShooterBlocker(true);
@@ -155,8 +194,7 @@ public class Shooter {
                 if (aimLauncherV8()) {
                     state = State.READY;
                 }
-
-                setTargetVelocity(minV0);
+                setTargetVelocity(minFlywheelVelocity);
                 setTurretAngle(targetTurretAngle);
                 setHoodAngle(targetHoodAngle);
 
@@ -165,20 +203,22 @@ public class Shooter {
                     aimRequest = false;
                     shootRequest = false;
                     state = State.IDLE;
-                    setTargetVelocity(0.0);
                 }
                 break;
             case READY:
-                setShooterBlocker(false);
+                setShooterBlocker(true);
 
                 aimLauncherV8();
-                setTargetVelocity(minV0);
+                setTargetVelocity(minFlywheelVelocity);
                 setTurretAngle(targetTurretAngle);
                 setHoodAngle(targetHoodAngle);
 
-                if (flywheelBlocker.inPosition() && shootRequest) {
-                    state = State.SHOOT;
-                    robot.intake.reqShoot(true);
+                if (shootRequest) {
+                    setShooterBlocker(false);
+                    if (flywheelBlocker.inPosition()) {
+                        state = State.SHOOT;
+                        robot.intake.reqShoot(true);
+                    }
                 }
 
                 if (stopRequest) {
@@ -187,23 +227,40 @@ public class Shooter {
                     shootRequest = false;
                     state = State.IDLE;
                     setTargetVelocity(0.0);
+                    robot.intake.reqShoot(false);
+                    robot.intake.reqOff(true);
                 }
                 break;
             case SHOOT:
                 setShooterBlocker(false);
-
-                aimLauncherV8();
-                setTargetVelocity(minV0);
-                setTurretAngle(targetTurretAngle);
-                setHoodAngle(targetHoodAngle);
+                if (index) {
+                    setTargetVelocity(60); //test optimal
+                    setHoodAngle(0.8); //test optimal
+                    setKicker(4.0); //test optimal
+                    index = false;
+                    if(kicker.inPosition()){
+                        state = State.INDEXING;
+                    }
+                } else {
+                    aimLauncherV8();
+                    setTargetVelocity(minFlywheelVelocity);
+                    setTurretAngle(targetTurretAngle);
+                    setHoodAngle(targetHoodAngle);
+                }
 
                 if (stopRequest) {
                     stopRequest = false;
                     aimRequest = false;
                     shootRequest = false;
-
                     state = State.IDLE;
                     setTargetVelocity(0.0);
+                    robot.intake.reqShoot(false);
+                    robot.intake.reqOff(true);
+                }
+                if (reAimRequest) {
+                    reAimRequest = false;
+                    state = State.AIMING;
+                    robot.intake.reqShoot(false);
                     robot.intake.reqOff(true);
                 }
                 break;
@@ -231,18 +288,13 @@ public class Shooter {
         flywheel.setTargetPower(pow);
         prevPow = pow;
 
+        // TODO Turret PID
+
         // Aim Correction
         nanoTimes.add(0, System.nanoTime());
         turretHistory.add(0, turret.getCurrentAngle());
 
-        TelemetryUtil.packet.put("Shooter : Flywheel Filtered Velocity", filteredVelocity);
-        TelemetryUtil.packet.put("Shooter : Flywheel Target Velocity", targetVelocity);
-        TelemetryUtil.packet.put("Shooter : Flywheel PID Power", pidpow * 100);
-        TelemetryUtil.packet.put("Shooter : Flywheel FF Power", ffpow * 100);
-        TelemetryUtil.packet.put("Shooter : Flywheel Applied Power", pow * 100);
-        TelemetryUtil.packet.put("Shooter : Turret Target Angle", turret.getTargetAngle());
-        TelemetryUtil.packet.put("Shooter : state", this.state);
-        LogUtil.shooterState.set(this.state.toString());
+        updateTelemetry(pidpow, ffpow, pow);
     }
 
     public void reqShoot (boolean req) { shootRequest = req; }
@@ -251,118 +303,25 @@ public class Shooter {
 
     public void reqStop (boolean req) { stopRequest = req; }
 
+    public void reqReAim (boolean req) { reAimRequest = req; }
+
+    public void setManual(boolean on) {
+        if (on) {
+            state = State.TEST;
+            setShooter(Dist.OFF);
+        } else {
+            state = State.IDLE;
+        }
+    }
+
+    public void reqIndex (boolean req) { indexRequest = req; }
+
     public void setTurretAngle (double targetAngle) {
-        turret.setTargetAngle(targetAngle);
+        //turret.setTargetAngle(targetAngle);
 
         TelemetryUtil.packet.put("Shooter : turretTargetAngle", targetAngle);
         LogUtil.turretAngle.set(targetAngle);
     }
-
-    public boolean aimLauncherV8() {
-        Vector3 P = new Vector3(ballTarget); // TODO: change this target to account for distance
-        P.subtract(new Vector3(ROBOT_POSITION.x, ROBOT_POSITION.y, launcherHeight));
-        Vector3 V = new Vector3(-ROBOT_VELOCITY.x, -ROBOT_VELOCITY.y, 0); // TODO: need to subtract robot angular vel component thing to this
-
-        double a = g * g / 4;
-        // double b = 0;
-        double c = V.x * V.x + V.y + V.y + g * P.z;
-        double d = 2 * Vector3.dot(P, V);
-        double e = P.x * P.x + P.y * P.y + P.z * P.z;
-        List<Double> tRoots = Polynomial.findRealRoots(new double[]{1, 0.0, 0.0, -d/(2 * a), -e/a}, 1e-4);
-        for (int i = 0; i < tRoots.size(); i++) {
-            if(tRoots.get(i) < 0) {
-                tRoots.remove(i);
-                i--;
-            }
-        }
-        if (tRoots.isEmpty()) {
-            return false;
-        }
-
-        minV0 = Math.sqrt(2 * a * tRoots.get(0) * tRoots.get(0) + c + d / 2 / tRoots.get(0)) + minV0Superthresh;
-        minV0 *= minV0factor * 2 / flywheelEfficiency; // converts minV0 to min flywheel vel for triple
-
-        targetTurretAngle = AngleUtil.clipAngle(Math.atan2(P.getY(), P.getX()) - ROBOT_POSITION.heading);
-        double v0 = getBallExitSpd();
-        // all of this is to calculate a basic phi for when we're not moving a whole lot
-        if (v0 > 1)  {
-            double A = 4 * Math.pow(v0, 4) * P.getMag() * P.getMag();
-            double dist2 = P.x * P.x + P.y + P.y; // 2D dist squared
-            double B = 4 * dist2 * v0 * v0 * (g * P.z - v0 * v0);
-            double C = dist2 * dist2 * g * g;
-            // replaceable with polynomial root solver but ts is simple cause its biquadratic
-            double det = B * B - 4 * A * C;
-            double[] phis = new double[]{100, 100, 0};
-            if (det > 0) { phis[0] = (-B - Math.sqrt(det)) * 0.5 / A; phis[1] = (-B + Math.sqrt(det)) * 0.5 / A; }
-            else if (det == 0) phis[0] = -B * 0.5 / A;
-            else return false;
-
-            for (int i = 0; i < 2; i++) {
-                if (phis[i] >= 0) {
-                    phis[i] = Math.sqrt(phis[i]);
-                    if (phis[i] <= 1.0) phis[i] = Math.asin(phis[i]);
-                    else phis[i] = 100;
-                } else phis[i] = 100;
-
-                double c1 = (58.3414785 - 72) / (55.6424675 - 48);
-                double c2 = c1 * 48 - 72;
-                double slope = c1 * (ROBOT_VELOCITY.y + v0 * Math.sin(targetTurretAngle) * Math.sin(phis[i])) - (ROBOT_VELOCITY.x + v0 * Math.cos(targetTurretAngle) * Math.sin(phis[i]));
-                double t = -c2 / slope;
-
-                if (t < 0) phis[i] = 100; // this makes sure the ball goes into the target through the diagonal plane but over
-                else if (launcherHeight + v0 * Math.cos(phis[i]) * t - g * t * t / 2 < 38.75 + 3.5) phis[i] = 100;
-                if (Math.PI * 0.5 - phis[i] - phiLim < 0) phis[i] = 100;
-                if (i == 0) {
-                    phis[2] = phis[0];
-                } else {
-                    if (phis[i] < phis[2]) {
-                        phis[2] = phis[i];
-                    }
-                }
-            }
-            if (phis[2] == 100) return false;
-
-            targetHoodAngle = Math.PI * 0.5 - phis[2] - phiLim;
-            if (V.getMag() < 6) return true; // no point in doing calculations that account for when the robot is moving if the robot isn't moving
-        } else return false;
-        c -= v0 * v0;
-
-        tRoots = Polynomial.findRealRoots(new double[]{1, 0, c/a, d/a, e/a}, 1e-4);
-        if (tRoots.isEmpty()) return false;
-
-        double[] thetas = new double[tRoots.size() + 1];
-        double[] phis = new double[tRoots.size() + 1];
-        for (int i = 0; i < tRoots.size(); i++) {
-            double t0 = tRoots.get(i);
-            Vector3 pf = new Vector3(P.x + V.x * t0, P.y + V.y * t0, P.z + g * t0 * t0 / 2);
-            thetas[i] = pf.theta();
-            phis[i] = pf.phi();
-            double c1 = (58.3414785 - 72) / (55.6424675 - 48);
-            double c2 = c1 * 48 - 72;
-            double slope = c1 * (ROBOT_VELOCITY.y + v0 * Math.sin(thetas[i]) * Math.sin(phis[i])) - (ROBOT_VELOCITY.x + v0 * Math.cos(thetas[i]) * Math.sin(phis[i]));
-            double t = -c2 / slope;
-
-            if (t < 0) phis[i] = 100; // this makes sure the ball goes into the target through the restricted diagonal plane
-            else if (launcherHeight + v0 * Math.cos(phis[i]) * t - g * t * t / 2 < 38.75 + 3.5) phis[i] = 100;
-            if (phis[i] - phiLim < 0) phis[i] = 100;
-            if (i == 0) {
-                thetas[tRoots.size()] = thetas[0];
-                phis[tRoots.size()] = phis[0];
-            } else {
-                if (phis[i] < phis[tRoots.size()]) {
-                    phis[tRoots.size()] = phis[i];
-                    thetas[tRoots.size()] = thetas[i];
-                }
-            }
-
-        }
-        if (phis[tRoots.size()] == 100) return false;
-        targetTurretAngle = AngleUtil.clipAngle(thetas[tRoots.size()] - ROBOT_POSITION.heading); // converts from global to difference with heading
-        targetHoodAngle = Math.PI / 2 - phis[tRoots.size()] - phiLim;
-        return true;
-    }
-
-    public double getBallExitSpd() { return filteredVelocity * flywheelEfficiency * 0.5; }
 
     public void setHoodAngle(double target_angle) {
         hood.setTargetAngle(target_angle);
@@ -379,14 +338,403 @@ public class Shooter {
 
     public void setShooterBlocker(boolean active) { flywheelBlocker.setTargetAngle(active ? latchBlockAngle : -0.2);}
 
+    public void updateBallTarget() {
+        ballTarget = new Vector3(-70.5, 60 * (Globals.isRed ? 1 : -1), 38.75);
+    }
+
+    public int calcIndexPosition(int greenPos, int motifPos){
+        moves = (motifPos - greenPos)%3;
+        return moves;
+    }
+
+    public boolean turretTrackTarget() {
+        if (ROBOT_POSITION == null || ROBOT_VELOCITY == null) return false;
+        // targetTurretAngle = AngleUtil.clipAngle(Math.atan2(P.getY(), P.getX()) - ROBOT_POSITION.heading);
+        // above works
+        // below needs testing
+        targetTurretAngle = AngleUtil.clipAngle(Math.atan2(P.getY(), P.getX()) - ROBOT_POSITION.heading - Math.PI / 2) + Math.PI / 2;
+        return true;
+    }
+
+    public void updateAimingConstants() {
+        if (ROBOT_POSITION == null || ROBOT_VELOCITY == null) return;
+        P = new Vector3(ballTarget); // we'll figure out whether we need to change this target based on distance
+        P.subtract(new Vector3(ROBOT_POSITION.x, ROBOT_POSITION.y, launcherHeight));
+        V = new Vector3(-ROBOT_VELOCITY.x, -ROBOT_VELOCITY.y, 0); // TODO: need to subtract robot angular vel component thing to this
+
+        v0 = getBallExitSpd();
+
+        // double b = 0;
+        c = V.x * V.x + V.y * V.y + g * P.z;
+        cv0 = c - v0 * v0;
+        d = 2 * Vector3.dot(P, V);
+        e = P.x * P.x + P.y * P.y + P.z * P.z;
+    }
+
+    public boolean calcMinFlywheelVelocity() {
+        if (ROBOT_POSITION == null || ROBOT_VELOCITY == null) return false;
+        List<Double> tRoots = Polynomial.findRealRoots(new double[]{1, 0.0, 0.0, -d/(2 * a), -e/a}, 1e-4);
+        for (int i = 0; i < tRoots.size(); i++) {
+            if(tRoots.get(i) < 0) {
+                tRoots.remove(i);
+                i--;
+            }
+        }
+        if (tRoots.isEmpty()) return false;
+        minV0 = Math.sqrt(2 * a * tRoots.get(0) * tRoots.get(0) + c + d / 2 / tRoots.get(0)) + minV0Superthresh;
+        minV0 *= minV0factor;
+        minFlywheelVelocity = minV0 * 2 / flywheelEfficiency;
+        return true;
+    }
+
+    public boolean calcStaticShotAngles() {
+        if (!turretTrackTarget()) return false;
+        if (v0 > (minV0 / minV0factor - minV0Superthresh) * 0.97) { // makes sure v0 is at least 97% of true minV0
+            double A = 4 * v0 * v0 * v0 * v0 * e;
+            double dist2 = e - P.z * P.z; // 2D dist squared
+            double B = 4 * dist2 * v0 * v0 * (g * P.z - v0 * v0);
+            double C = dist2 * dist2 * g * g;
+            List<Double> tRoots = Polynomial.findRealRoots(new double[]{A, B, C}, 1e-4);
+            double[] phis = new double[tRoots.size() + 1];
+            double[] thetas = new double[phis.length];
+
+            for (int i = 0; i < tRoots.size(); i++) {
+                if (Math.abs(tRoots.get(i) - 0.5) <= 0.5) {
+                    phis[i] = Math.asin(Math.sqrt(tRoots.get(i)));
+                } else phis[i] = 100;
+                thetas[i] = targetTurretAngle;
+
+                double slope = c1 * (ROBOT_VELOCITY.y + v0 * Math.sin(thetas[i]) * Math.sin(phis[i])) - (ROBOT_VELOCITY.x + v0 * Math.cos(thetas[i]) * Math.sin(phis[i]));
+                if ((int)slope == 0) {
+                    phis[i] = 100;
+                } else {
+                    double t = (c1 * (48 - ROBOT_POSITION.y) + 72 + ROBOT_POSITION.x) / slope;
+                    if (t <= 0) {
+                        phis[i] = 100;
+                    } else if (launcherHeight + v0 * Math.cos(phis[i]) * t - g * t * t / 2 < 38.75 + 3) {
+                        phis[i] = 100;
+                    }
+                }
+                if (phis[i] - hoodSweep < 0) phis[i] = 100;
+                if (i == 0) {
+                    thetas[tRoots.size()] = thetas[0];
+                    phis[tRoots.size()] = phis[0];
+                } else {
+                    if (phis[i] != 100) {
+                        if (phis[tRoots.size()] != 100) {
+                            if (phis[i] > phis[tRoots.size()]) {
+                                phis[tRoots.size()] = phis[i];
+                                thetas[tRoots.size()] = thetas[i];
+                            }
+                        } else {
+                            phis[tRoots.size()] = phis[i];
+                            thetas[tRoots.size()] = thetas[i];
+                        }
+                    }
+                }
+            }
+
+            if (phis[tRoots.size()] == 100) return false;
+            targetTurretAngle = AngleUtil.clipAngle(thetas[tRoots.size()] - ROBOT_POSITION.heading); // converts from global to difference with heading
+            targetHoodAngle = (phis[tRoots.size()] - hoodSweep) * hoodGearRatio; // first part converts angle from vertical to angle from horizontal && then subtracts the sweep of the hood
+            return true;
+        } else return false;
+    }
+
+    public boolean calcDynamicShotAngles() {
+        if (!turretTrackTarget()) return false;
+        if (v0 > (minV0 / minV0factor - minV0Superthresh) * 0.97) { // makes sure v0 is at least 97% of true minV0
+            List<Double> tRoots = Polynomial.findRealRoots(new double[]{1, 0, cv0/a, d/a, e/a}, 1e-4);
+            for(int i = 0; i < tRoots.size(); i++) {
+                if(tRoots.get(i) < 0) {
+                    tRoots.remove(i);
+                    i--;
+                }
+            }
+            if (tRoots.isEmpty()) {
+                return false;
+            }
+            double[] phis = new double[tRoots.size() + 1];
+            double[] thetas = new double[phis.length];
+            for (int i = 0; i < tRoots.size(); i++) {
+                double t0 = tRoots.get(i);
+                Vector3 pf = new Vector3(P.x + V.x * t0, P.y + V.y * t0, P.z + g * t0 * t0 / 2);
+                thetas[i] = pf.theta();
+                phis[i] = pf.phi();
 
 
+                double vel = Math.pow(ROBOT_VELOCITY.y + v0 * Math.sin(thetas[i]) * Math.sin(phis[i]), 2) + Math.pow(ROBOT_VELOCITY.x + v0 * Math.cos(thetas[i]) * Math.sin(phis[i]), 2);
+                vel = Math.sqrt(vel);
+                double dist = Math.pow(-60 - ROBOT_POSITION.x, 2) + Math.pow(ballTarget.y - ROBOT_POSITION.y, 2);
+                dist = Math.sqrt(dist);
+                double t = dist / vel;
+                if (t <= 0) {
+                    phis[i] = 100; // this makes sure the ball goes into the target through the restricted diagonal plane
+                } else {
+                    double heightAtWall = launcherHeight + v0 * Math.cos(phis[i]) * t - g * t * t / 2;
+                    if (heightAtWall < 38.75 + 3) {
+                        phis[i] = 100;
+                    }
+                }
+                if (phis[i] - hoodSweep < 0) {
+                    phis[i] = 100;
+                }
+                if (i == 0) {
+                    thetas[tRoots.size()] = thetas[0];
+                    phis[tRoots.size()] = phis[0];
+                } else {
+                    if (phis[i] != 100) {
+                        if (phis[tRoots.size()] != 100) {
+                            if (phis[i] > phis[tRoots.size()]) {
+                                phis[tRoots.size()] = phis[i];
+                                thetas[tRoots.size()] = thetas[i];
+                            }
+                        } else {
+                            phis[tRoots.size()] = phis[i];
+                            thetas[tRoots.size()] = thetas[i];
+                        }
+                    }
+                }
+            }
+
+            if (phis[tRoots.size()] == 100) return false;
+            targetTurretAngle = AngleUtil.clipAngle(thetas[tRoots.size()] - ROBOT_POSITION.heading); // converts from global to difference with heading
+            targetHoodAngle = (phis[tRoots.size()] - hoodSweep) * hoodGearRatio; // first part converts angle from vertical to angle from horizontal && then subtracts the sweep of the hood
+            return true;
+        } else return false;
+    }
+
+    public boolean aimLauncherV8() {
+        if (ROBOT_POSITION == null || ROBOT_VELOCITY == null) return false;
+        Log.i("Points", "Starting aimLauncherV8");
+        Vector3 P = new Vector3(ballTarget); // TODO: change this target to account for distance
+        P.subtract(new Vector3(ROBOT_POSITION.x, ROBOT_POSITION.y, launcherHeight));
+        Vector3 V = new Vector3(-ROBOT_VELOCITY.x, -ROBOT_VELOCITY.y, 0); // TODO: need to subtract robot angular vel component thing to this
+
+        targetTurretAngle = AngleUtil.clipAngle(Math.atan2(P.getY(), P.getX()) - ROBOT_POSITION.heading);
+        Log.i("Points", "Set target turret angle & Starting MinV0");
+
+        double a = g * g / 4;
+        // double b = 0;
+        double c = V.x * V.x + V.y * V.y + g * P.z;
+        double d = 2 * Vector3.dot(P, V);
+        double e = P.x * P.x + P.y * P.y + P.z * P.z;
+        List<Double> tRoots = Polynomial.findRealRoots(new double[]{1, 0.0, 0.0, -d/(2 * a), -e/a}, 1e-4);
+        for (int i = 0; i < tRoots.size(); i++) {
+            if(tRoots.get(i) < 0) {
+                tRoots.remove(i);
+                i--;
+            }
+        }
+        Log.i("MinV0", tRoots.size() + "");
+        if (tRoots.isEmpty()) {
+            Log.i("Points", "Shot dies in MinV0, tRoots is empty");
+            return false;
+        }
+        Log.i("MinV0", "tRoots[0]: " + tRoots.get(0));
+
+        minV0 = (Math.sqrt(2 * a * tRoots.get(0) * tRoots.get(0) + c + d / 2 / tRoots.get(0)) + minV0Superthresh) * minV0factor;
+        Log.i("MinV0", "value: " + minV0);
+        minFlywheelVelocity = minV0 * 2 / flywheelEfficiency;
+        Log.i("MinV0", "min flywheel:" + minFlywheelVelocity);
+
+        double v0 = getBallExitSpd();
+        Log.i("Points", "Got past MinV0, v0 = " + v0);
+
+        double[] thetas;
+        double[] phis;
+        if (v0 > 36)  {
+            Log.i("Points", "Entering the hood calculator");
+            if (V.getMag() < 6) {
+                Log.i("Points" , "Entering Static");
+                double A = 4 * v0 * v0 * v0 * v0 * e;
+                double dist2 = e - P.z * P.z; // 2D dist squared
+                double B = 4 * dist2 * v0 * v0 * (g * P.z - v0 * v0);
+                double C = dist2 * dist2 * g * g;
+                tRoots = Polynomial.findRealRoots(new double[]{A, B, C}, 1e-4);
+                Log.i("Static", "Root count: " + tRoots.size() + ", for polynomial [" + A + ", " + B + ", " + C + "]");
+                if (tRoots.isEmpty()) {
+                    Log.i("Points", "Shot dies in Static, tRoots is empty");
+                    return false;
+                }
+                StringBuilder roots = new StringBuilder();
+                for (int i = 0; i < tRoots.size(); i++) {
+                    roots.append(tRoots.get(i));
+                    if (i != tRoots.size() - 1) roots.append(", ");
+                }
+                Log.i("Static", "Roots: [" + roots.toString() + "]");
+                phis = new double[tRoots.size() + 1];
+                thetas = new double[phis.length];
+
+                for (int i = 0; i < tRoots.size(); i++) {
+                    if (Math.abs(tRoots.get(i) - 0.5) <= 0.5) {
+                        phis[i] = Math.asin(Math.sqrt(tRoots.get(i)));
+                    } else phis[i] = 100;
+                    Log.i("Static", "Point 1: i = " + i + ", phis[i] = " + phis[i]);
+                    thetas[i] = targetTurretAngle;
+
+                    double vel = Math.pow(ROBOT_VELOCITY.y + v0 * Math.sin(thetas[i]) * Math.sin(phis[i]), 2) + Math.pow(ROBOT_VELOCITY.x + v0 * Math.cos(thetas[i]) * Math.sin(phis[i]), 2);
+                    vel = Math.sqrt(vel);
+                    double dist = Math.pow(-60 - ROBOT_POSITION.x, 2) + Math.pow(ballTarget.y - ROBOT_POSITION.y, 2);
+                    dist = Math.sqrt(dist);
+                    double t = dist / vel;
+                    if (t <= 0) {
+                        phis[i] = 100; // this makes sure the ball goes into the target through the restricted diagonal plane
+                        Log.i("Static", "Point 2: i = " + i + ", t = " + t);
+                    } else {
+                        double heightAtWall = launcherHeight + v0 * Math.cos(phis[i]) * t - g * t * t / 2;
+                        if (heightAtWall < 38.75 + 3) {
+                            phis[i] = 100;
+                            Log.i("Static", "Point 3: i = " + i + ", t = " + t + ", height at wall = " + heightAtWall);
+                        }
+                    }
+                    // brlow needs to be fixed
+//                    double slope = c1 * (ROBOT_VELOCITY.y + v0 * Math.sin(thetas[i]) * Math.sin(phis[i])) - ROBOT_VELOCITY.x + v0 * Math.cos(thetas[i]) * Math.sin(phis[i]);
+//                    if ((int)slope == 0) {
+//                        phis[i] = 100;
+//                        Log.i("Static", "Point 1.5: i = " + i + ", slope = 0");
+//                    } else {
+//                        double t = (c1 * (48 - ROBOT_POSITION.y) + 72 + ROBOT_POSITION.x) / slope;
+//                        if (t <= 0) {
+//                            phis[i] = 100; // this makes sure the ball goes into the target through the restricted diagonal plane
+//                            Log.i("Static", "Point 2: i = " + i + ", t = " + t);
+//                        } else {
+//                            double heightAtWall = launcherHeight + v0 * Math.cos(phis[i]) * t - g * t * t / 2;
+//                            if (heightAtWall < 38.75 + 3) {
+//                                phis[i] = 100;
+//                                Log.i("Static", "Point 3: i = " + i + ", t = " + t + ", height at wall = " + heightAtWall);
+//                            }
+//                        }
+//                    }
+
+                    if (phis[i] - hoodSweep < 0) {
+                        Log.i("Static", "Point 4: i = " + i + ", phis[i] = " + phis[i]);
+                        phis[i] = 100;
+                    }
+                    Log.i("Static", "Point 5: i = " + i + ", phis[i] = " + phis[i]);
+                    if (i == 0) {
+                        thetas[tRoots.size()] = thetas[0];
+                        phis[tRoots.size()] = phis[0];
+                    } else {
+                        if (phis[i] != 100) {
+                            if (phis[tRoots.size()] != 100) {
+                                if (phis[i] > phis[tRoots.size()]) {
+                                    phis[tRoots.size()] = phis[i];
+                                    thetas[tRoots.size()] = thetas[i];
+                                }
+                            } else {
+                                phis[tRoots.size()] = phis[i];
+                                thetas[tRoots.size()] = thetas[i];
+                            }
+                        }
+                    }
+                    Log.i("Static", "High Phi: " + phis[tRoots.size()]);
+                    Log.i("Points", "Leaving Static");
+                }
+            } else {
+                Log.i("Points", "Entering Dynamic");
+                c -= v0 * v0;
+                tRoots = Polynomial.findRealRoots(new double[]{1, 0, c/a, d/a, e/a}, 1e-4);
+                Log.i("Dynamic", "tRoots.size() = " + tRoots.size());
+                for(int i = 0; i < tRoots.size(); i++) {
+                    if(tRoots.get(i) < 0) {
+                        tRoots.remove(i);
+                        i--;
+                    }
+                }
+                if (tRoots.isEmpty()) {
+                    Log.i("Points", "Shot dies in Dynamic, tRoots is empty");
+                    return false;
+                }
+                StringBuilder roots = new StringBuilder("[");
+                for (int i = 0; i < tRoots.size(); i++) {
+                    roots.append(tRoots.get(i));
+                    if (i != tRoots.size() - 1) roots.append(", ");
+                }
+                Log.i("Dynamic", "Roots: [" + roots.toString() + "]");
+                phis = new double[tRoots.size() + 1];
+                thetas = new double[phis.length];
+                for (int i = 0; i < tRoots.size(); i++) {
+                    double t0 = tRoots.get(i);
+                    Vector3 pf = new Vector3(P.x + V.x * t0, P.y + V.y * t0, P.z + g * t0 * t0 / 2);
+                    thetas[i] = pf.theta();
+                    phis[i] = pf.phi();
+
+                    double slope = c1 * (ROBOT_VELOCITY.y + v0 * Math.sin(thetas[i]) * Math.sin(phis[i])) - (ROBOT_VELOCITY.x + v0 * Math.cos(thetas[i]) * Math.sin(phis[i]));
+                    if ((int)slope == 0) {
+                        phis[i] = 100;
+                        Log.i("Dynamic", "Point 1.5: i = " + i + ", slope = 0");
+                    } else {
+                        double t = (c1 * (48 - ROBOT_POSITION.y) + 72 + ROBOT_POSITION.x) / slope;
+                        if (t <= 0) {
+                            phis[i] = 100; // this makes sure the ball goes into the target through the restricted diagonal plane
+                            Log.i("Dynamic", "Point 2: i = " + i + ", phis[i] = " + phis[i]);
+                        } else if (launcherHeight + v0 * Math.cos(phis[i]) * t - g * t * t / 2 < 38.75 + 3) {
+                            phis[i] = 100;
+                            Log.i("Dynamic", "Point 3: i = " + i + ", phis[i] = " + phis[i]);
+                        }
+                    }
+                    if (phis[i] - hoodSweep < 0) {
+                        Log.i("Dynamic", "Point 4: i = " + i + ", phis[i] = " + phis[i]);
+                        phis[i] = 100;
+                    }
+                    if (i == 0) {
+                        thetas[tRoots.size()] = thetas[0];
+                        phis[tRoots.size()] = phis[0];
+                    } else {
+                        if (phis[i] != 100) {
+                            if (phis[tRoots.size()] != 100) {
+                                if (phis[i] > phis[tRoots.size()]) {
+                                    phis[tRoots.size()] = phis[i];
+                                    thetas[tRoots.size()] = thetas[i];
+                                }
+                            } else {
+                                phis[tRoots.size()] = phis[i];
+                                thetas[tRoots.size()] = thetas[i];
+                            }
+                        }
+                    }
+                    targetTurretAngle = AngleUtil.clipAngle(thetas[tRoots.size()] - ROBOT_POSITION.heading); // converts from global to difference with heading
+                    Log.i("Dynamic", "High Phi: " + phis[i]);
+                    Log.i("Points", "Leaving Dynamic");
+                }
+            }
+        } else {
+            Log.i("Points", "Shot isn't possible, v0 is sub-36 in/s");
+            return false;
+        }
 
 
+        if (phis[tRoots.size()] == 100) {
+            Log.i("Points", "Phis are cooked, phis[" + tRoots.size() + "] = 100");
+            return false;
+        }
+        targetHoodAngle = (phis[tRoots.size()] - hoodSweep) * hoodGearRatio; // first part converts angle from vertical to angle from horizontal && then subtracts the sweep of the hood
+        Log.i("Points", "The shot is possible and we're returning true!!");
+        return true;
+    }
+
+    public double getBallExitSpd() { return filteredVelocity * flywheelEfficiency * 0.5; }
+
+    public void updateTelemetry(double pidpow, double ffpow, double pow) {
+        TelemetryUtil.packet.put("Shooter : state", this.state);
+
+        TelemetryUtil.packet.put("Shooter : Filtered Velocity", filteredVelocity);
+        TelemetryUtil.packet.put("Shooter : Target Velocity", targetVelocity);
+        TelemetryUtil.packet.put("Shooter : Turret Target", turret.getTargetAngle());
+        TelemetryUtil.packet.put("Shooter : Hood Target", hood.getTargetAngle());
+        TelemetryUtil.packet.put("Shooter : Hood top angle (deg)", Math.toDegrees(robot.shooter.hood.getCurrentAngle()) * 30 / 48 + 34);
+
+        TelemetryUtil.packet.put("Shooter : PID Power", pidpow * 100);
+        TelemetryUtil.packet.put("Shooter : FF Power", ffpow * 100);
+        TelemetryUtil.packet.put("Shooter : Applied Power", pow * 100);
+        LogUtil.shooterState.set(this.state.toString());
+    }
 
     // further separation :)
     // bootleg LM1 strat being used in LM2 code
     public static double closeAngle = 0.1, closeVel = 630, midAngle = 0.65, midVel  = 750, farAngle = 0.5, farVel = 840;
+
     public enum Dist {
         CLOSE(closeAngle, closeVel),
         MID(midAngle, midVel),
@@ -407,11 +755,15 @@ public class Shooter {
         public static void setFlywheelVel(Dist dist, double vel) {
             dist.flywheelVel = vel;
         }
-    } Dist dist = Dist.CLOSE;
+    }
 
     public void setShooter(Dist mode) {
         targetVelocity = mode.flywheelVel;
-        targetHoodAngle = mode.hoodAngle;
+        setHoodAngle(targetHoodAngle = mode.hoodAngle);
+    }
+
+    public void setKicker(double angle){
+        kicker.setTargetAngle(angle);
     }
 
     public boolean atVel() { return Math.abs(targetVelocity - filteredVelocity) <= atVelThresh; }

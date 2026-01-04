@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.teamcode.tests.localization_testers;
+package org.firstinspires.ftc.teamcode.tests.drivetrain_tuners;
 
 import android.util.Log;
 
@@ -8,6 +8,7 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import org.firstinspires.ftc.teamcode.Robot;
 import org.firstinspires.ftc.teamcode.sensors.Sensors;
 import org.firstinspires.ftc.teamcode.subsystems.drive.localizers.Localizer;
+import org.firstinspires.ftc.teamcode.subsystems.shooter.Shooter;
 import org.firstinspires.ftc.teamcode.utils.Globals;
 import org.firstinspires.ftc.teamcode.utils.Pose2d;
 import org.firstinspires.ftc.teamcode.utils.TelemetryUtil;
@@ -40,6 +41,8 @@ public class MinimumPowerToOvercomeFrictionDrivetrainTuner extends LinearOpMode 
 
         Pose2d robotPose;
         robot.drivetrain.resetMinPowersToOvercomeFriction();
+
+        robot.shooter.state = Shooter.State.TEST;
 
         waitForStart();
 

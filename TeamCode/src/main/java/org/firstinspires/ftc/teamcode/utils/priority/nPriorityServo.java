@@ -163,7 +163,9 @@ public class nPriorityServo extends PriorityDevice {
                 servos[i].setPosition(0.1);
                 servos[i].setPosition(0.07);
             }
+
             servos[i].setPosition(pos);
+            // servos[i].setPosition(Utils.minMaxClip(pos + (i % 2 == 1 ? 0.01 : 0), 0, 1));
             //Log.i("SLCI", "Set position of " + name + i + " to position " + pos + " current angle is " + currentAngle);
         }
 

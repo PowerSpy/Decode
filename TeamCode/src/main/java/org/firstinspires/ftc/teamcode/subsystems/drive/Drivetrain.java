@@ -5,11 +5,14 @@ import static org.firstinspires.ftc.teamcode.utils.Globals.ROBOT_POSITION;
 import static org.firstinspires.ftc.teamcode.utils.Globals.ROBOT_VELOCITY;
 import static org.firstinspires.ftc.teamcode.utils.Globals.TRACK_WIDTH;
 
+import android.util.Log;
+
 import com.acmerobotics.dashboard.canvas.Canvas;
 import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.Gamepad;
+import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.configuration.typecontainers.MotorConfigurationType;
 
 import org.firstinspires.ftc.teamcode.Robot;
@@ -45,34 +48,36 @@ public class Drivetrain {
     public PriorityMotor leftFront, leftRear, rightRear, rightFront;
     private final List<PriorityMotor> motors;
 
-    public Robot robot;
-    public MergeLocalizer mergeLocalizer;
+    // public Localizer localizer;
     public Vision vision;
+    public MergeLocalizer mergeLocalizer;
     private final HardwareQueue hardwareQueue;
     private final Sensors sensors;
 
-    public Drivetrain(Robot robot, Vision vision) {
-        this.robot = robot;
-        this.hardwareQueue = robot.hardwareQueue;
-        this.sensors = robot.sensors;
+    public Drivetrain(Robot robot, Vision vision) { this(robot.hardwareMap, robot.sensors, robot.hardwareQueue, vision); }
+
+    public Drivetrain(HardwareMap hardwareMap, Sensors sensors, HardwareQueue hardwareQueue, Vision vision) {
+        this.vision = vision;
+        this.hardwareQueue = hardwareQueue;
+        this.sensors = sensors;
 
         leftFront = new PriorityMotor(
-            robot.hardwareMap.get(DcMotorEx.class, "leftFront"),
+            hardwareMap.get(DcMotorEx.class, "leftFront"),
             "leftFront", 4, 5,
             1.0, sensors
         );
         leftRear = new PriorityMotor(
-            robot.hardwareMap.get(DcMotorEx.class, "leftRear"),
+            hardwareMap.get(DcMotorEx.class, "leftRear"),
             "leftRear", 4, 5,
             1.0, sensors
         );
         rightRear = new PriorityMotor(
-            robot. hardwareMap.get(DcMotorEx.class, "rightRear"),
+            hardwareMap.get(DcMotorEx.class, "rightRear"),
             "rightRear", 4, 5,
             1.0, sensors
         );
         rightFront = new PriorityMotor(
-            robot.hardwareMap.get(DcMotorEx.class, "rightFront"),
+            hardwareMap.get(DcMotorEx.class, "rightFront"),
             "rightFront", 4, 5,
             1.0, sensors
         );
@@ -82,7 +87,8 @@ public class Drivetrain {
         configureMotors();
         setMinPowersToOvercomeFriction(1.0);
 
-        mergeLocalizer = new MergeLocalizer (robot.hardwareMap, robot.sensors, this, "#ffff00", "#00ffff");
+        // localizer = new Localizer (sensors, this, "#00ff00", "#ff0000");
+        mergeLocalizer = new MergeLocalizer (hardwareMap, sensors, this, "#0000ff", "#ffffff");
     }
 
     public void configureMotors() {
@@ -116,10 +122,10 @@ public class Drivetrain {
 
     // leftFront, leftRear, rightRear, rightFront
     double[] minPowersToOvercomeFriction = {
-            0.2413194940290,
-            0.2337791473,
-            0.246122952040818,
-            0.2737912666227906
+            0.2431906580541209,
+            0.14544137800655768,
+            0.183475227610153,
+            0.18010218334461908
     };
 
     public void setMinPowersToOvercomeFriction(double scalar) {
@@ -154,13 +160,12 @@ public class Drivetrain {
 
     private Path path = null;
     ArrayList<RepulsionPoint> repel;
-    private Pose2d pos;
 
     private Vector2 moveVector = new Vector2(0, 0);
     private double turn = 0;
     public double[] powers = {0, 0, 0, 0};
 
-    private PID turnPID = new PID (1, 0, 0);
+    private PID turnPID = new PID (0.55, 0, 0.002);
 
     public PathData pd;
     public static double centripetalScalar = 0.2;
@@ -178,6 +183,9 @@ public class Drivetrain {
             return;
         }
 
+//        localizer.updateEncoders(odoWheelPositions);
+//        localizer.update();
+
         if(path != null) {
             state = State.FOLLOW_SPLINE;
         }
@@ -185,30 +193,46 @@ public class Drivetrain {
         switch(state) {
             case FOLLOW_SPLINE:
                 pd = path.update(ROBOT_POSITION);
+
+                if(path != null && path.completed) {
+                    targetPoint = path.lastPose.clone();
+                    path = null;
+                    state = State.PID_TO_POINT;
+                    break;
+                }
+
                 Vector2 pathForward, pathCentripetal;
                 pathForward = pd.vel;
+
                 pathCentripetal = new Vector2(0, pathForward.mag() * pathForward.mag() / pd.r * centripetalScalar);
                 pathCentripetal.rotate(Math.atan2(pathForward.y, pathForward.x));
 
+                /*
+                Log.i("Path vel", pathForward.x + " " + pathForward.y);
+                Log.i("Path accel", pd.accel + "");
+                Log.i("Path cent", pathCentripetal.x + " " + pathCentripetal.y);
+                Log.i("Path r", pd.r + "");
+                 */
+
                 moveVector = Vector2.add(pathForward, pathCentripetal);
                 double mag = moveVector.mag();
-                moveVector.rotate(-pos.heading);
+                moveVector.rotate(-ROBOT_POSITION.heading);
                 moveVector.norm();
 
                 double pathRot = 0;
                 if(Math.abs(pd.r) < Spline.MAX_RADIUS) {
-                    pathRot = pathForward.mag() / mag * TRACK_WIDTH / (2.0 * pd.r) * (pd.reversed ? -1 : 1);
+                    pathRot = pathForward.mag() / mag * (TRACK_WIDTH / (2.0 * pd.r)) * (pd.reversed ? -1 : 1);
                 }
 
                 double targetHeading = Math.atan2(pathForward.y, pathForward.x) + (pd.reversed ? Math.PI : 0);
-                turn = pathRot + turnPID.update(AngleUtil.clipAngle(targetHeading - pos.heading), -0.6, 0.6);
+                turn = pathRot + turnPID.update(AngleUtil.clipAngle(targetHeading - ROBOT_POSITION.heading), -0.6, 0.6);
+
+                double distRemaining = ROBOT_POSITION.getDistanceFromPoint(path.lastPose);
+                if (path.pathSegments.get(pd.index).decel && distRemaining <= 12) {
+                    moveVector.mul(0.8 * Math.sqrt(distRemaining / 12) + 0.2);
+                }
 
                 setMoveVector(moveVector, turn);
-
-                if(path.completed) {
-                    path = null;
-                    state = State.IDLE;
-                }
                 break;
             case PID_TO_POINT:
                 calculateErrors();
@@ -349,23 +373,24 @@ public class Drivetrain {
     public void updateTelemetry() {
         TelemetryUtil.packet.put("Drivetrain : state", state);
 
-        TelemetryUtil.packet.put("Drivetrain : TargetPoint", "(" + targetPoint.x + ", " + targetPoint.y + ", " + targetPoint.heading + ")");
-
-        TelemetryUtil.packet.put("Drivetrain : PID xError", xError);
-        TelemetryUtil.packet.put("Drivetrain : PID yError", yError);
-        TelemetryUtil.packet.put("Drivetrain : PID hError", hError);
+//        TelemetryUtil.packet.put("Drivetrain : TargetPoint", "(" + targetPoint.x + ", " + targetPoint.y + ", " + targetPoint.heading + ")");
+//        TelemetryUtil.packet.put("Drivetrain : PID xError", xError);
+//        TelemetryUtil.packet.put("Drivetrain : PID yError", yError);
+//        TelemetryUtil.packet.put("Drivetrain : PID hError", hError);
 
         Canvas canvas = TelemetryUtil.packet.fieldOverlay();
-        DashboardUtil.drawRobot(canvas, targetPoint, "#c000ff");
-
         if (path != null) {
-            DashboardUtil.drawRobot(canvas, new Pose2d(ROBOT_POSITION.x + robot.sensors.loopTime * pd.vel.x, ROBOT_POSITION.y + robot.sensors.loopTime * pd.vel.y, Math.atan2(pd.vel.x, pd.vel.y)), "#8000ff");
+            DashboardUtil.drawRobot(canvas, new Pose2d(ROBOT_POSITION.x + sensors.loopTime * pd.vel.x, ROBOT_POSITION.y + sensors.loopTime * pd.vel.y, Math.atan2(pd.vel.y, pd.vel.x)), "#8000ff");
             Spline s = path.pathSegments.get(pd.index).spline;
 
             double n = 100;
             double step = 1/n;
-            for(double t = 0; t < 1; t = t + step){
+            for (double t = 0; t < 1; t = t + step) {
                 canvas.strokeLine(s.getPos(t).x, s.getPos(t).y, s.getPos(t + step).x, s.getPos(t + step).y);
+            }
+
+            for (RepulsionPoint repel : path.repel) {
+                canvas.fillCircle(repel.x, repel.y, 0.5);
             }
         }
     }

@@ -46,16 +46,16 @@ public class LocalizationTest extends LinearOpMode {
 
         while(!isStopRequested()) {
             robot.drivetrain.drive(gamepad1);
-            // robot.drivetrain.mergeLocalizer.setConstantPinpoint(constantCorrection);
+            robot.drivetrain.mergeLocalizer.setConstantPinpoint(constantCorrection);
 
             Pose2d pos = robot.drivetrain.getPoseEstimate();
 
             Log.i ("Localization Test - x", pos.x + "");
             Log.i ("Localization Test - y", pos.y + "");
             Log.i ("Localization Test - heading", pos.heading + "");
-            Log.i ("Localization Test - odo 0", ((PriorityMotor) robot.hardwareQueue.getDevice("leftRear")).motor[0].getCurrentPosition() + "");
-            Log.i ("Localization Test - odo 1", ((PriorityMotor) robot.hardwareQueue.getDevice("leftFront")).motor[0].getCurrentPosition() + "");
-            Log.i ("Localization Test - odo 2", ((PriorityMotor) robot.hardwareQueue.getDevice("rightFront")).motor[0].getCurrentPosition() + "");
+            Log.i ("Localization Test - odo 0", ((PriorityMotor) robot.hardwareQueue.getDevice("leftFront")).motor[0].getCurrentPosition() + "");
+            Log.i ("Localization Test - odo 1", ((PriorityMotor) robot.hardwareQueue.getDevice("rightFront")).motor[0].getCurrentPosition() + "");
+            Log.i ("Localization Test - odo 2", ((PriorityMotor) robot.hardwareQueue.getDevice("leftRear")).motor[0].getCurrentPosition() + "");
 
             /*
             TelemetryUtil.packet.put("Localizer x: ", pos.x);

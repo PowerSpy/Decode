@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode.vision;
 import android.util.Log;
 import android.util.Size;
 
+import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.robotcore.hardware.HardwareMap;
@@ -16,36 +17,26 @@ import org.firstinspires.ftc.vision.VisionPortal;
 
 import java.util.concurrent.TimeUnit;
 
+@Config
 public class Vision {
     VisionPortal visionPortal;
     public Limelight3A limelight;
     private LLResult result = null;
-    public double cameraAngle = Math.toRadians(15);
-    public double cameraHeight = 10.0;
-    public boolean obelisk = true;
-    public int greenPosition = -1;
-
-    int visionWidth = 480;
-    int visionHeight = 360;
+    public static double cameraAngle = Math.toRadians(63.75);
+    public static double cameraHeight = 12.75;
+    public boolean obelisk = false;
 
     public Vision (HardwareMap hardwareMap) {
         limelight = hardwareMap.get(Limelight3A.class, "limelight");
         limelight.setPollRateHz(100);
         limelight.pipelineSwitch(2);
-
-        visionPortal = new VisionPortal.Builder()
-                .setCamera(hardwareMap.get(WebcamName.class, "limelight")) // i think this may work? need to test in the garage. I just want the video feed and limelight is registered as a camera
-                .setCameraResolution(new Size(visionWidth, visionHeight))
-                .setStreamFormat(VisionPortal.StreamFormat.MJPEG)
-                .build();
-
-        setCameraSettings(8, 145);
     }
 
     public void update(){
         if(!limelight.isConnected()){
             TelemetryUtil.packet.put("Limelight : Status", "Oops! Something broke :blehhh:");
         }else{
+            TelemetryUtil.packet.put("Limelight : Status", "at least it doesn't need glasses");
             result = limelight.getLatestResult();
         }
     }
@@ -56,9 +47,9 @@ public class Vision {
 
     public LLResult getResult(){ return result;}
 
-    public void togglePipeline (boolean obelisk) {
-        limelight.pipelineSwitch(obelisk ? 2 : (Globals.isRed ? 0 : 1));
-        this.obelisk = obelisk;
+    public void setPipeline (int index) {
+        limelight.pipelineSwitch(index);
+        this.obelisk = index == 2;
     }
 
     // visionPortal methods

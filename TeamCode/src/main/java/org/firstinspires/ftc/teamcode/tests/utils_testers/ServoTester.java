@@ -23,8 +23,9 @@ import java.util.ArrayList;
 @TeleOp(group = "Test")
 public class ServoTester extends LinearOpMode {
 
-    public static boolean usePosition = false;
-    public static double position = 0.5;
+    public static boolean usePosition = false, useAngleDeg = false;
+    public static double position = 0.5, angle = 0;
+
 
     @Override
     public void runOpMode() throws InterruptedException {
@@ -82,7 +83,13 @@ public class ServoTester extends LinearOpMode {
 
             // figuring out time to set servo pos
             long start = System.nanoTime();
-            servos.get(servoIndex).setTargetPos(usePosition ? position : servoPos[servoIndex], 1.0);
+
+            if (useAngleDeg) {
+                servos.get(servoIndex).setTargetAngle(Math.toRadians(angle), 1.0);
+            } else {
+                servos.get(servoIndex).setTargetPos(usePosition ? position : servoPos[servoIndex], 1.0);
+            }
+
             double elapsedTime = (System.nanoTime()-start)/1000000000.0;
             totalTime += elapsedTime;
 

@@ -1,6 +1,5 @@
-package org.firstinspires.ftc.teamcode.tests.localization_testers;
+package org.firstinspires.ftc.teamcode.tests.drivetrain_tuners;
 
-import static org.firstinspires.ftc.teamcode.utils.Globals.ROBOT_POSITION;
 import static org.firstinspires.ftc.teamcode.utils.Globals.ROBOT_VELOCITY;
 
 import com.qualcomm.robotcore.eventloop.opmode.Disabled;
@@ -8,7 +7,6 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
 import org.firstinspires.ftc.teamcode.Robot;
-import org.firstinspires.ftc.teamcode.utils.Pose2d;
 import org.firstinspires.ftc.teamcode.utils.Vector2;
 
 import java.util.ArrayList;

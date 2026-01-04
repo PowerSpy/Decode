@@ -40,8 +40,6 @@ public class Localizer {
     protected ArrayList<Pose2d> relHistory = new ArrayList<Pose2d>();
     protected ArrayList<Long> nanoTimes = new ArrayList<Long>();
 
-    protected Pose2d aprilTagPose = new Pose2d(0,0,0);
-
     protected double maxVel = 0.0;
     protected double startHeadingOffset = 0;
     protected String color;
@@ -55,11 +53,10 @@ public class Localizer {
 
         encoders = new Encoder[3];
 
-
         // 1 / (ticks / mm * mm / in)
-        encoders[0] = new Encoder(new Pose2d(0, 2.755905511 * (64.3169) / (20 * Math.PI) * (20 * Math.PI) / (62.5501)),  -1, 1 / (19.89436789 * 25.4)); // left
-        encoders[1] = new Encoder(new Pose2d(0, -2.95275590 * (64.3169) / (20 * Math.PI) * (20 * Math.PI) / (62.5501)), -1, 1 / (19.89436789 * 25.4)); // right
-        encoders[2] = new Encoder(new Pose2d(-4.88188976, 0), 1, 1 / (19.89436789 * 25.4)); // back
+        encoders[0] = new Encoder(new Pose2d(0, 2.933071 * (62.385 / (20 * Math.PI)) * (62.691 / (20 * Math.PI)) * (62.7733 / (20 * Math.PI))),  -1, 1 / (19.89436789 * 25.4)); // left
+        encoders[1] = new Encoder(new Pose2d(0, -2.933071 * (62.385 / (20 * Math.PI)) * (62.691 / (20 * Math.PI)) * (62.7733 / (20 * Math.PI))), 1, 1 / (19.89436789 * 25.4)); // right
+        encoders[2] = new Encoder(new Pose2d(-2.5861673228, 0), -1, 1 / (19.89436789 * 25.4)); // back
 
         relHistory.add(new Pose2d(0,0,0));
         poseHistory.add(new Pose2d(0,0,0));
@@ -265,7 +262,7 @@ public class Localizer {
         return movingAverage.getMovingAverageForNum();
     }
 
-    public void updateField() {
+    public void updateField () {
         TelemetryUtil.packet.put(this.getClass().getSimpleName()+" x", x);
         TelemetryUtil.packet.put(this.getClass().getSimpleName()+" y", y);
         TelemetryUtil.packet.put(this.getClass().getSimpleName()+" heading (deg)", Math.toDegrees(heading));
@@ -273,6 +270,5 @@ public class Localizer {
 
         Canvas fieldOverlay = TelemetryUtil.packet.fieldOverlay();
         DashboardUtil.drawRobot(fieldOverlay, getPoseEstimate(), color);
-        DashboardUtil.drawRobot(fieldOverlay, expected, expectedColor);
     }
 }
