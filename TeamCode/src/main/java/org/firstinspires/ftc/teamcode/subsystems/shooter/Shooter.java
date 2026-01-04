@@ -1,30 +1,21 @@
 package org.firstinspires.ftc.teamcode.subsystems.shooter;
 
-import static org.firstinspires.ftc.robotcore.external.BlocksOpModeCompanion.telemetry;
 import static org.firstinspires.ftc.teamcode.utils.Globals.ROBOT_POSITION;
 import static org.firstinspires.ftc.teamcode.utils.Globals.ROBOT_VELOCITY;
-import static org.firstinspires.ftc.teamcode.utils.Globals.blueTag;
-import static org.firstinspires.ftc.teamcode.utils.Globals.redTag;
 
 import android.util.Log;
 
 import com.acmerobotics.dashboard.config.Config;
-import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.Servo;
 
 import org.firstinspires.ftc.teamcode.Robot;
-import org.firstinspires.ftc.teamcode.sensors.Sensors;
-import org.firstinspires.ftc.teamcode.subsystems.drive.localizers.MergeLocalizer;
 import org.firstinspires.ftc.teamcode.utils.AngleUtil;
 import org.firstinspires.ftc.teamcode.utils.Globals;
 import org.firstinspires.ftc.teamcode.utils.LogUtil;
 import org.firstinspires.ftc.teamcode.utils.PID;
 import org.firstinspires.ftc.teamcode.utils.Polynomial;
-import org.firstinspires.ftc.teamcode.utils.Pose2d;
 import org.firstinspires.ftc.teamcode.utils.TelemetryUtil;
-import org.firstinspires.ftc.teamcode.utils.Utils;
-import org.firstinspires.ftc.teamcode.utils.Vector2;
 import org.firstinspires.ftc.teamcode.utils.Vector3;
 import org.firstinspires.ftc.teamcode.utils.priority.PriorityMotor;
 import org.firstinspires.ftc.teamcode.utils.priority.nPriorityServo;
@@ -41,7 +32,6 @@ public class Shooter {
         SHOOT,
         INDEX,
         INDEXING,
-        MANUAL,
         TEST
     } public State state = State.IDLE;
 
@@ -84,7 +74,8 @@ public class Shooter {
     public double flywheelEfficiency = 0.63;
     public double targetTurretAngle = 0.0;
     public double targetHoodAngle = 0.0;
-    public double phiLim = 34.0 * Math.PI / 180;
+    public double hoodSweep = Math.toRadians(34.0);
+    public static double hoodGearRatio = 48 / 30;
     private final double c1 = (58.3414785 + 72) / (55.6424675 - 48);
     private final double c2 = c1 * 48 - 72;
     private int moves;
@@ -143,9 +134,17 @@ public class Shooter {
                 2, 5
         );
 
+        kicker = new nPriorityServo(
+                new Servo[] {robot.hardwareMap.get(Servo.class, "kicker")},
+                "kicker", nPriorityServo.ServoType.AXON_MINI,
+                0.0, 1.0, 0.5,
+                new boolean [] {false},
+                2, 5
+        );
+
         robot.hardwareQueue.addDevices(flywheel, hood, turret, flywheelBlocker, net);
 
-        ballTarget = new Vector3(-70.5, 60 * (Globals.isRed ? 1 : -1), 38.75);
+        updateBallTarget();
     }
 
     // FSM needs to be upgraded to allow for indexing, we won't need it till lm4+, but we be working on it
@@ -167,17 +166,11 @@ public class Shooter {
                     aimRequest = false;
                     state = State.AIMING;
                 }
-                if (manualRequest) {
-                    manualRequest = false;
-                    state = State.MANUAL;
-                }
                 if (indexRequest) {
                     indexRequest = false;
                     state = State.INDEX;
                 }
                 break;
-            case MANUAL:
-                setShooter(dist);
             case INDEX:
                 calcIndexPosition(0,0); // get values from LL
                 state = State.INDEXING;
@@ -213,16 +206,19 @@ public class Shooter {
                 }
                 break;
             case READY:
-                setShooterBlocker(false);
+                setShooterBlocker(true);
 
                 aimLauncherV8();
                 setTargetVelocity(minFlywheelVelocity);
                 setTurretAngle(targetTurretAngle);
                 setHoodAngle(targetHoodAngle);
 
-                if (flywheelBlocker.inPosition() && shootRequest) {
-                    state = State.SHOOT;
-                    robot.intake.reqShoot(true);
+                if (shootRequest) {
+                    setShooterBlocker(false);
+                    if (flywheelBlocker.inPosition()) {
+                        state = State.SHOOT;
+                        robot.intake.reqShoot(true);
+                    }
                 }
 
                 if (stopRequest) {
@@ -231,6 +227,8 @@ public class Shooter {
                     shootRequest = false;
                     state = State.IDLE;
                     setTargetVelocity(0.0);
+                    robot.intake.reqShoot(false);
+                    robot.intake.reqOff(true);
                 }
                 break;
             case SHOOT:
@@ -254,15 +252,16 @@ public class Shooter {
                     stopRequest = false;
                     aimRequest = false;
                     shootRequest = false;
-
                     state = State.IDLE;
                     setTargetVelocity(0.0);
+                    robot.intake.reqShoot(false);
                     robot.intake.reqOff(true);
                 }
                 if (reAimRequest) {
                     reAimRequest = false;
                     state = State.AIMING;
                     robot.intake.reqShoot(false);
+                    robot.intake.reqOff(true);
                 }
                 break;
             case TEST: // LEAVE THIS EMPTY AT ALL TIMES
@@ -289,6 +288,8 @@ public class Shooter {
         flywheel.setTargetPower(pow);
         prevPow = pow;
 
+        // TODO Turret PID
+
         // Aim Correction
         nanoTimes.add(0, System.nanoTime());
         turretHistory.add(0, turret.getCurrentAngle());
@@ -304,12 +305,19 @@ public class Shooter {
 
     public void reqReAim (boolean req) { reAimRequest = req; }
 
-    public void reqManual (boolean req) { manualRequest = req; }
+    public void setManual(boolean on) {
+        if (on) {
+            state = State.TEST;
+            setShooter(Dist.OFF);
+        } else {
+            state = State.IDLE;
+        }
+    }
 
     public void reqIndex (boolean req) { indexRequest = req; }
 
     public void setTurretAngle (double targetAngle) {
-        turret.setTargetAngle(targetAngle);
+        //turret.setTargetAngle(targetAngle);
 
         TelemetryUtil.packet.put("Shooter : turretTargetAngle", targetAngle);
         LogUtil.turretAngle.set(targetAngle);
@@ -329,6 +337,10 @@ public class Shooter {
     public double getFilteredVelocity() { return filteredVelocity; }
 
     public void setShooterBlocker(boolean active) { flywheelBlocker.setTargetAngle(active ? latchBlockAngle : -0.2);}
+
+    public void updateBallTarget() {
+        ballTarget = new Vector3(-70.5, 60 * (Globals.isRed ? 1 : -1), 38.75);
+    }
 
     public int calcIndexPosition(int greenPos, int motifPos){
         moves = (motifPos - greenPos)%3;
@@ -403,7 +415,7 @@ public class Shooter {
                         phis[i] = 100;
                     }
                 }
-                if (phis[i] - phiLim < 0) phis[i] = 100;
+                if (phis[i] - hoodSweep < 0) phis[i] = 100;
                 if (i == 0) {
                     thetas[tRoots.size()] = thetas[0];
                     phis[tRoots.size()] = phis[0];
@@ -424,7 +436,7 @@ public class Shooter {
 
             if (phis[tRoots.size()] == 100) return false;
             targetTurretAngle = AngleUtil.clipAngle(thetas[tRoots.size()] - ROBOT_POSITION.heading); // converts from global to difference with heading
-            targetHoodAngle = phis[tRoots.size()] - phiLim; // first part converts angle from vertical to angle from horizontal && then subtracts the sweep of the hood
+            targetHoodAngle = (phis[tRoots.size()] - hoodSweep) * hoodGearRatio; // first part converts angle from vertical to angle from horizontal && then subtracts the sweep of the hood
             return true;
         } else return false;
     }
@@ -464,7 +476,7 @@ public class Shooter {
                         phis[i] = 100;
                     }
                 }
-                if (phis[i] - phiLim < 0) {
+                if (phis[i] - hoodSweep < 0) {
                     phis[i] = 100;
                 }
                 if (i == 0) {
@@ -487,7 +499,7 @@ public class Shooter {
 
             if (phis[tRoots.size()] == 100) return false;
             targetTurretAngle = AngleUtil.clipAngle(thetas[tRoots.size()] - ROBOT_POSITION.heading); // converts from global to difference with heading
-            targetHoodAngle = phis[tRoots.size()] - phiLim; // first part converts angle from vertical to angle from horizontal && then subtracts the sweep of the hood
+            targetHoodAngle = (phis[tRoots.size()] - hoodSweep) * hoodGearRatio; // first part converts angle from vertical to angle from horizontal && then subtracts the sweep of the hood
             return true;
         } else return false;
     }
@@ -595,7 +607,7 @@ public class Shooter {
 //                        }
 //                    }
 
-                    if (phis[i] - phiLim < 0) {
+                    if (phis[i] - hoodSweep < 0) {
                         Log.i("Static", "Point 4: i = " + i + ", phis[i] = " + phis[i]);
                         phis[i] = 100;
                     }
@@ -662,7 +674,7 @@ public class Shooter {
                             Log.i("Dynamic", "Point 3: i = " + i + ", phis[i] = " + phis[i]);
                         }
                     }
-                    if (phis[i] - phiLim < 0) {
+                    if (phis[i] - hoodSweep < 0) {
                         Log.i("Dynamic", "Point 4: i = " + i + ", phis[i] = " + phis[i]);
                         phis[i] = 100;
                     }
@@ -697,7 +709,7 @@ public class Shooter {
             Log.i("Points", "Phis are cooked, phis[" + tRoots.size() + "] = 100");
             return false;
         }
-        targetHoodAngle = phis[tRoots.size()] - phiLim; // first part converts angle from vertical to angle from horizontal && then subtracts the sweep of the hood
+        targetHoodAngle = (phis[tRoots.size()] - hoodSweep) * hoodGearRatio; // first part converts angle from vertical to angle from horizontal && then subtracts the sweep of the hood
         Log.i("Points", "The shot is possible and we're returning true!!");
         return true;
     }
@@ -707,7 +719,6 @@ public class Shooter {
     public void updateTelemetry(double pidpow, double ffpow, double pow) {
         TelemetryUtil.packet.put("Shooter : state", this.state);
 
-        TelemetryUtil.packet.put("Shooter : Current Velocity", robot.sensors.getFlywheelVelocity());
         TelemetryUtil.packet.put("Shooter : Filtered Velocity", filteredVelocity);
         TelemetryUtil.packet.put("Shooter : Target Velocity", targetVelocity);
         TelemetryUtil.packet.put("Shooter : Turret Target", turret.getTargetAngle());
@@ -718,10 +729,6 @@ public class Shooter {
         TelemetryUtil.packet.put("Shooter : FF Power", ffpow * 100);
         TelemetryUtil.packet.put("Shooter : Applied Power", pow * 100);
         LogUtil.shooterState.set(this.state.toString());
-
-        if (state == State.MANUAL) {
-            telemetry.addData("Shooter Dist", dist.name());
-        }
     }
 
     // further separation :)
@@ -748,11 +755,11 @@ public class Shooter {
         public static void setFlywheelVel(Dist dist, double vel) {
             dist.flywheelVel = vel;
         }
-    } Dist dist = Dist.CLOSE;
+    }
 
     public void setShooter(Dist mode) {
         targetVelocity = mode.flywheelVel;
-        targetHoodAngle = mode.hoodAngle;
+        setHoodAngle(targetHoodAngle = mode.hoodAngle);
     }
 
     public void setKicker(double angle){

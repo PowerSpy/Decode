@@ -5,23 +5,16 @@ import static org.firstinspires.ftc.teamcode.utils.Globals.ROBOT_VELOCITY;
 
 import com.acmerobotics.dashboard.canvas.Canvas;
 import com.acmerobotics.dashboard.config.Config;
-import com.qualcomm.robotcore.hardware.AnalogInput;
-import com.qualcomm.robotcore.hardware.DcMotorEx;
-import com.qualcomm.robotcore.hardware.HardwareMap;
 
 import org.firstinspires.ftc.teamcode.Robot;
-import org.firstinspires.ftc.teamcode.utils.AngleUtil;
 import org.firstinspires.ftc.teamcode.utils.DashboardUtil;
-import org.firstinspires.ftc.teamcode.utils.Globals;
 import org.firstinspires.ftc.teamcode.utils.LogUtil;
 import org.firstinspires.ftc.teamcode.utils.Pose2d;
 import org.firstinspires.ftc.teamcode.utils.TelemetryUtil;
-import org.firstinspires.ftc.teamcode.utils.Vector2;
-import org.firstinspires.ftc.teamcode.utils.priority.PriorityMotor;
 
 @Config
 public class Sensors {
-    private final HardwareMap hardwareMap;
+    private final Robot robot;
 
     public double loopTime;
     private long currentTime, lastTime;
@@ -35,13 +28,11 @@ public class Sensors {
     private final double voltageUpdateTime = 5000;
     private long lastVoltageUpdatedTime = System.currentTimeMillis();
 
-    public Sensors (Robot robot) { this(robot.hardwareMap); }
-
-    public Sensors(HardwareMap hardwareMap) {
-        this.hardwareMap = hardwareMap;
+    public Sensors(Robot robot) {
+        this.robot = robot;
 
         currentTime = System.nanoTime();
-        voltage = hardwareMap.voltageSensor.iterator().next().getVoltage();
+        voltage = robot.hardwareMap.voltageSensor.iterator().next().getVoltage();
     }
 
     public void update() {
@@ -49,20 +40,20 @@ public class Sensors {
         currentTime = System.nanoTime();
         loopTime = (currentTime - lastTime) / 1e9;
 
-        odoWheelPositions[0] = hardwareMap.get(DcMotorEx.class, "leftFront").getCurrentPosition();
-        odoWheelPositions[1] = hardwareMap.get(DcMotorEx.class, "rightFront").getCurrentPosition();
-        odoWheelPositions[2] = hardwareMap.get(DcMotorEx.class, "leftRear").getCurrentPosition();
+        odoWheelPositions[0] = robot.drivetrain.leftFront.motor[0].getCurrentPosition();
+        odoWheelPositions[1] = robot.drivetrain.rightFront.motor[0].getCurrentPosition();
+        odoWheelPositions[2] = robot.drivetrain.leftRear.motor[0].getCurrentPosition();
 
-        double flywheelPos = hardwareMap.get(DcMotorEx.class, "rightRear").getCurrentPosition();
-
+        double flywheelPos = robot.drivetrain.rightRear.motor[0].getCurrentPosition();
         // (flywheelPos - flywheelLastPos) / 28.0 = delta revolutions
-        flywheelAngularVel = hardwareMap.get(DcMotorEx.class, "rightRear").getVelocity() / 28.0;
+        flywheelAngularVel = robot.drivetrain.rightRear.motor[0].getVelocity() / 28.0;
         flywheelVelocity = flywheelAngularVel * 96.0 * Math.PI / 25.4;
 
-
+        robot.drivetrain.mergeLocalizer.updateEncoders(odoWheelPositions);
+        robot.drivetrain.mergeLocalizer.update();
 
         if (System.currentTimeMillis() - lastVoltageUpdatedTime > voltageUpdateTime) {
-            voltage = hardwareMap.voltageSensor.iterator().next().getVoltage();
+            voltage = robot.hardwareMap.voltageSensor.iterator().next().getVoltage();
             lastVoltageUpdatedTime = System.currentTimeMillis();
         }
 
@@ -80,8 +71,13 @@ public class Sensors {
 
     private void updateTelemetry() {
         TelemetryUtil.packet.put("Voltage", voltage);
+        TelemetryUtil.packet.put("Shooter : Flywheel Angular Velocity", flywheelAngularVel);
+        TelemetryUtil.packet.put("Shooter : Flywheel Current Velocity", flywheelVelocity);
+        TelemetryUtil.packet.put("Shooter : Hood top angle (deg)", Math.toDegrees(robot.shooter.hood.getCurrentAngle()) * 30 / 48 + 34);
 
-        Pose2d currentPose = Globals.ROBOT_POSITION;
+        ROBOT_POSITION = robot.drivetrain.mergeLocalizer.getPoseEstimate();
+        ROBOT_VELOCITY = robot.drivetrain.mergeLocalizer.getRelativePoseVelocity();
+        Pose2d currentPose = ROBOT_POSITION;
         Canvas fieldOverlay = TelemetryUtil.packet.fieldOverlay();
         DashboardUtil.drawRobot(fieldOverlay, currentPose, "#ff0000");
 

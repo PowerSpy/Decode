@@ -2,6 +2,7 @@ package org.firstinspires.ftc.teamcode.opmodes;
 
 import static org.firstinspires.ftc.teamcode.utils.Globals.AUTO_ENDING_POSE;
 import static org.firstinspires.ftc.teamcode.utils.Globals.ROBOT_POSITION;
+import static org.firstinspires.ftc.teamcode.utils.Globals.isRed;
 
 import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
@@ -41,12 +42,14 @@ public class Teleop extends LinearOpMode {
         ButtonToggle b2 = new ButtonToggle();
         ButtonToggle x2 = new ButtonToggle();
         ButtonToggle y2 = new ButtonToggle();
+        ButtonToggle back2 = new ButtonToggle();
 
         boolean intakeReversed = false;
         boolean intakeOn = false;
         boolean flywheelOn = false;
         boolean atSpeedRumble = false;
         boolean confirmation = true;
+        boolean manualToggled = false;
 
         while (opModeInInit());
 
@@ -56,6 +59,11 @@ public class Teleop extends LinearOpMode {
 
         while (!isStopRequested()) {
             robot.update();
+
+            if (back2.isClicked(gamepad2.back)) {
+                isRed = !isRed;
+                robot.shooter.updateBallTarget();
+            }
 
             // INTAKE
             if (lb1.isClicked(gamepad1.left_bumper)) {
@@ -69,7 +77,7 @@ public class Teleop extends LinearOpMode {
             }
 
             if (a1.isClicked(gamepad1.a)) {
-                intakeReversed = intakeOn && !intakeReversed;
+                intakeReversed = !intakeOn || !intakeReversed;
                 intakeOn = true;
                 robot.intake.reqIntake(true);
                 robot.intake.setRollerDirection(intakeReversed);
@@ -78,11 +86,20 @@ public class Teleop extends LinearOpMode {
             // SHOOTER
 
             if (a2.isHeld(gamepad2.a, 500)) {
-                robot.shooter.state = Shooter.State.MANUAL;
-                robot.shooter.setShooter(Shooter.Dist.OFF);
+                if (!manualToggled) {
+                    manualToggled = true;
+                    robot.shooter.setManual(robot.shooter.state != Shooter.State.TEST);
+                    robot.shooter.setShooter(Shooter.Dist.OFF);
+                    gamepad1.rumble(500);
+                    gamepad2.rumble(500);
+                }
+            } else {
+                manualToggled = false;
             }
 
-            if (robot.shooter.state == Shooter.State.MANUAL) {
+            if (robot.shooter.state == Shooter.State.TEST) {
+                rb1.isClicked(gamepad1.right_bumper);
+
                 if (b1.isHeld(gamepad1.b, 500) || b2.isHeld(gamepad2.b, 500)
                         || y1.isHeld(gamepad1.y, 500) || y2.isHeld(gamepad2.y, 500)
                         || x1.isHeld(gamepad1.x, 500) || x2.isHeld(gamepad2.x, 500)) { // Off
@@ -124,16 +141,24 @@ public class Teleop extends LinearOpMode {
                     robot.intake.reqOff(true);
                 }
             } else {
+                x1.isClicked(gamepad1.x);
+
                 if (b1.isClicked(gamepad1.b)) {
                     robot.shooter.reqAim(true);
                 }
 
-                if (robot.shooter.state == Shooter.State.READY && confirmation) {
-                    gamepad1.rumble(150);
-                    gamepad2.rumble(150);
-                    confirmation = false;
-                } else if (robot.shooter.state != Shooter.State.READY) {
+                if (robot.shooter.state == Shooter.State.READY) {
+                    if (confirmation) {
+                        gamepad1.rumble(150);
+                        gamepad2.rumble(150);
+                        confirmation = false;
+                    }
+                } else {
                     confirmation = true;
+                }
+
+                if (y1.isClicked(gamepad1.y)) {
+                    robot.shooter.reqStop(true);
                 }
 
                 if (rb1.isClicked(gamepad1.right_bumper)) {
@@ -155,6 +180,7 @@ public class Teleop extends LinearOpMode {
             telemetry.addData("flywheelOn", flywheelOn);
             telemetry.addData("flywheel target velocity", robot.shooter.getTargetVelocity());
             telemetry.addData("flywheelAtVel", robot.shooter.atVel());
+            telemetry.addData("shooter state", robot.shooter.state.toString());
             telemetry.addData("robot thonker its at", ROBOT_POSITION.x + ", " + ROBOT_POSITION.y + ", " + ROBOT_POSITION.heading);
 
             telemetry.update();

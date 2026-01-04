@@ -186,12 +186,6 @@ public class Drivetrain {
 //        localizer.updateEncoders(odoWheelPositions);
 //        localizer.update();
 
-        mergeLocalizer.updateEncoders(sensors.getOdometry());
-        mergeLocalizer.update();
-
-        ROBOT_POSITION = mergeLocalizer.getPoseEstimate();
-        ROBOT_VELOCITY = mergeLocalizer.getRelativePoseVelocity();
-
         if(path != null) {
             state = State.FOLLOW_SPLINE;
         }

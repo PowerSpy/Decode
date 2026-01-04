@@ -122,7 +122,7 @@ public class nTeleop extends LinearOpMode {
             // manual shooting
             if (options.isClicked(gamepad1.options)) {
                 manualOn = !manualOn;
-                robot.shooter.reqManual(manualOn);
+                robot.shooter.setManual(manualOn);
             }
 
             /*
