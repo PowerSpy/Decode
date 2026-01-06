@@ -6,6 +6,7 @@ import static org.firstinspires.ftc.teamcode.utils.Globals.ROBOT_VELOCITY;
 import android.util.Log;
 
 import com.acmerobotics.dashboard.config.Config;
+import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.Servo;
 
@@ -17,6 +18,7 @@ import org.firstinspires.ftc.teamcode.utils.PID;
 import org.firstinspires.ftc.teamcode.utils.Polynomial;
 import org.firstinspires.ftc.teamcode.utils.TelemetryUtil;
 import org.firstinspires.ftc.teamcode.utils.Vector3;
+import org.firstinspires.ftc.teamcode.utils.priority.PriorityCRServo;
 import org.firstinspires.ftc.teamcode.utils.priority.PriorityMotor;
 import org.firstinspires.ftc.teamcode.utils.priority.nPriorityServo;
 
@@ -38,12 +40,12 @@ public class Shooter {
     private Robot robot;
     private DcMotorEx ms1, ms2;
     public PriorityMotor flywheel;
-    public nPriorityServo turret, hood, flywheelBlocker, net, kicker;
-
-    public static ArrayList<Long> nanoTimes;
-    public static ArrayList<Double> turretHistory;
+    public nPriorityServo hood, flywheelBlocker, net, kicker;
+    public PriorityCRServo turret;
 
     private boolean aimRequest = false, shootRequest = false, stopRequest = false, reAimRequest = false, manualRequest = false, indexRequest = false;
+
+    public static PID turretPID = new PID (0.1, 0, 0.01);
 
     // velocity is in inches / second
     public static PID velocityPID = new PID (0.0, 0.0002, 0.0001);
@@ -104,18 +106,6 @@ public class Shooter {
             2, 5
         );
 
-        turret = new nPriorityServo(
-            new Servo[]{robot.hardwareMap.get(Servo.class, "turret1"), robot.hardwareMap.get(Servo.class,"turret2")},
-            "turret", nPriorityServo.ServoType.AXON_MINI,
-            0.1, 0.78, 0.5,
-            new boolean[] {false, false},
-            2, 5
-        );
-        //turret.maxPower = 0.8;
-
-        nanoTimes = new ArrayList<>();
-        turretHistory = new ArrayList<>();
-
         flywheelBlocker = new nPriorityServo(
             new Servo[]{robot.hardwareMap.get(Servo.class, "flywheelBlocker")},
             "flywheelBlocker", nPriorityServo.ServoType.AXON_MICRO,
@@ -132,6 +122,13 @@ public class Shooter {
             2, 5
         );
 
+        turret = new PriorityCRServo(
+                new CRServo[] {robot.hardwareMap.get(CRServo.class, "turret1"), robot.hardwareMap.get(CRServo.class, "turret2")},
+                "turret", PriorityCRServo.ServoType.AXON_MINI,
+                new boolean[] {false, false},
+                3, 5
+        );
+
         robot.hardwareQueue.addDevices(flywheel, hood, turret, flywheelBlocker, net);
 
         updateBallTarget();
@@ -143,7 +140,6 @@ public class Shooter {
     // should be able to cancel into stop -> idle anytime
     // should be able to cancel into aim req or index req within accel
     public void update() {
-        //updateAimingConstants(); the method exists dw
         switch (state) {
             case IDLE:
                 aimLauncherV8();
@@ -278,11 +274,11 @@ public class Shooter {
         flywheel.setTargetPower(pow);
         prevPow = pow;
 
-        // TODO Turret PID
+        // Turret PID
+        double turretPow = turretPID.update(targetTurretAngle - robot.sensors.getTurretAng(), -0.8, 0.8);
+        double angularVelCorrection = 0;
+        turret.setTargetPower(turretPow + angularVelCorrection);
 
-        // Aim Correction
-        nanoTimes.add(0, System.nanoTime());
-        turretHistory.add(0, turret.getCurrentAngle());
 
         updateTelemetry(pidpow, ffpow, pow);
     }

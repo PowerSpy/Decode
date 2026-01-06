@@ -5,6 +5,7 @@ import static org.firstinspires.ftc.teamcode.utils.Globals.ROBOT_VELOCITY;
 
 import com.acmerobotics.dashboard.canvas.Canvas;
 import com.acmerobotics.dashboard.config.Config;
+import com.qualcomm.robotcore.hardware.AnalogInput;
 
 import org.firstinspires.ftc.teamcode.Robot;
 import org.firstinspires.ftc.teamcode.utils.DashboardUtil;
@@ -25,9 +26,9 @@ public class Sensors {
     // Enocder Resolution: 28 PPR
     private double flywheelAngularVel = 0, flywheelVelocity = 0;
 
-    AbsoluteEncoder parkEncoder;
-
-
+    private AbsoluteEncoder parkEncoder;
+    public AnalogInput turretEncoder;
+    private double turretGlobal, lastTurretGlobal;
 
     private double voltage;
     private final double voltageUpdateTime = 5000;
@@ -40,6 +41,8 @@ public class Sensors {
         voltage = robot.hardwareMap.voltageSensor.iterator().next().getVoltage();
 
         parkEncoder = new AbsoluteEncoder(robot.hardwareMap, "park_encoder");
+        turretEncoder = robot.hardwareMap.get(AnalogInput.class, "turret_encoder");
+        lastTurretGlobal = turretGlobal = turretEncoder.getVoltage() / 3.3 * 2.0 * Math.PI;
     }
 
     public void update() {
@@ -58,8 +61,13 @@ public class Sensors {
 
         robot.drivetrain.mergeLocalizer.updateEncoders(odoWheelPositions);
         robot.drivetrain.mergeLocalizer.update();
+        ROBOT_POSITION = robot.drivetrain.mergeLocalizer.getPoseEstimate();
+        ROBOT_VELOCITY = robot.drivetrain.mergeLocalizer.getRelativePoseVelocity();
 
         parkEncoder.update();
+
+        lastTurretGlobal = turretGlobal;
+        turretGlobal = turretEncoder.getVoltage() / 3.3 * 2.0 * Math.PI;
 
         if (System.currentTimeMillis() - lastVoltageUpdatedTime > voltageUpdateTime) {
             voltage = robot.hardwareMap.voltageSensor.iterator().next().getVoltage();
@@ -78,6 +86,20 @@ public class Sensors {
         return voltage;
     }
 
+    /**
+     * Assumes the turret encoder 0 is facing robot-centric x
+     * (turretGlobal >= Math.PI ? 2 * Math.PI : 0) adjusts the output to be [-Math.PI, Math.PI] to complete the wraparound
+     * @return
+     */
+    public double getTurretAng() { return turretGlobal - (turretGlobal >= Math.PI ? 2 * Math.PI : 0); }
+
+    /**
+     * Assumes the turret encoder 0 is facing robot-centric x
+     * (turretGlobal >= Math.PI ? 2 * Math.PI : 0) adjusts the output to be [-Math.PI, Math.PI] to complete the wraparound
+     * @return
+     */
+    public double getLastTurretGlobal() { return lastTurretGlobal - (turretGlobal >= Math.PI ? 2 * Math.PI : 0); }
+
     //angle that the park servo has traveled, not the bellypan
     public double getParkAngleTraveled() { return parkEncoder.getAngleTraveled(); }
 
@@ -88,8 +110,6 @@ public class Sensors {
         TelemetryUtil.packet.put("Shooter : Hood top angle (deg)", Math.toDegrees(robot.shooter.hood.getCurrentAngle()) * 30 / 48 + 34);
         TelemetryUtil.packet.put("Park : Servo angle", parkEncoder.getAngleTraveled());
 
-        ROBOT_POSITION = robot.drivetrain.mergeLocalizer.getPoseEstimate();
-        ROBOT_VELOCITY = robot.drivetrain.mergeLocalizer.getRelativePoseVelocity();
         Pose2d currentPose = ROBOT_POSITION;
         TelemetryUtil.packet.put("Robot position", currentPose.toString());
         Canvas fieldOverlay = TelemetryUtil.packet.fieldOverlay();

@@ -65,28 +65,13 @@ public class PriorityCRServo extends PriorityDevice {
 
     @Override
     protected void update() {
-        // Check how much the servo(s) have moved since last update
-        double dt = (System.nanoTime()-lastUpdateTime)/1.0E9;
-        angle += dt * power * servoType.speed % (2 * Math.PI);
-        lastUpdateTime = System.nanoTime();
-        lastPower = power;
-
         for(int i = 0; i < servo.length; i++){
             servo[i].setPower(power * (reversed[i] ? -1.0 : 1.0));
         }
     }
 
-    public double getCurrentAngle() {
-        return angle;
-    }
 
     public double getTargetAngle() {
         return targetAngle;
-    }
-
-    public void setTargetAngle(double angle) {
-        while(angle < 0) angle += 2 * Math.PI;
-        while(angle >= 2 * Math.PI) angle -= 2 * Math.PI;
-        this.targetAngle = angle;
     }
 }
