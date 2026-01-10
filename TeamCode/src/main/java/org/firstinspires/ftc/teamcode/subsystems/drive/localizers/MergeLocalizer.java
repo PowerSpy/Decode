@@ -43,7 +43,7 @@ public class MergeLocalizer extends Localizer {
 
     // Limelight
     private LLResult result = null;
-    private Pose2d lastLimelightPose = null, lastLimelightMergePose = null;
+    private Pose2d globalLLEstimate = null;
     public static boolean useLimelight = false;
 
     public void update() {
@@ -123,7 +123,7 @@ public class MergeLocalizer extends Localizer {
                         Math.atan2(tag.y - D * Math.sin(thetaLime), tag.x - D * Math.cos(thetaLime))
                 );
 
-                Pose2d globalLLEstimate = new Pose2d(
+                globalLLEstimate = new Pose2d(
                         estimatedLLPose.x - 6.4 * Math.cos(estimatedLLPose.heading) + 5.5 * Math.sin(estimatedLLPose.heading),
                         estimatedLLPose.y - 6.4 * Math.sin(estimatedLLPose.heading) + 5.5 * Math.cos(estimatedLLPose.heading),
                         estimatedLLPose.heading
@@ -134,7 +134,6 @@ public class MergeLocalizer extends Localizer {
                 currentPose.heading = currentPose.heading * 0.5 + globalLLEstimate.heading * 0.5;
             }
         }
-
 
         x = currentPose.x;
         y = currentPose.y;
@@ -165,6 +164,12 @@ public class MergeLocalizer extends Localizer {
         TelemetryUtil.packet.put("Pinpoint x", pinpoint.getPosX());
         TelemetryUtil.packet.put("Pinpoint y", pinpoint.getPosY());
         TelemetryUtil.packet.put("Pinpoint heading", pinpoint.getHeading());
+
+        if (globalLLEstimate != null) {
+            TelemetryUtil.packet.put("Limelight x", globalLLEstimate.x);
+            TelemetryUtil.packet.put("Limelight y", globalLLEstimate.y);
+            TelemetryUtil.packet.put("Limelight heading", globalLLEstimate.heading);
+        }
 
         Canvas fieldOverlay = TelemetryUtil.packet.fieldOverlay();
         DashboardUtil.drawRobot(fieldOverlay, getPoseEstimate(), this.color);
