@@ -1,10 +1,9 @@
 package org.firstinspires.ftc.teamcode.subsystems.drive.localizers;
 
-import static org.firstinspires.ftc.teamcode.utils.Globals.ROBOT_POSITION;
-
 import android.util.Log;
 
 import com.acmerobotics.dashboard.canvas.Canvas;
+import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
@@ -13,14 +12,12 @@ import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 import org.firstinspires.ftc.teamcode.sensors.Sensors;
 import org.firstinspires.ftc.teamcode.subsystems.drive.Drivetrain;
-import org.firstinspires.ftc.teamcode.subsystems.shooter.Shooter;
 import org.firstinspires.ftc.teamcode.utils.DashboardUtil;
-import org.firstinspires.ftc.teamcode.utils.Globals;
 import org.firstinspires.ftc.teamcode.utils.Pose2d;
 import org.firstinspires.ftc.teamcode.utils.TelemetryUtil;
-import org.firstinspires.ftc.teamcode.vision.Vision;
 
-public class MergeLocalizer extends Localizer{
+@Config
+public class MergeLocalizer extends Localizer {
     private String color;
 
     public MergeLocalizer (HardwareMap hardwareMap, Sensors sensors, Drivetrain drivetrain, String color, String expectedColor){
@@ -29,22 +26,23 @@ public class MergeLocalizer extends Localizer{
 
         pinpoint = hardwareMap.get(GoBildaPinpointDriver.class, "pinpoint");
         // these offsets refer to the center of the turret
-        pinpoint.setOffsets(74.5, -69.14865, DistanceUnit.MM);
+        pinpoint.setOffsets(74, -80, DistanceUnit.MM);
         pinpoint.setEncoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD);
         pinpoint.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.FORWARD, GoBildaPinpointDriver.EncoderDirection.REVERSED);
     }
 
     // Pinpoint
     private GoBildaPinpointDriver pinpoint;
-    private Pose2d currPinpointPose = null, lastPinpointPose = null, lastPinpointMergePose = null;
-    private boolean constantCorrection = false;
+    private Pose2d lastPinpointPose = null, lastPinpointMergePose = null;
+    public static boolean constantCorrection = false;
+    public static boolean usePinpoint = true;
 
     // Limelight
     private LLResult result = null;
     private boolean limelightToggle = false;
     private double lastStaleness = 100.0;
 
-    public void update(){
+    public void update() {
         long currentTime = System.nanoTime();
         double loopTime = (double)(currentTime - lastTime)/1.0E9;
         lastTime = currentTime;
@@ -69,10 +67,9 @@ public class MergeLocalizer extends Localizer{
         Pose2d relDelta = new Pose2d (relDeltaX,relDeltaY,deltaHeading);
         constAccelMath.calculate(loopTime, relDelta, currentPose);
 
-
         // PINPOINT
 
-        if ((currPinpointPose != null && currentPose.getDistanceFromPoint(currPinpointPose) >= 24.0) || constantCorrection) {
+        if ((usePinpoint && lastPinpointPose != null && currentPose.getDistanceFromPoint(lastPinpointPose) >= 24.0) || constantCorrection) {
             Log.i("Localization Test", "pinpoint in use");
             pinpoint.update();
 
@@ -97,6 +94,11 @@ public class MergeLocalizer extends Localizer{
             lastPinpointPose = new Pose2d (pinpoint.getPosX(), pinpoint.getPosY(), pinpoint.getHeading());
             currentPose = globalPinpointEstimate.clone();
             lastPinpointMergePose = globalPinpointEstimate.clone();
+        }
+
+        if (lastPinpointPose != null) {
+            Canvas fieldOverlay = TelemetryUtil.packet.fieldOverlay();
+            DashboardUtil.drawRobot(fieldOverlay, lastPinpointPose, this.expectedColor);
         }
 
         // LIMELIGHT
@@ -146,12 +148,9 @@ public class MergeLocalizer extends Localizer{
     public void setPoseEstimate(Pose2d pose) {
         super.setPoseEstimate(pose);
         pinpoint.setPosition(new Pose2D (DistanceUnit.INCH, pose.x, pose.y, AngleUnit.RADIANS, pose.heading));
-        currPinpointPose = pose.clone();
         lastPinpointPose = pose.clone();
         lastPinpointMergePose = pose.clone();
     }
-
-    public void setConstantPinpoint (boolean toggle) { constantCorrection = toggle; }
 
     public void setLimelightToggle (boolean toggle) { limelightToggle = toggle; }
 

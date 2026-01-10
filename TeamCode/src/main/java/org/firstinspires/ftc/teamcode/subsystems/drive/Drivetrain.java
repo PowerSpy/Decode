@@ -17,6 +17,7 @@ import com.qualcomm.robotcore.hardware.configuration.typecontainers.MotorConfigu
 
 import org.firstinspires.ftc.teamcode.Robot;
 import org.firstinspires.ftc.teamcode.sensors.Sensors;
+import org.firstinspires.ftc.teamcode.subsystems.drive.localizers.Localizer;
 import org.firstinspires.ftc.teamcode.subsystems.drive.localizers.MergeLocalizer;
 import org.firstinspires.ftc.teamcode.utils.AngleUtil;
 import org.firstinspires.ftc.teamcode.utils.DashboardUtil;
@@ -50,6 +51,7 @@ public class Drivetrain {
     private final List<PriorityMotor> motors;
 
     public Vision vision;
+    public Localizer localizer;
     public MergeLocalizer mergeLocalizer;
     private final HardwareQueue hardwareQueue;
     private final Sensors sensors;
@@ -87,7 +89,8 @@ public class Drivetrain {
         configureMotors();
         setMinPowersToOvercomeFriction(1.0);
 
-        mergeLocalizer = new MergeLocalizer (hardwareMap, sensors, this, "#0000ff", "#ffffff");
+        localizer = new Localizer (sensors, this, "#ff0000", "#ffffff");
+        mergeLocalizer = new MergeLocalizer (hardwareMap, sensors, this, "#0000ff", "#ff00ff");
     }
 
     public void configureMotors() {
@@ -150,6 +153,7 @@ public class Drivetrain {
     }
 
     public void setPoseEstimate(Pose2d pose2d) {
+        localizer.setPoseEstimate(pose2d);
         mergeLocalizer.setPoseEstimate(pose2d);
         LogUtil.drivePositionReset = true;
     }

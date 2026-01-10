@@ -6,14 +6,18 @@ import static org.firstinspires.ftc.teamcode.utils.Globals.ROBOT_VELOCITY;
 import com.acmerobotics.dashboard.canvas.Canvas;
 import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.robotcore.hardware.AnalogInput;
+import com.qualcomm.robotcore.hardware.DigitalChannel;
 
 import org.firstinspires.ftc.teamcode.Robot;
 import org.firstinspires.ftc.teamcode.utils.DashboardUtil;
 import org.firstinspires.ftc.teamcode.utils.LogUtil;
 import org.firstinspires.ftc.teamcode.utils.Pose2d;
+import org.firstinspires.ftc.teamcode.utils.REVColorSensorV3;
 import org.firstinspires.ftc.teamcode.utils.TelemetryUtil;
 import org.firstinspires.ftc.teamcode.utils.RelativeEncoder;
 import org.firstinspires.ftc.teamcode.utils.Utils;
+
+import java.util.Arrays;
 
 @Config
 public class Sensors {
@@ -34,9 +38,14 @@ public class Sensors {
     public static double turretAngleFilter = 0.4;
     public static double turretLimitLeft = Math.toRadians(120), turretLimitRight = Math.toRadians(-180), turretWrapMid = Math.toRadians(-45);
 
+    public final REVColorSensorV3 colorSensor0;
+    public final DigitalChannel light0G, light0P;
+    private boolean isGreen = false, isPurple = false;
+
     private double voltage;
-    private final double voltageUpdateTime = 5000;
+    private final double voltageUpdateTime = 5000, colorSensorUpdateTime = 500;
     private long lastVoltageUpdatedTime = System.currentTimeMillis();
+    private long lastColorSensorUpdatedTime = System.currentTimeMillis();
 
     public Sensors(Robot robot) {
         this.robot = robot;
@@ -47,6 +56,19 @@ public class Sensors {
         //parkEncoder = new RelativeEncoder(robot.hardwareMap, "park_encoder");
         turretEncoder = robot.hardwareMap.get(AnalogInput.class, "turret_encoder");
         lastTurretAngle = turretAngle = 0;
+
+        colorSensor0 = robot.hardwareMap.get(REVColorSensorV3.class, "intakeColorSensor");
+        colorSensor0.configureLS(REVColorSensorV3.LSResolution.THIRTEEN, REVColorSensorV3.LSMeasureRate.m25s, REVColorSensorV3.LSGain.EIGHTEEN);
+        colorSensor0.sendControlRequest(new REVColorSensorV3.ControlRequest()
+            .enableFlag(REVColorSensorV3.ControlFlag.LIGHT_SENSOR_ENABLED)
+            .enableFlag(REVColorSensorV3.ControlFlag.RGB_ENABLED)
+        );
+        light0G = robot.hardwareMap.get(DigitalChannel.class, "light0G");
+        light0P = robot.hardwareMap.get(DigitalChannel.class, "light0P");
+        light0G.setMode(DigitalChannel.Mode.OUTPUT);
+        light0P.setMode(DigitalChannel.Mode.OUTPUT);
+        light0G.setState(true);
+        light0P.setState(true);
     }
 
     public void update() {
@@ -63,6 +85,8 @@ public class Sensors {
         flywheelAngularVel = robot.drivetrain.rightRear.motor[0].getVelocity() / 28.0;
         flywheelVelocity = flywheelAngularVel * 96.0 * Math.PI / 25.4;
 
+        robot.drivetrain.localizer.updateEncoders(odoWheelPositions);
+        robot.drivetrain.localizer.update();
         robot.drivetrain.mergeLocalizer.updateEncoders(odoWheelPositions);
         robot.drivetrain.mergeLocalizer.update();
         ROBOT_POSITION = robot.drivetrain.mergeLocalizer.getPoseEstimate();
@@ -74,6 +98,25 @@ public class Sensors {
         turretEncoderVoltage = turretEncoder.getVoltage();
         if (turretEncoderVoltage > 0.1) turretAngle = turretAngle * (1 - turretAngleFilter)
             + (Utils.headingClip(RelativeEncoder.normalizeVoltage(turretEncoderVoltage) - turretEncoderOffset - turretWrapMid) + turretWrapMid) * turretAngleFilter;
+
+        //float[] color = colorSensor0.readLSRGBA();
+        //int[] colorRaw = colorSensor0.readLSRGBRAW();
+        //TelemetryUtil.packet.put("Intake : Color RGBA", Arrays.toString(color));
+        //TelemetryUtil.packet.put("Intake : Color Raw", Arrays.toString(colorRaw));
+
+        if (System.currentTimeMillis() - lastColorSensorUpdatedTime > colorSensorUpdateTime) {
+            float red = colorSensor0.readLSRed();
+            float green = colorSensor0.readLSGreen();
+            float blue = colorSensor0.readLSBlue();
+            isPurple = red > 0.05 && blue > 0.075;
+            isGreen = green > 0.1 && red < 0.05;
+            light0G.setState(!isGreen);
+            light0P.setState(!isPurple);
+            //TelemetryUtil.packet.put("Intake : Color Red", red);
+            //TelemetryUtil.packet.put("Intake : Color Green", green);
+            //TelemetryUtil.packet.put("Intake : Color Blue", blue);
+            lastColorSensorUpdatedTime = System.currentTimeMillis();
+        }
 
         if (System.currentTimeMillis() - lastVoltageUpdatedTime > voltageUpdateTime) {
             voltage = robot.hardwareMap.voltageSensor.iterator().next().getVoltage();
@@ -113,6 +156,8 @@ public class Sensors {
         TelemetryUtil.packet.put("Shooter : Hood top angle (deg)", Math.toDegrees(robot.shooter.hood.getCurrentAngle()) * 30 / 48 + 34);
         TelemetryUtil.packet.put("Shooter : Turret encoder voltage", turretEncoderVoltage);
         //TelemetryUtil.packet.put("Park : Servo angle", parkEncoder.getAngleTraveled());
+
+        TelemetryUtil.packet.put("Intake : Color", isPurple ? "purple" : isGreen ? "green" : "none");
 
         Pose2d currentPose = ROBOT_POSITION;
         TelemetryUtil.packet.put("Robot position", currentPose.toString());
