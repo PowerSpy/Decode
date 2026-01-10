@@ -76,8 +76,8 @@ public class Shooter {
     public double minV0 = 0.0, minFlywheelVelocity = 0.0;
     public double minV0Superthresh = 0.0; // TODO: need to tune this, controls how much over minV0 we make the v0 strive for pre mult
     public double minV0factor = 1.07;
-    public static double minV0factorClose = 1.108; // TODO: tune this so that triple fire works; without this, 2nd & 3rd balls don't go in
-    public static double minV0factorFar = 1.17; // TODO: tune this so that triple fire works; without this, 2nd & 3rd balls don't go in
+    public static double minV0factorClose = 1; // TODO: tune this so that triple fire works; without this, 2nd & 3rd balls don't go in
+    public static double minV0factorFar = 1; // TODO: tune this so that triple fire works; without this, 2nd & 3rd balls don't go in
     public static double flywheelEfficiency = 0.63;
     public static double flywheelEfficiencyConstantFarAddition = -0.05;
     public double targetTurretAngle = 0.0;
@@ -508,7 +508,9 @@ public class Shooter {
     public boolean aimLauncherV8() {
         if (ROBOT_POSITION == null || ROBOT_VELOCITY == null) return false;
         Log.i("Points", "Starting aimLauncherV8");
-        Vector3 P = new Vector3(ballTarget); // TODO: change this target to account for distance
+        Vector3 P;
+        if (Math.atan2(72 * (Globals.isRed ? 1 : -1) - ROBOT_POSITION.y, -72 - ROBOT_POSITION.x) <= Math.PI / 4) P = new Vector3(ballTarget);
+        else P = new Vector3(-ballTarget.y * (Globals.isRed ? 1 : -1), -ballTarget.x * (Globals.isRed ? 1 : -1), ballTarget.z); // This only works for when base target is at
         P.subtract(new Vector3(ROBOT_POSITION.x, ROBOT_POSITION.y, launcherHeight));
         this.P = P;
         Vector3 V = new Vector3(-ROBOT_VELOCITY.x, -ROBOT_VELOCITY.y, 0); // TODO: need to subtract robot angular vel component thing to this

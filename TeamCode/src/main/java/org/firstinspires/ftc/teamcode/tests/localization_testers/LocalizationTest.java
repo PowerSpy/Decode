@@ -20,11 +20,8 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 
-@Config
 @TeleOp
 public class LocalizationTest extends LinearOpMode {
-    public static boolean constantCorrection = true;
-
     @Override
     public void runOpMode() throws InterruptedException {
         Robot robot = new Robot(hardwareMap);
@@ -46,7 +43,6 @@ public class LocalizationTest extends LinearOpMode {
 
         while(!isStopRequested()) {
             robot.drivetrain.drive(gamepad1);
-            robot.drivetrain.mergeLocalizer.setConstantPinpoint(constantCorrection);
 
             Pose2d pos = robot.drivetrain.getPoseEstimate();
 

@@ -29,7 +29,7 @@ public class Teleop extends LinearOpMode {
         Robot robot = new Robot(hardwareMap);
         robot.setStopChecker(this::isStopRequested);
 
-        robot.shooter.state = Shooter.State.TEST;
+        //robot.shooter.state = Shooter.State.TEST;
 
         robot.drivetrain.setPoseEstimate(AUTO_ENDING_POSE);
 
@@ -77,12 +77,15 @@ public class Teleop extends LinearOpMode {
             // INTAKE
             if (lb1.isClicked(gamepad1.left_bumper)) {
                 intakeOn = !intakeOn;
+                intakeReversed = false;
                 if (intakeOn) {
                     robot.intake.reqIntake(true);
                 } else {
                     robot.intake.reqOff(true);
                 }
                 robot.intake.setRollerDirection(false);
+                //robot.sensors.light0G.setState(!intakeOn);
+                //robot.sensors.light0P.setState(true);
             }
 
             if (a1.isClicked(gamepad1.a)) {
@@ -90,6 +93,8 @@ public class Teleop extends LinearOpMode {
                 intakeOn = true;
                 robot.intake.reqIntake(true);
                 robot.intake.setRollerDirection(intakeReversed);
+                //robot.sensors.light0G.setState(intakeReversed);
+                //robot.sensors.light0P.setState(!intakeReversed);
             }
 
             // SHOOTER
