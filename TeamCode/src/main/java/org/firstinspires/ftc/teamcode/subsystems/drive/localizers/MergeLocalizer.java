@@ -43,8 +43,8 @@ public class MergeLocalizer extends Localizer {
 
     // Limelight
     private LLResult result = null;
-    private boolean limelightToggle = false;
-    private double lastStaleness = 100.0;
+    private Pose2d lastLimelightPose = null, lastLimelightMergePose = null;
+    public static boolean useLimelight = false;
 
     public void update() {
         long currentTime = System.nanoTime();
@@ -107,13 +107,14 @@ public class MergeLocalizer extends Localizer {
 
         // LIMELIGHT
 
-        if (limelightToggle) {
+        if (useLimelight) {
             drivetrain.vision.update();
             result = drivetrain.vision.getResult();
 
-            if (result != null && result.isValid()) {
+            // Assume 90FPS, essentially must be most recent frame
+            if (result != null && result.isValid() && result.getStaleness() < 0.006) {
                 double D = (Globals.tagHeight - Vision.cameraHeight) / Math.tan(Math.toRadians(0.97 - 0.729 * result.getTx() + 9.37 * 0.001 * result.getTx() * result.getTx()));
-                double thetaLime = AngleUtil.clipAngle(ROBOT_POSITION.heading - Math.toRadians(2.88 + 0.249 * result.getTy() + 0.0325 * result.getTy() * result.getTy()));
+                double thetaLime = AngleUtil.clipAngle(Globals.ROBOT_POSITION.heading - Math.toRadians(2.88 + 0.249 * result.getTy() + 0.0325 * result.getTy() * result.getTy()));
                 Pose2d tag = (result.getFiducialResults().get(0).getFiducialId() == 24) ? Globals.redTag.clone() : Globals.blueTag.clone();
 
                 Pose2d estimatedLLPose = new Pose2d(
@@ -127,6 +128,10 @@ public class MergeLocalizer extends Localizer {
                         estimatedLLPose.y - 6.4 * Math.sin(estimatedLLPose.heading) + 5.5 * Math.cos(estimatedLLPose.heading),
                         estimatedLLPose.heading
                 );
+
+                currentPose.x = currentPose.x * 0.5 + globalLLEstimate.x * 0.5;
+                currentPose.y = currentPose.y * 0.5 + globalLLEstimate.y * 0.5;
+                currentPose.heading = currentPose.heading * 0.5 + globalLLEstimate.heading * 0.5;
             }
         }
 
@@ -147,11 +152,8 @@ public class MergeLocalizer extends Localizer {
     public void setPoseEstimate(Pose2d pose) {
         super.setPoseEstimate(pose);
         pinpoint.setPosition(new Pose2D (DistanceUnit.INCH, pose.x, pose.y, AngleUnit.RADIANS, pose.heading));
-        lastPinpointPose = pose.clone();
-        lastPinpointMergePose = pose.clone();
+        lastPinpointPose = lastPinpointMergePose = pose.clone();
     }
-
-    public void setLimelightToggle (boolean toggle) { limelightToggle = toggle; }
 
     public double getInstantaneousAngularVel () { return poseHistory.size() >= 2 ? (poseHistory.get(0).heading - poseHistory.get(1).heading) / (nanoTimes.get(0) - nanoTimes.get(1)) : 0; }
 
