@@ -22,8 +22,8 @@ public class Vision {
     VisionPortal visionPortal;
     public Limelight3A limelight;
     private LLResult result = null;
-    public static double cameraAngle = Math.toRadians(63.75);
-    public static double cameraHeight = 12.75;
+    public static double cameraAngle = 0;
+    public static double cameraHeight = 6.4;
     public boolean obelisk = false;
 
     public Vision (HardwareMap hardwareMap) {

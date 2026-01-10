@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.subsystems.intake;
 
+import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 
@@ -8,13 +9,14 @@ import org.firstinspires.ftc.teamcode.utils.LogUtil;
 import org.firstinspires.ftc.teamcode.utils.TelemetryUtil;
 import org.firstinspires.ftc.teamcode.utils.priority.PriorityMotor;
 
+@Config
 public class Intake {
     private final Robot robot;
     public final PriorityMotor roller, feed;
 
     private boolean requestIntake = false, requestShoot = false, requestOff = false, reversed = false;
 
-    public static double intakeRollerPower = 0.8, intakeFeedPower = 0.4, shootRollerPower = 0.8, shootFeedPower = 0.8;
+    public static double intakeRollerPower = 0.8, intakeFeedPower = 0.4, shootRollerPower = 1.0, shootFeedPower = 0.8;
 
     public enum State {
         IDLE,

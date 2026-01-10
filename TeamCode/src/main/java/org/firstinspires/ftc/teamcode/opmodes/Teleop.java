@@ -9,6 +9,7 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
 import org.firstinspires.ftc.teamcode.Robot;
+import org.firstinspires.ftc.teamcode.sensors.Sensors;
 import org.firstinspires.ftc.teamcode.subsystems.intake.Intake;
 import org.firstinspires.ftc.teamcode.subsystems.shooter.Shooter;
 import org.firstinspires.ftc.teamcode.utils.ButtonToggle;
@@ -185,23 +186,26 @@ public class Teleop extends LinearOpMode {
                 }
             }
 
-            if (gamepad1.left_stick_button && gamepad1.right_stick_button) {
+            if (gamepad2.left_stick_button) { // set to localize to blue goal side back corner
                 gamepad1.rumble(1000);
                 gamepad2.rumble(1000);
-                robot.drivetrain.setPoseEstimate(new Pose2d(72 - 6, (72 - 6) * (isRed ? -1 : 1), Math.PI));
+                robot.drivetrain.setPoseEstimate(new Pose2d(72 - 6, (72 - 6) * -1, Math.PI));
+            }
+            if (gamepad2.right_stick_button) { // set to localize to red goal side back corner
+                gamepad1.rumble(1000);
+                gamepad2.rumble(1000);
+                robot.drivetrain.setPoseEstimate(new Pose2d(72 - 6, (72 - 6) * 1, Math.PI));
             }
 
             robot.drivetrain.drive(gamepad1);
 
             telemetry.addData("Alliance", Globals.isRed ? "Red" : "Blue");
-            telemetry.addData("intakeOn", intakeOn);
             telemetry.addData("intakeReversed", intakeReversed);
             telemetry.addData("intakePower", robot.intake.roller.getPower());
-            telemetry.addData("feedPower", robot.intake.feed.getPower());
-            telemetry.addData("flywheelOn", flywheelOn);
-            telemetry.addData("flywheel target velocity", robot.shooter.getTargetVelocity());
-            telemetry.addData("flywheelAtVel", robot.shooter.atVel());
             telemetry.addData("shooter state", robot.shooter.state.toString());
+            telemetry.addData("flywheelOn", flywheelOn);
+            telemetry.addData("flywheelAtVel", robot.shooter.atVel());
+            telemetry.addData("turretInPosition", Math.abs(robot.shooter.targetTurretAngle - Sensors.turretAngleClip(robot.sensors.getTurretAngle())) <= Math.toRadians(2.0) ? "yes" : "aw no its not happy yet");
             telemetry.addData("Robot position (deg)", String.format(Locale.US, "(%.2f, %.2f, %.2f)", ROBOT_POSITION.x, ROBOT_POSITION.y, Math.toDegrees(ROBOT_POSITION.heading)));
 
             telemetry.update();

@@ -16,6 +16,7 @@ import org.firstinspires.ftc.teamcode.utils.RunMode;
 @TeleOp(group = "Test")
 public class AutoaimTester extends LinearOpMode {
     public static double rollerPower = 0.8, feedPower = 0.6, minV0FactorClose = Shooter.minV0factorClose, minV0FactorFar = Shooter.minV0factorFar, minV0SuperThresh = 0.0, flywheelEfficiency = 0.63, flywheelEfficiencyConstantFarAddition = -0.05;
+    public static double posX = -24.0, posY = 24, posHeading = 0.75 * Math.PI;
     public static boolean latchBlock = false, aimReq = false, shootReq = false, stopReq = false;
 
     public void runOpMode() {
@@ -25,12 +26,13 @@ public class AutoaimTester extends LinearOpMode {
         robot.intake.state = Intake.State.TEST;
 
         rollerPower = feedPower = 0;
-        robot.drivetrain.setPoseEstimate(new Pose2d(0, 0, 0.75 * Math.PI));
+        robot.drivetrain.setPoseEstimate(new Pose2d(posX, posY, posHeading));
 
         while (opModeInInit());
 
         while(!isStopRequested()) {
 
+            robot.drivetrain.setPoseEstimate(new Pose2d(posX, posY, posHeading));
             robot.intake.roller.setTargetPower(rollerPower);
             robot.intake.feed.setTargetPower(feedPower);
             robot.shooter.minV0Superthresh = minV0SuperThresh;
@@ -40,18 +42,12 @@ public class AutoaimTester extends LinearOpMode {
             Shooter.flywheelEfficiencyConstantFarAddition = flywheelEfficiencyConstantFarAddition;
             robot.shooter.setShooterBlocker(latchBlock);
 
-            if (aimReq) {
-                robot.shooter.reqShoot(aimReq);
-                aimReq = false;
-            }
-            if (shootReq) {
-                robot.shooter.reqShoot(shootReq);
-                shootReq = false;
-            }
-            if (stopReq) {
-                robot.shooter.reqShoot(stopReq);
-                stopReq = false;
-            }
+            robot.shooter.reqAim(aimReq);
+            if (aimReq) aimReq = false;
+            robot.shooter.reqShoot(shootReq);
+            if (shootReq) shootReq = false;
+            robot.shooter.reqStop(stopReq);
+            if (stopReq) stopReq = false;
 
             robot.update();
         }

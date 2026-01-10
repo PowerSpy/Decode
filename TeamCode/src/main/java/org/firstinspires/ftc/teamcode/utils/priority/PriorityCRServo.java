@@ -2,6 +2,8 @@ package org.firstinspires.ftc.teamcode.utils.priority;
 
 import com.qualcomm.robotcore.hardware.CRServo;
 
+import org.firstinspires.ftc.teamcode.utils.Utils;
+
 public class PriorityCRServo extends PriorityDevice {
     public enum ServoType {
         // Radians/s is speed
@@ -65,7 +67,7 @@ public class PriorityCRServo extends PriorityDevice {
     @Override
     public void update() {
         for(int i = 0; i < servo.length; i++){
-            servo[i].setPower(power * (reversed[i] ? -1.0 : 1.0));
+            servo[i].setPower(Utils.minMaxClip(power, -1.0, 1.0) * (reversed[i] ? -1.0 : 1.0));
         }
         lastUpdateTime = System.nanoTime();
         lastPower = power;

@@ -22,7 +22,7 @@ public class AprilTagLocalizationTest extends LinearOpMode {
     private Vision vision;
     private LLResult result = null;
 
-    public static double robotHeading = 0.0, turretHeading = 0.0;
+    public static double robotHeading = 0.0;
 
     @SuppressLint("DefaultLocale")
     public void runOpMode() {
@@ -40,8 +40,9 @@ public class AprilTagLocalizationTest extends LinearOpMode {
             result = vision.getResult();
 
             if (result != null && result.isValid()) {
-                double D = (Globals.tagHeight - Vision.cameraHeight) / Math.tan(Math.PI / 2 - Vision.cameraAngle - Math.toRadians(result.getTx()));
-                double thetaLime = AngleUtil.clipAngle(robotHeading + turretHeading + Math.toRadians(result.getTy()));
+                double D = (Globals.tagHeight - Vision.cameraHeight) / Math.tan(Math.toRadians(0.97 - 0.729 * result.getTx() + 9.37 * 0.001 * result.getTx() * result.getTx()));
+                double ty = Math.toRadians(2.88 + 0.249 * result.getTy() + 0.0325 * result.getTy() * result.getTy());
+                double thetaLime = AngleUtil.clipAngle(robotHeading - ty);
                 Pose2d tag = Globals.isRed ? Globals.redTag.clone() : Globals.blueTag.clone();
 
                 Pose2d estimatedLLPos = new Pose2d(
@@ -50,9 +51,9 @@ public class AprilTagLocalizationTest extends LinearOpMode {
                 );
 
                 Pose2d globalLimelightEstimate = new Pose2d(
-                    tag.x - D * Math.cos(thetaLime) - 3.8582 * Math.sin(thetaLime),
-                    tag.y - D * Math.sin(thetaLime) + 3.8582 * Math.cos(thetaLime),
-                    Math.atan((D * Math.sin(thetaLime) + 3.8582 * Math.cos(thetaLime)) / (D * Math.cos(thetaLime) - 3.8582 * Math.sin(thetaLime))) - turretHeading
+                    tag.x - D * Math.cos(thetaLime) - 6.5 * Math.cos(robotHeading) + 5.5 * Math.sin(robotHeading),
+                    tag.y - D * Math.sin(thetaLime) + 6.5 * Math.cos(robotHeading) - 5.5 * Math.cos(robotHeading),
+                    Math.atan(estimatedLLPos.y / estimatedLLPos.x)
                 );
                 globalLimelightEstimate.heading += globalLimelightEstimate.x >= tag.x ? Math.PI : 0;
 
