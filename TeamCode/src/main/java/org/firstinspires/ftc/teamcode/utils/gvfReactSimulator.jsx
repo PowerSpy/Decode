@@ -5,9 +5,10 @@ const SplineNavigationSim = () => {
   const canvasRef = useRef(null);
   const [isRunning, setIsRunning] = useState(false);
   const [showVectorField, setShowVectorField] = useState(true);
-  const [algorithm, setAlgorithm] = useState('lookahead');
+  const [algorithm, setAlgorithm] = useState('paper');
   const [showSliderConfig, setShowSliderConfig] = useState(false);
   const [config, setConfig] = useState({
+    // Original algorithms
     maxSpeed: 70,
     attractionGain: 0.8,
     tangentGain: 1.2,
@@ -17,26 +18,27 @@ const SplineNavigationSim = () => {
     kRep: 50.0,
     repSigma: 10.0,
     terminalGain: 0.0,
-    terminalRange: 150.0
+    terminalRange: 150.0,
+    // Paper-based algorithm parameters
+    k1: 1.0,           // Tangential error gain
+    k2: 0.8,           // Cross-track error gain (for sigma function)
+    k3: 1.5,           // Heading error gain
+    epsilon: 10.0,     // Smoothing parameter for sigma function
+    adaptiveLookahead: true,  // Enable adaptive lookahead based on curvature
+    baseLA: 25.0,      // Base lookahead distance
+    curvatureScale: 50.0, // Scale factor for curvature-based lookahead adjustment
+    speedRegulation: true,  // Enable speed regulation based on path curvature
+    minSpeedRatio: 0.3     // Minimum speed as ratio of maxSpeed during high curvature
   });
+  
   const lastTimeRef = useRef(null);
-  const SIM_SPEED = 1; // ← increase to run faster without changing physics
+  const SIM_SPEED = 1;
   const SCALE = 5;
 
   const [obstacles, setObstacles] = useState([
-    { x: 144, y: 72 },
-    { x: 132, y: 72 },
-    { x: 120, y: 72 },
-    { x: 108, y: 72 },
-    { x: 96, y: 72 },
-    { x: 84, y: 72 },
-    { x: 72, y: 72 },
-    { x: 60, y: 72 },
-    { x: 48, y: 72 },
-    { x: 36, y: 72 },
-    { x: 24, y: 72 },
-    { x: 12, y: 72 },
-    { x: 0, y: 72 }
+    { x: 144, y: 72 }, { x: 132, y: 72 }, { x: 120, y: 72 }, { x: 108, y: 72 },
+    { x: 96, y: 72 }, { x: 84, y: 72 }, { x: 72, y: 72 }, { x: 60, y: 72 },
+    { x: 48, y: 72 }, { x: 36, y: 72 }, { x: 24, y: 72 }, { x: 12, y: 72 }, { x: 0, y: 72 }
   ]);
   const [draggingObstacle, setDraggingObstacle] = useState(null);
 
@@ -50,7 +52,14 @@ const SplineNavigationSim = () => {
     kRep: { min: 0, max: 200, step: 10 },
     repSigma: { min: 10, max: 150, step: 5 },
     terminalGain: { min: 0, max: 5, step: 0.1 },
-    terminalRange: { min: 50, max: 300, step: 10 }
+    terminalRange: { min: 50, max: 300, step: 10 },
+    k1: { min: 0, max: 3, step: 0.1 },
+    k2: { min: 0, max: 2, step: 0.1 },
+    k3: { min: 0, max: 3, step: 0.1 },
+    epsilon: { min: 1, max: 50, step: 1 },
+    baseLA: { min: 10, max: 100, step: 5 },
+    curvatureScale: { min: 10, max: 200, step: 10 },
+    minSpeedRatio: { min: 0.1, max: 1.0, step: 0.05 }
   });
 
   const [pointA, setPointA] = useState({ x: 108, y: 108 });
@@ -59,12 +68,13 @@ const SplineNavigationSim = () => {
   const [control2, setControl2] = useState({ x: 36, y: 84 });
 
   const [dragging, setDragging] = useState(null);
-  const startPos = {x: pointA.x + 12, y: pointA.y + 24, heading: Math.PI * 3 / 2};
+  const startPos = {x: pointA.x, y: pointA.y, heading: Math.PI * 3 / 2};
   const animationRef = useRef(null);
   const stateRef = useRef({
     object: { x: startPos.x, y: startPos.y, vx: 0, vy: 0, ax: 0, ay: 0, angle: startPos.heading },
     time: 0,
-    trail: []
+    trail: [],
+    pathParam: 0  // s parameter for paper algorithm
   });
 
   const evaluateSpline = (t) => {
@@ -94,7 +104,6 @@ const SplineNavigationSim = () => {
 
   const splineCurvature = (t) => {
     const mt = 1 - t;
-
     const dx = 3 * mt * mt * (control1.x - pointA.x) + 6 * mt * t * (control2.x - control1.x) + 3 * t * t * (pointB.x - control2.x);
     const dy = 3 * mt * mt * (control1.y - pointA.y) + 6 * mt * t * (control2.y - control1.y) + 3 * t * t * (pointB.y - control2.y);
 
@@ -132,8 +141,120 @@ const SplineNavigationSim = () => {
     return { t: bestT, point: evaluateSpline(bestT), distance: minDist };
   };
 
-  const computeVelocity = (px, py, currentVx, currentVy) => {
-    if (algorithm === 'lookahead') {
+  // Paper-based algorithm: sigma function for approach angle
+  const computeSigma = (ye) => {
+    return Math.asin((config.k2 * ye) / (Math.abs(ye) + config.epsilon));
+  };
+
+  // Paper-based path-following controller
+  const computeVelocityPaper = (px, py, currentAngle) => {
+    const closest = findClosestPoint(px, py);
+    const s = closest.t;
+    const tangent = splineTangent(s);
+    const curvature = splineCurvature(s);
+    
+    // Compute psi_t (tangent angle)
+    const psi_t = Math.atan2(tangent.y, tangent.x);
+    
+    // Normal vector (perpendicular to tangent)
+    const normal = { x: -tangent.y, y: tangent.x };
+    
+    // Error computation in Serret-Frenet frame
+    const dx = px - closest.point.x;
+    const dy = py - closest.point.y;
+    
+    // Rotate error to path frame
+    const xe = dx * Math.cos(psi_t) + dy * Math.sin(psi_t);
+    const ye = -dx * Math.sin(psi_t) + dy * Math.cos(psi_t);
+    
+    // Heading error
+    const theta_e = psi_t - currentAngle;
+    
+    // Compute sigma (approach angle)
+    const sigma = computeSigma(ye);
+    
+    // Desired velocity angle
+    const psi_d = psi_t - sigma;
+    
+    // Adaptive lookahead based on curvature
+    let lookahead = config.baseLA;
+    if (config.adaptiveLookahead) {
+      // Reduce lookahead in high curvature regions
+      const curvatureEffect = Math.min(1.0, curvature * config.curvatureScale);
+      lookahead = config.baseLA * (1 - 0.6 * curvatureEffect);
+    }
+    
+    // Speed regulation based on curvature
+    let targetSpeed = config.maxSpeed;
+    if (config.speedRegulation) {
+      const curvatureEffect = Math.min(1.0, curvature * config.curvatureScale);
+      targetSpeed = config.maxSpeed * (config.minSpeedRatio + (1 - config.minSpeedRatio) * (1 - curvatureEffect));
+    }
+    
+    // s_prime: progress rate along path (Equation 30a from paper)
+    const s_prime = config.k1 * xe + Math.cos(psi_t - psi_d);
+    
+    // Angular velocity for heading control (Equation 30b from paper)
+    const kappa_d = curvature; // Path curvature at closest point
+    const theta_b_prime = config.k3 * theta_e + kappa_d * s_prime;
+    
+    // Velocity direction control
+    const dy_dt = -s_prime * kappa_d * xe - Math.sin(psi_t - psi_d);
+    const dsigma_dye = (config.k2 * config.epsilon) / Math.pow(Math.abs(ye) + config.epsilon, 2);
+    const psi_v_prime = kappa_d * s_prime - dsigma_dye * dy_dt;
+    
+    // Obstacle repulsion (projected onto normal only - preserves forward progress)
+    let vRepulsion = { x: 0, y: 0 };
+    for (const obs of obstacles) {
+      const dx_obs = px - obs.x;
+      const dy_obs = py - obs.y;
+      const distSq = dx_obs * dx_obs + dy_obs * dy_obs;
+      const distObs = Math.sqrt(distSq);
+
+      if (distObs > 0) {
+        const gaussian = Math.exp(-distSq / (2 * config.repSigma * config.repSigma));
+        const repMag = config.kRep * gaussian;
+        const repX = repMag * (dx_obs / distObs);
+        const repY = repMag * (dy_obs / distObs);
+
+        // Project repulsion onto normal direction only (sideways avoidance)
+        const repDotNormal = repX * normal.x + repY * normal.y;
+        vRepulsion.x += repDotNormal * normal.x;
+        vRepulsion.y += repDotNormal * normal.y;
+      }
+    }
+    
+    // Compute final velocity components with obstacle avoidance
+    let vx = targetSpeed * Math.cos(psi_d) + vRepulsion.x;
+    let vy = targetSpeed * Math.sin(psi_d) + vRepulsion.y;
+    
+    // Limit total velocity
+    const totalSpeed = Math.sqrt(vx * vx + vy * vy);
+    if (totalSpeed > config.maxSpeed * 1.5) {
+      vx = (vx / totalSpeed) * config.maxSpeed * 1.5;
+      vy = (vy / totalSpeed) * config.maxSpeed * 1.5;
+    }
+    
+    return { 
+      vx, 
+      vy, 
+      tangent,
+      normal,
+      targetSpeed,
+      curvature,
+      xe,
+      ye,
+      sigma,
+      lookahead,
+      s_prime,
+      psi_d
+    };
+  };
+
+  const computeVelocity = (px, py, currentVx, currentVy, currentAngle) => {
+    if (algorithm === 'paper') {
+      return computeVelocityPaper(px, py, currentAngle);
+    } else if (algorithm === 'lookahead') {
       return computeVelocityLookahead(px, py);
     } else if (algorithm === 'proposed') {
       return computeVelocityProposed(px, py);
@@ -146,6 +267,7 @@ const SplineNavigationSim = () => {
     const closest = findClosestPoint(px, py);
     const lookaheadT = Math.min(1, closest.t + config.lookaheadDist / 600);
     const tangent = splineTangent(lookaheadT);
+    const terminalTangent = splineTangent(1);
 
     const toSpline = {
       x: closest.point.x - px,
@@ -156,14 +278,12 @@ const SplineNavigationSim = () => {
     const attractionWeight = Math.min(1, dist / 50) * config.attractionGain;
     const tangentWeight = config.tangentGain;
 
-    // Terminal guidance: increase alignment near point B
     const distToB = Math.sqrt((px - pointB.x) ** 2 + (py - pointB.y) ** 2);
     const terminalWeight = Math.max(0, 1 - distToB / config.terminalRange);
 
     let vx = attractionWeight * toSpline.x + tangentWeight * tangent.x * 50;
     let vy = attractionWeight * toSpline.y + tangentWeight * tangent.y * 50;
 
-    // Add terminal guidance component
     vx += terminalWeight * config.terminalGain * terminalTangent.x * 50;
     vy += terminalWeight * config.terminalGain * terminalTangent.y * 50;
 
@@ -180,6 +300,7 @@ const SplineNavigationSim = () => {
     const closest = findClosestPoint(px, py);
     const tangent = splineTangent(closest.t);
     const curvature = splineCurvature(closest.t);
+    const terminalTangent = splineTangent(1);
 
     const distVector = {
       x: closest.point.x - px,
@@ -203,7 +324,6 @@ const SplineNavigationSim = () => {
       y: (distVector.y / dist) * curvatureMag
     } : { x: 0, y: 0 };
 
-    // Terminal guidance: strongly align with point B tangent near the end
     const distToB = Math.sqrt((px - pointB.x) ** 2 + (py - pointB.y) ** 2);
     const terminalWeight = Math.max(0, 1 - distToB / config.terminalRange);
     const terminalTerm = {
@@ -227,6 +347,7 @@ const SplineNavigationSim = () => {
     const closest = findClosestPoint(px, py);
     const tangent = splineTangent(closest.t);
     const curvature = splineCurvature(closest.t);
+    const terminalTangent = splineTangent(1);
 
     const normal = { x: -tangent.y, y: tangent.x };
 
@@ -236,39 +357,31 @@ const SplineNavigationSim = () => {
     };
     const dist = Math.sqrt(distVector.x * distVector.x + distVector.y * distVector.y);
 
-    // Terminal guidance: adjust speed based on distance to B
     const distToB = Math.sqrt((px - pointB.x) ** 2 + (py - pointB.y) ** 2);
     const terminalWeight = Math.max(0, 1 - distToB / config.terminalRange);
 
-    // Slow down as approaching B (reduce speed by up to 70% near B)
     const speedScale = 1 - terminalWeight * 0.7;
     const currentMaxSpeed = config.maxSpeed * speedScale;
 
-    // v_spline: velocity at closest point on spline
     const splineVel = {
       x: tangent.x * currentMaxSpeed,
       y: tangent.y * currentMaxSpeed
     };
 
-    // Gaussian boost to distance gain as approaching B
     const gaussianBoost = Math.exp(-(distToB * distToB) / (2 * config.terminalRange * config.terminalRange));
     const effectiveDistanceGain = config.distanceGain * (1 + gaussianBoost * 5);
 
-    // k·d: distance gain times distance vector (attracts to path)
     const distTerm = {
       x: effectiveDistanceGain * distVector.x,
       y: effectiveDistanceGain * distVector.y
     };
 
-    // (v²·κ)·d̂: curvature term
-    // Normalize by distance to prevent speed-dependent convergence point shift
     const curvatureMag = currentMaxSpeed * currentMaxSpeed * curvature;
     const curvatureTerm = dist > 0 ? {
       x: (distVector.x / dist) * curvatureMag / (1 + dist * 0.01),
       y: (distVector.y / dist) * curvatureMag / (1 + dist * 0.01)
     } : { x: 0, y: 0 };
 
-    // Repulsion projected onto normal only (doesn't slow forward progress)
     let vRepulsion = { x: 0, y: 0 };
     for (const obs of obstacles) {
       const dx = px - obs.x;
@@ -282,7 +395,6 @@ const SplineNavigationSim = () => {
         const repX = repMag * (dx / distObs);
         const repY = repMag * (dy / distObs);
 
-        // Project repulsion onto normal direction only
         const repDotNormal = repX * normal.x + repY * normal.y;
         vRepulsion.x += repDotNormal * normal.x;
         vRepulsion.y += repDotNormal * normal.y;
@@ -294,11 +406,9 @@ const SplineNavigationSim = () => {
       y: terminalWeight * config.terminalGain * terminalTangent.y * currentMaxSpeed
     };
 
-    // Sum all components
     let vx = splineVel.x + distTerm.x + curvatureTerm.x + vRepulsion.x + vTerminalAlign.x;
     let vy = splineVel.y + distTerm.y + curvatureTerm.y + vRepulsion.y + vTerminalAlign.y;
 
-    // Limit to reasonable speed
     const speed = Math.sqrt(vx * vx + vy * vy);
     if (speed > config.maxSpeed * 2) {
       vx = (vx / speed) * config.maxSpeed * 2;
@@ -318,14 +428,14 @@ const SplineNavigationSim = () => {
     ctx.save();
     ctx.scale(SCALE, SCALE);
 
-
     ctx.strokeRect(0, 0, 144, 144);
+    
     if (showVectorField) {
       ctx.strokeStyle = 'rgba(100, 150, 250, 0.3)';
       ctx.fillStyle = 'rgba(100, 150, 250, 0.3)';
       for (let x = 50; x < 144; x += 20) {
         for (let y = 50; y < 144; y += 20) {
-          const vel = computeVelocity(x, y, 0, 0);
+          const vel = computeVelocity(x, y, 0, 0, 0);
           const scale = 8;
           ctx.beginPath();
           ctx.moveTo(x, y);
@@ -334,7 +444,7 @@ const SplineNavigationSim = () => {
 
           const angle = Math.atan2(vel.vy, vel.vx);
           ctx.beginPath();
-          ctx.moveTo(x + vel.vx * scale, y + vel.vy * scale );
+          ctx.moveTo(x + vel.vx * scale, y + vel.vy * scale);
           ctx.lineTo(x + vel.vx * scale - 4 * Math.cos(angle - 0.5), y + vel.vy * scale - 4 * Math.sin(angle - 0.5));
           ctx.lineTo(x + vel.vx * scale - 4 * Math.cos(angle + 0.5), y + vel.vy * scale - 4 * Math.sin(angle + 0.5));
           ctx.closePath();
@@ -420,7 +530,24 @@ const SplineNavigationSim = () => {
     ctx.stroke();
     ctx.restore();
 
-    if (algorithm === 'enhanced') {
+                if (algorithm === 'enhanced') {
+      for (const obs of obstacles) {
+        ctx.fillStyle = 'rgba(255, 0, 0, 0.1)';
+        ctx.beginPath();
+        ctx.arc(obs.x, obs.y, config.repSigma * 2, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#F44336';
+        ctx.beginPath();
+        ctx.arc(obs.x, obs.y, 8, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = '#C62828';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      }
+    }
+    if (algorithm === 'paper') {
       for (const obs of obstacles) {
         ctx.fillStyle = 'rgba(255, 0, 0, 0.1)';
         ctx.beginPath();
@@ -440,17 +567,16 @@ const SplineNavigationSim = () => {
     ctx.restore();
   };
 
-  const terminalTangent = splineTangent(1);
   const update = (dt) => {
     if (dt <= 0) return;
     const obj = stateRef.current.object;
+    const terminalTangent = splineTangent(1);
     const distToB = Math.sqrt((obj.x - pointB.x) ** 2 + (obj.y - pointB.y) ** 2);
 
     if (distToB > 6 || Math.abs(Math.atan2(terminalTangent.y, terminalTangent.x) - obj.angle) >= 0.01) {
-      const vel = computeVelocity(obj.x, obj.y, obj.vx, obj.vy);
+      const vel = computeVelocity(obj.x, obj.y, obj.vx, obj.vy, obj.angle);
 
-      if (algorithm === 'proposed' || algorithm === 'enhanced') {
-        // Apply acceleration limiting for realistic motion
+      if (algorithm === 'proposed' || algorithm === 'enhanced' || algorithm === 'paper') {
         const ax = (vel.vx - obj.vx) / dt;
         const ay = (vel.vy - obj.vy) / dt;
 
@@ -481,8 +607,6 @@ const SplineNavigationSim = () => {
     } else {
       setIsRunning(false);
     }
-
-
   };
 
   const animate = (time) => {
@@ -490,10 +614,9 @@ const SplineNavigationSim = () => {
       lastTimeRef.current = time;
     }
 
-    const rawDt = (time - lastTimeRef.current) / 1000; // seconds
+    const rawDt = (time - lastTimeRef.current) / 1000;
     lastTimeRef.current = time;
 
-    // Clamp for stability, then scale simulation time
     const dt = Math.min(0.05, rawDt) * SIM_SPEED;
 
     update(dt);
@@ -525,7 +648,8 @@ const SplineNavigationSim = () => {
     stateRef.current = {
       object: { x: startPos.x, y: startPos.y, vx: 0, vy: 0, ax: 0, ay: 0, angle: startPos.heading },
       time: 0,
-      trail: []
+      trail: [],
+      pathParam: 0
     };
     draw();
   };
@@ -568,9 +692,9 @@ const SplineNavigationSim = () => {
       setDragging('pointB');
     } else if (isNearPoint(pos, control1)) {
       setDragging('control1');
-    } else if (isNearPoint(pos, control2)) {
+                } else if (isNearPoint(pos, control2)) {
       setDragging('control2');
-    } else if (algorithm === 'enhanced') {
+    } else if (algorithm === 'enhanced' || algorithm === 'paper') {
       for (let i = 0; i < obstacles.length; i++) {
         if (isNearPoint(pos, obstacles[i])) {
           setDraggingObstacle(i);
@@ -631,11 +755,11 @@ const SplineNavigationSim = () => {
   return (
     <div className="w-full h-screen bg-gray-50 p-6 overflow-auto">
       <div className="max-w-6xl mx-auto">
-        <h1 className="text-3xl font-bold mb-2">Cubic Spline Navigation</h1>
+        <h1 className="text-3xl font-bold mb-2">Advanced Cubic Spline Navigation</h1>
         <p className="text-gray-600 mb-4">
-          Object navigates to spline while following its direction toward point B.
+          Path-following algorithms including the paper-based universal controller.
           <strong> Drag the control points (A, B, C1, C2) to modify the spline!</strong>
-          {algorithm === 'enhanced' && <strong> Drag red obstacles to reposition them!</strong>}
+          {(algorithm === 'enhanced' || algorithm === 'paper') && <strong> Drag red obstacles to reposition them!</strong>}
           <br />
           <span className="text-sm">Units: inches for distance, inches/second for velocity, inches/second² for acceleration</span>
         </p>
@@ -690,6 +814,7 @@ const SplineNavigationSim = () => {
                 onChange={(e) => setAlgorithm(e.target.value)}
                 className="px-3 py-2 border border-gray-300 rounded"
               >
+                <option value="paper">Paper Algorithm (Universal)</option>
                 <option value="lookahead">Lookahead Pursuit</option>
                 <option value="proposed">Proposed Algorithm</option>
                 <option value="enhanced">Enhanced Algorithm</option>
@@ -702,7 +827,9 @@ const SplineNavigationSim = () => {
               <h3 className="text-lg font-semibold mb-3">Slider Configuration</h3>
               <div className="grid grid-cols-1 gap-4">
                 {Object.entries(sliderConfig).map(([param, settings]) => {
-                  const allowedParams = algorithm === 'lookahead'
+                  const allowedParams = algorithm === 'paper'
+                    ? ['maxSpeed', 'k1', 'k2', 'k3', 'epsilon', 'baseLA', 'curvatureScale', 'minSpeedRatio', 'maxAccel', 'kRep', 'repSigma']
+                    : algorithm === 'lookahead'
                     ? ['maxSpeed', 'attractionGain', 'tangentGain', 'lookaheadDist', 'terminalGain', 'terminalRange']
                     : algorithm === 'proposed'
                     ? ['maxSpeed', 'distanceGain', 'maxAccel', 'terminalGain', 'terminalRange']
@@ -720,7 +847,14 @@ const SplineNavigationSim = () => {
                     kRep: 'Repulsion Strength',
                     repSigma: 'Repulsion Range',
                     terminalGain: 'Terminal Guidance Gain',
-                    terminalRange: 'Terminal Guidance Range'
+                    terminalRange: 'Terminal Guidance Range',
+                    k1: 'Tangential Error Gain (k₁)',
+                    k2: 'Cross-track Error Gain (k₂)',
+                    k3: 'Heading Error Gain (k₃)',
+                    epsilon: 'Smoothing Parameter (ε)',
+                    baseLA: 'Base Lookahead Distance',
+                    curvatureScale: 'Curvature Scale Factor',
+                    minSpeedRatio: 'Min Speed Ratio'
                   };
 
                   return (
@@ -779,6 +913,153 @@ const SplineNavigationSim = () => {
               />
             </div>
 
+            {algorithm === 'paper' && (
+              <>
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    Tangential Error Gain (k₁): {config.k1.toFixed(getDecimalPlaces(sliderConfig.k1.step))}
+                  </label>
+                  <input
+                    type="range"
+                    min={sliderConfig.k1.min}
+                    max={sliderConfig.k1.max}
+                    step={sliderConfig.k1.step}
+                    value={config.k1}
+                    onChange={(e) => setConfig({...config, k1: parseFloat(e.target.value)})}
+                    className="w-full"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    Cross-track Error Gain (k₂): {config.k2.toFixed(getDecimalPlaces(sliderConfig.k2.step))}
+                  </label>
+                  <input
+                    type="range"
+                    min={sliderConfig.k2.min}
+                    max={sliderConfig.k2.max}
+                    step={sliderConfig.k2.step}
+                    value={config.k2}
+                    onChange={(e) => setConfig({...config, k2: parseFloat(e.target.value)})}
+                    className="w-full"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    Heading Error Gain (k₃): {config.k3.toFixed(getDecimalPlaces(sliderConfig.k3.step))}
+                  </label>
+                  <input
+                    type="range"
+                    min={sliderConfig.k3.min}
+                    max={sliderConfig.k3.max}
+                    step={sliderConfig.k3.step}
+                    value={config.k3}
+                    onChange={(e) => setConfig({...config, k3: parseFloat(e.target.value)})}
+                    className="w-full"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    Smoothing Parameter (ε): {config.epsilon.toFixed(getDecimalPlaces(sliderConfig.epsilon.step))}
+                  </label>
+                  <input
+                    type="range"
+                    min={sliderConfig.epsilon.min}
+                    max={sliderConfig.epsilon.max}
+                    step={sliderConfig.epsilon.step}
+                    value={config.epsilon}
+                    onChange={(e) => setConfig({...config, epsilon: parseFloat(e.target.value)})}
+                    className="w-full"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    Base Lookahead: {config.baseLA.toFixed(getDecimalPlaces(sliderConfig.baseLA.step))}
+                  </label>
+                  <input
+                    type="range"
+                    min={sliderConfig.baseLA.min}
+                    max={sliderConfig.baseLA.max}
+                    step={sliderConfig.baseLA.step}
+                    value={config.baseLA}
+                    onChange={(e) => setConfig({...config, baseLA: parseFloat(e.target.value)})}
+                    className="w-full"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    Curvature Scale: {config.curvatureScale.toFixed(getDecimalPlaces(sliderConfig.curvatureScale.step))}
+                  </label>
+                  <input
+                    type="range"
+                    min={sliderConfig.curvatureScale.min}
+                    max={sliderConfig.curvatureScale.max}
+                    step={sliderConfig.curvatureScale.step}
+                    value={config.curvatureScale}
+                    onChange={(e) => setConfig({...config, curvatureScale: parseFloat(e.target.value)})}
+                    className="w-full"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    Min Speed Ratio: {config.minSpeedRatio.toFixed(getDecimalPlaces(sliderConfig.minSpeedRatio.step))}
+                  </label>
+                  <input
+                    type="range"
+                    min={sliderConfig.minSpeedRatio.min}
+                    max={sliderConfig.minSpeedRatio.max}
+                    step={sliderConfig.minSpeedRatio.step}
+                    value={config.minSpeedRatio}
+                    onChange={(e) => setConfig({...config, minSpeedRatio: parseFloat(e.target.value)})}
+                    className="w-full"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    Max Acceleration: {config.maxAccel.toFixed(getDecimalPlaces(sliderConfig.maxAccel.step))}
+                  </label>
+                  <input
+                    type="range"
+                    min={sliderConfig.maxAccel.min}
+                    max={sliderConfig.maxAccel.max}
+                    step={sliderConfig.maxAccel.step}
+                    value={config.maxAccel}
+                    onChange={(e) => setConfig({...config, maxAccel: parseFloat(e.target.value)})}
+                    className="w-full"
+                  />
+                </div>
+
+                <div className="col-span-2">
+                  <div className="flex gap-4 items-center">
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={config.adaptiveLookahead}
+                        onChange={(e) => setConfig({...config, adaptiveLookahead: e.target.checked})}
+                        className="w-4 h-4"
+                      />
+                      <span className="text-sm font-medium">Adaptive Lookahead (curvature-based)</span>
+                    </label>
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={config.speedRegulation}
+                        onChange={(e) => setConfig({...config, speedRegulation: e.target.checked})}
+                        className="w-4 h-4"
+                      />
+                      <span className="text-sm font-medium">Speed Regulation (slow in curves)</span>
+                    </label>
+                  </div>
+                </div>
+              </>
+            )}
+
             {algorithm === 'lookahead' && (
               <>
                 <div>
@@ -825,10 +1106,40 @@ const SplineNavigationSim = () => {
                     className="w-full"
                   />
                 </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    Terminal Guidance Gain: {config.terminalGain.toFixed(getDecimalPlaces(sliderConfig.terminalGain.step))}
+                  </label>
+                  <input
+                    type="range"
+                    min={sliderConfig.terminalGain.min}
+                    max={sliderConfig.terminalGain.max}
+                    step={sliderConfig.terminalGain.step}
+                    value={config.terminalGain}
+                    onChange={(e) => setConfig({...config, terminalGain: parseFloat(e.target.value)})}
+                    className="w-full"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    Terminal Guidance Range: {config.terminalRange.toFixed(getDecimalPlaces(sliderConfig.terminalRange.step))}
+                  </label>
+                  <input
+                    type="range"
+                    min={sliderConfig.terminalRange.min}
+                    max={sliderConfig.terminalRange.max}
+                    step={sliderConfig.terminalRange.step}
+                    value={config.terminalRange}
+                    onChange={(e) => setConfig({...config, terminalRange: parseFloat(e.target.value)})}
+                    className="w-full"
+                  />
+                </div>
               </>
             )}
 
-            {algorithm === 'enhanced' && (
+            {(algorithm === 'proposed' || algorithm === 'enhanced') && (
               <>
                 <div>
                   <label className="block text-sm font-medium mb-1">
@@ -862,87 +1173,104 @@ const SplineNavigationSim = () => {
 
                 <div>
                   <label className="block text-sm font-medium mb-1">
-                    Repulsion Strength: {config.kRep.toFixed(getDecimalPlaces(sliderConfig.kRep.step))}
+                    Terminal Guidance Gain: {config.terminalGain.toFixed(getDecimalPlaces(sliderConfig.terminalGain.step))}
                   </label>
                   <input
                     type="range"
-                    min={sliderConfig.kRep.min}
-                    max={sliderConfig.kRep.max}
-                    step={sliderConfig.kRep.step}
-                    value={config.kRep}
-                    onChange={(e) => setConfig({...config, kRep: parseFloat(e.target.value)})}
+                    min={sliderConfig.terminalGain.min}
+                    max={sliderConfig.terminalGain.max}
+                    step={sliderConfig.terminalGain.step}
+                    value={config.terminalGain}
+                    onChange={(e) => setConfig({...config, terminalGain: parseFloat(e.target.value)})}
                     className="w-full"
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium mb-1">
-                    Repulsion Range: {config.repSigma.toFixed(getDecimalPlaces(sliderConfig.repSigma.step))}
+                    Terminal Guidance Range: {config.terminalRange.toFixed(getDecimalPlaces(sliderConfig.terminalRange.step))}
                   </label>
                   <input
                     type="range"
-                    min={sliderConfig.repSigma.min}
-                    max={sliderConfig.repSigma.max}
-                    step={sliderConfig.repSigma.step}
-                    value={config.repSigma}
-                    onChange={(e) => setConfig({...config, repSigma: parseFloat(e.target.value)})}
+                    min={sliderConfig.terminalRange.min}
+                    max={sliderConfig.terminalRange.max}
+                    step={sliderConfig.terminalRange.step}
+                    value={config.terminalRange}
+                    onChange={(e) => setConfig({...config, terminalRange: parseFloat(e.target.value)})}
                     className="w-full"
                   />
                 </div>
+
+                {algorithm === 'enhanced' && (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">
+                        Repulsion Strength: {config.kRep.toFixed(getDecimalPlaces(sliderConfig.kRep.step))}
+                      </label>
+                      <input
+                        type="range"
+                        min={sliderConfig.kRep.min}
+                        max={sliderConfig.kRep.max}
+                        step={sliderConfig.kRep.step}
+                        value={config.kRep}
+                        onChange={(e) => setConfig({...config, kRep: parseFloat(e.target.value)})}
+                        className="w-full"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium mb-1">
+                        Repulsion Range: {config.repSigma.toFixed(getDecimalPlaces(sliderConfig.repSigma.step))}
+                      </label>
+                      <input
+                        type="range"
+                        min={sliderConfig.repSigma.min}
+                        max={sliderConfig.repSigma.max}
+                        step={sliderConfig.repSigma.step}
+                        value={config.repSigma}
+                        onChange={(e) => setConfig({...config, repSigma: parseFloat(e.target.value)})}
+                        className="w-full"
+                      />
+                    </div>
+                  </>
+                )}
               </>
-            )}
-
-            <div>
-              <label className="block text-sm font-medium mb-1">
-                Terminal Guidance Gain: {config.terminalGain.toFixed(getDecimalPlaces(sliderConfig.terminalGain.step))}
-              </label>
-              <input
-                type="range"
-                min={sliderConfig.terminalGain.min}
-                max={sliderConfig.terminalGain.max}
-                step={sliderConfig.terminalGain.step}
-                value={config.terminalGain}
-                onChange={(e) => setConfig({...config, terminalGain: parseFloat(e.target.value)})}
-                className="w-full"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1">
-                Terminal Guidance Range: {config.terminalRange.toFixed(getDecimalPlaces(sliderConfig.terminalRange.step))}
-              </label>
-              <input
-                type="range"
-                min={sliderConfig.terminalRange.min}
-                max={sliderConfig.terminalRange.max}
-                step={sliderConfig.terminalRange.step}
-                value={config.terminalRange}
-                onChange={(e) => setConfig({...config, terminalRange: parseFloat(e.target.value)})}
-                className="w-full"
-              />
-            </div>
-
-            {algorithm === 'proposed' && (
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  Distance Gain (k): {config.distanceGain.toFixed(getDecimalPlaces(sliderConfig.distanceGain.step))}
-                </label>
-                <input
-                  type="range"
-                  min={sliderConfig.distanceGain.min}
-                  max={sliderConfig.distanceGain.max}
-                  step={sliderConfig.distanceGain.step}
-                  value={config.distanceGain}
-                  onChange={(e) => setConfig({...config, distanceGain: parseFloat(e.target.value)})}
-                  className="w-full"
-                />
-              </div>
             )}
           </div>
         </div>
 
         <div className="bg-white rounded-lg shadow-lg p-4">
           <h2 className="text-xl font-semibold mb-2">Algorithm Explanation</h2>
+
+          {algorithm === 'paper' && (
+            <>
+              <p className="text-gray-700 mb-2">
+                <strong>Universal Path-Following (MDPI Paper - Sensors 2021):</strong>
+              </p>
+              <p className="text-gray-700 mb-3">
+                This algorithm implements the universal path-following controller for wheeled mobile robots from Oftadeh et al. It works for all common WMR types: omnidirectional, unicycle, car-like, and all-steerable wheels.
+              </p>
+              <div className="bg-gray-100 p-3 rounded mb-2 font-mono text-sm">
+                σ(y_e) = arcsin(k₂·y_e / (|y_e| + ε))
+              </div>
+              <ul className="list-disc list-inside space-y-1 text-gray-700 ml-4">
+                <li><strong>Serret-Frenet frame</strong>: Errors computed in path-aligned coordinate system</li>
+                <li><strong>σ(y_e)</strong>: Approach angle function that generates smooth convergence to path</li>
+                <li><strong>k₁</strong>: Tangential error gain - controls forward progress along path</li>
+                <li><strong>k₂</strong>: Cross-track error gain - controls lateral convergence rate</li>
+                <li><strong>k₃</strong>: Heading error gain - controls orientation alignment</li>
+                <li><strong>ε</strong>: Smoothing parameter preventing singularities at y_e = 0</li>
+                <li><strong>Adaptive lookahead</strong>: Reduces lookahead distance in high-curvature regions for tighter tracking</li>
+                <li><strong>Speed regulation</strong>: Automatically slows down in sharp curves based on path curvature</li>
+                <li><strong>Obstacle avoidance</strong>: Gaussian repulsion forces projected onto path normal (sideways avoidance only - preserves forward progress!)</li>
+                <li><strong>Semi-globally exponentially stable</strong>: Guaranteed convergence from large initial errors</li>
+                <li><strong>Velocity-independent convergence</strong>: Path geometry independent of speed</li>
+              </ul>
+              <p className="text-gray-700 mt-2">
+                <strong>Key Features:</strong> This controller acts as a feedback path-planner, continuously generating asymptotic paths from the robot's current position to the desired path. The approach angle σ(y_e) smoothly transitions from aggressive turning (when far from path) to tangential alignment (when close to path). Obstacle repulsion is intelligently projected onto the path normal direction, allowing the robot to move sideways around obstacles without slowing its forward progress.
+              </p>
+            </>
+          )}
 
           {algorithm === 'lookahead' && (
             <>
