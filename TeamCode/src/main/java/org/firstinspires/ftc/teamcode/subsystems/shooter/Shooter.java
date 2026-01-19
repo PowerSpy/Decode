@@ -364,7 +364,8 @@ public class Shooter {
     public void setShooterBlocker(boolean active) { flywheelBlocker.setTargetAngle(active ? latchBlockAngle : -0.2);}
 
     public void updateBallTarget() {
-        ballTarget = new Vector3(-67, 63 * (Globals.isRed ? 1 : -1), 41);
+        // TODO: need to interpolate between two targets based on distance
+        ballTarget = new Vector3(-69.5, 67 * (Globals.isRed ? 1 : -1), 46);
     }
 
     public int calcIndexPosition(int greenPos, int motifPos){
@@ -391,163 +392,6 @@ public class Shooter {
         return true;
     }
 
-    // outdated
-    public void updateAimingConstants() {
-        if (ROBOT_POSITION == null || ROBOT_VELOCITY == null) return;
-        P = new Vector3(ballTarget); // we'll figure out whether we need to change this target based on distance
-        P.subtract(new Vector3(ROBOT_POSITION.x, ROBOT_POSITION.y, launcherHeight));
-        V = new Vector3(-ROBOT_VELOCITY.x, -ROBOT_VELOCITY.y, 0); // TODO: need to subtract robot angular vel component thing to this
-
-        v0 = getBallExitSpd();
-
-        // double b = 0;
-        c = V.x * V.x + V.y * V.y + g * P.z;
-        cv0 = c - v0 * v0;
-        d = 2 * Vector3.dot(P, V);
-        e = P.x * P.x + P.y * P.y + P.z * P.z;
-        if (P.x * P.x + P.y * P.y >= 8100) minV0factor = minV0factorFar;
-        else minV0factor = minV0factorClose;
-
-    }
-
-    // outdated
-    public boolean calcMinFlywheelVelocity() {
-        if (ROBOT_POSITION == null || ROBOT_VELOCITY == null) return false;
-        List<Double> tRoots = Polynomial.findRealRoots(new double[]{1, 0.0, 0.0, -d/(2 * a), -e/a}, 1e-4);
-        for (int i = 0; i < tRoots.size(); i++) {
-            if(tRoots.get(i) < 0) {
-                tRoots.remove(i);
-                i--;
-            }
-        }
-        if (tRoots.isEmpty()) return false;
-        minV0 = Math.sqrt(2 * a * tRoots.get(0) * tRoots.get(0) + c + d / 2 / tRoots.get(0)) + minV0Superthresh;
-        minV0 *= minV0factor;
-        minFlywheelVelocity = minV0 * 2;
-        if (P.x * P.x + P.y * P.y >= 8100) minFlywheelVelocity /= flywheelEfficiency + flywheelEfficiencyConstantFarAddition;
-        else minFlywheelVelocity /= flywheelEfficiency;
-        return true;
-    }
-
-    // outdated
-    public boolean calcStaticShotAngles() {
-        if (!turretTrackTarget()) return false;
-        if (v0 > (minV0 / minV0factor - minV0Superthresh) * 0.97) { // makes sure v0 is at least 97% of true minV0
-            double A = 4 * v0 * v0 * v0 * v0 * e;
-            double dist2 = e - P.z * P.z; // 2D dist squared
-            double B = 4 * dist2 * v0 * v0 * (g * P.z - v0 * v0);
-            double C = dist2 * dist2 * g * g;
-            List<Double> tRoots = Polynomial.findRealRoots(new double[]{A, B, C}, 1e-4);
-            double[] phis = new double[tRoots.size() + 1];
-            double[] thetas = new double[phis.length];
-
-            for (int i = 0; i < tRoots.size(); i++) {
-                if (Math.abs(tRoots.get(i) - 0.5) <= 0.5) {
-                    phis[i] = Math.asin(Math.sqrt(tRoots.get(i)));
-                } else phis[i] = 100;
-                thetas[i] = targetTurretAngle;
-
-                double slope = c1 * (ROBOT_VELOCITY.y + v0 * Math.sin(thetas[i]) * Math.sin(phis[i])) - (ROBOT_VELOCITY.x + v0 * Math.cos(thetas[i]) * Math.sin(phis[i]));
-                if ((int)slope == 0) {
-                    phis[i] = 100;
-                } else {
-                    double t = (c1 * (thirdFieldWidth - ROBOT_POSITION.y) + halfFieldWidth + ROBOT_POSITION.x) / slope;
-                    if (t <= 0) {
-                        phis[i] = 100;
-                    } else if (launcherHeight + v0 * Math.cos(phis[i]) * t - g * t * t / 2 < 38.75 + 3) {
-                        phis[i] = 100;
-                    }
-                }
-                if (phis[i] - hoodSweep < 0) phis[i] = 100;
-                if (i == 0) {
-                    thetas[tRoots.size()] = thetas[0];
-                    phis[tRoots.size()] = phis[0];
-                } else {
-                    if (phis[i] != 100) {
-                        if (phis[tRoots.size()] != 100) {
-                            if (phis[i] > phis[tRoots.size()]) {
-                                phis[tRoots.size()] = phis[i];
-                                thetas[tRoots.size()] = thetas[i];
-                            }
-                        } else {
-                            phis[tRoots.size()] = phis[i];
-                            thetas[tRoots.size()] = thetas[i];
-                        }
-                    }
-                }
-            }
-
-            if (phis[tRoots.size()] == 100) return false;
-            targetTurretAngle = AngleUtil.clipAngle(thetas[tRoots.size()] - ROBOT_POSITION.heading); // converts from global to difference with heading
-            targetHoodAngle = (phis[tRoots.size()] - hoodSweep) * hoodGearRatio; // first part converts angle from vertical to angle from horizontal && then subtracts the sweep of the hood
-            return true;
-        } else return false;
-    }
-
-    // outdated
-    public boolean calcDynamicShotAngles() {
-        if (!turretTrackTarget()) return false;
-        if (v0 > (minV0 / minV0factor - minV0Superthresh) * 0.97) { // makes sure v0 is at least 97% of true minV0
-            List<Double> tRoots = Polynomial.findRealRoots(new double[]{1, 0, cv0/a, d/a, e/a}, 1e-4);
-            for(int i = 0; i < tRoots.size(); i++) {
-                if(tRoots.get(i) < 0) {
-                    tRoots.remove(i);
-                    i--;
-                }
-            }
-            if (tRoots.isEmpty()) {
-                return false;
-            }
-            double[] phis = new double[tRoots.size() + 1];
-            double[] thetas = new double[phis.length];
-            for (int i = 0; i < tRoots.size(); i++) {
-                double t0 = tRoots.get(i);
-                Vector3 pf = new Vector3(P.x + V.x * t0, P.y + V.y * t0, P.z + g * t0 * t0 / 2);
-                thetas[i] = pf.theta();
-                phis[i] = pf.phi();
-
-
-                double vel = Math.pow(ROBOT_VELOCITY.y + v0 * Math.sin(thetas[i]) * Math.sin(phis[i]), 2) + Math.pow(ROBOT_VELOCITY.x + v0 * Math.cos(thetas[i]) * Math.sin(phis[i]), 2);
-                vel = Math.sqrt(vel);
-                double dist = Math.pow(-60 - ROBOT_POSITION.x, 2) + Math.pow(ballTarget.y - ROBOT_POSITION.y, 2);
-                dist = Math.sqrt(dist);
-                double t = dist / vel;
-                if (t <= 0) {
-                    phis[i] = 100; // this makes sure the ball goes into the target through the restricted diagonal plane
-                } else {
-                    double heightAtWall = launcherHeight + v0 * Math.cos(phis[i]) * t - g * t * t / 2;
-                    if (heightAtWall < 38.75 + 3) {
-                        phis[i] = 100;
-                    }
-                }
-                if (phis[i] - hoodSweep < 0) {
-                    phis[i] = 100;
-                }
-                if (i == 0) {
-                    thetas[tRoots.size()] = thetas[0];
-                    phis[tRoots.size()] = phis[0];
-                } else {
-                    if (phis[i] != 100) {
-                        if (phis[tRoots.size()] != 100) {
-                            if (phis[i] > phis[tRoots.size()]) {
-                                phis[tRoots.size()] = phis[i];
-                                thetas[tRoots.size()] = thetas[i];
-                            }
-                        } else {
-                            phis[tRoots.size()] = phis[i];
-                            thetas[tRoots.size()] = thetas[i];
-                        }
-                    }
-                }
-            }
-
-            if (phis[tRoots.size()] == 100) return false;
-            targetTurretAngle = AngleUtil.clipAngle(thetas[tRoots.size()] - ROBOT_POSITION.heading); // converts from global to difference with heading
-            targetHoodAngle = (phis[tRoots.size()] - hoodSweep) * hoodGearRatio; // first part converts angle from vertical to angle from horizontal && then subtracts the sweep of the hood
-            return true;
-        } else return false;
-    }
-
     // in use
     public boolean aimLauncherV8() {
         if (ROBOT_POSITION == null || ROBOT_VELOCITY == null) return false;
@@ -560,7 +404,10 @@ public class Shooter {
         Vector3 V = new Vector3(-ROBOT_VELOCITY.x, -ROBOT_VELOCITY.y, 0);
         V.subtract(Vector3.cross(new Vector3(0, 0, currHeadingVel), new Vector3(dLauncher * Math.cos(currHeadingPos), dLauncher * Math.sin(currHeadingPos), 0)));
 
-        targetTurretAngle = AngleUtil.clipAngle(Math.atan2(P.getY(), P.getX()) - ROBOT_POSITION.heading);
+        targetTurretAngle = AngleUtil.clipAngle(Math.atan2(P.getY(), P.getX()) - AngleUtil.clipAngle(ROBOT_POSITION.heading +
+                currHeadingVel * robot.sensors.loopTime +
+                currHeadingAccel * robot.sensors.loopTime * robot.sensors.loopTime / 2 +
+                currHeadingJerk * robot.sensors.loopTime * robot.sensors.loopTime * robot.sensors.loopTime / 6) + Math.PI);
         Log.i("Points", "Set target turret angle & Starting MinV0");
 
         double a = g * g / 4;
@@ -603,7 +450,7 @@ public class Shooter {
         double[] phis;
         if (v0 > 36)  {
             Log.i("Points", "Entering the hood calculator");
-            if (V.getMag() < 6) {
+            if (false) {
                 Log.i("Points" , "Entering Static");
                 double A = 4 * v0 * v0 * v0 * v0 * e;
                 double B = 4 * dist2 * v0 * v0 * (g * P.z - v0 * v0);
