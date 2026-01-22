@@ -20,8 +20,6 @@ import org.firstinspires.ftc.teamcode.utils.TelemetryUtil;
 import org.firstinspires.ftc.teamcode.utils.RelativeEncoder;
 import org.firstinspires.ftc.teamcode.utils.Utils;
 
-import java.util.Arrays;
-
 @Config
 public class Sensors {
     private final Robot robot;
@@ -39,14 +37,16 @@ public class Sensors {
     private double turretEncoderVoltage, turretAngle, lastTurretAngle;
     public static double turretEncoderOffset = Math.toRadians(182);
     public static double turretAngleFilter = 0.4;
-    public static double turretLimitLeft = Math.toRadians(120), turretLimitRight = Math.toRadians(-180), turretWrapMid = Math.toRadians(-45);
+    public static double turretLimitLeft = Math.toRadians(105), turretLimitRight = Math.toRadians(-180), turretWrapMid = Math.toRadians(-45);
 
-    public final REVColorSensorV3 colorSensor0;
+    private double lightSensorFilteredVoltage = 0;
+    public static double lightSensorFilter = 0.3;
+    public AnalogInput lightSensor0;
     public final DigitalChannel light0G, light0P;
     private boolean isGreen = false, isPurple = false;
 
     private double voltage;
-    public static long voltageUpdateTime = 5000, colorSensorUpdateTime = 500;
+    public static long voltageUpdateTime = 5000, colorSensorUpdateTime = 200;
     private long lastVoltageUpdatedTime = System.currentTimeMillis();
     private long lastColorSensorUpdatedTime = System.currentTimeMillis();
     private final VoltageSensor voltageSensor;
@@ -62,12 +62,7 @@ public class Sensors {
         turretEncoder = robot.hardwareMap.get(AnalogInput.class, "turret_encoder");
         lastTurretAngle = turretAngle = 0;
 
-        colorSensor0 = robot.hardwareMap.get(REVColorSensorV3.class, "intakeColorSensor");
-        colorSensor0.configureLS(REVColorSensorV3.LSResolution.THIRTEEN, REVColorSensorV3.LSMeasureRate.m25s, REVColorSensorV3.LSGain.EIGHTEEN);
-        colorSensor0.sendControlRequest(new REVColorSensorV3.ControlRequest()
-            .enableFlag(REVColorSensorV3.ControlFlag.LIGHT_SENSOR_ENABLED)
-            .enableFlag(REVColorSensorV3.ControlFlag.RGB_ENABLED)
-        );
+        lightSensor0 = robot.hardwareMap.get(AnalogInput.class, "lightSensor0");
         light0G = robot.hardwareMap.get(DigitalChannel.class, "light0G");
         light0P = robot.hardwareMap.get(DigitalChannel.class, "light0P");
         light0G.setMode(DigitalChannel.Mode.OUTPUT);
@@ -102,7 +97,7 @@ public class Sensors {
         lastTurretAngle = turretAngle;
         turretEncoderVoltage = turretEncoder.getVoltage();
         if (turretEncoderVoltage > 0.1) turretAngle = turretAngle * (1 - turretAngleFilter)
-            + (Utils.headingClip(RelativeEncoder.normalizeVoltage(turretEncoderVoltage) - turretEncoderOffset - turretWrapMid) + turretWrapMid) * turretAngleFilter;
+                + (Utils.headingClip(RelativeEncoder.normalizeVoltage(turretEncoderVoltage) - turretEncoderOffset - turretWrapMid) + turretWrapMid) * turretAngleFilter;
 
         //float[] color = colorSensor0.readLSRGBA();
         //int[] colorRaw = colorSensor0.readLSRGBRAW();
@@ -110,16 +105,16 @@ public class Sensors {
         //TelemetryUtil.packet.put("Intake : Color Raw", Arrays.toString(colorRaw));
 
         if (Globals.RUNMODE != RunMode.AUTO && System.currentTimeMillis() - lastColorSensorUpdatedTime > colorSensorUpdateTime) {
-            float red = colorSensor0.readLSRed();
-            float green = colorSensor0.readLSGreen();
-            float blue = colorSensor0.readLSBlue();
-            isPurple = red > 0.06 && blue > 0.08;
-            isGreen = green > 0.1 && red <= 0.06;
+            double lightSensorRawVoltage = lightSensor0.getVoltage();
+            lightSensorFilteredVoltage = lightSensorFilteredVoltage * (1 - lightSensorFilter) + lightSensorRawVoltage * lightSensorFilter;
+            isGreen = lightSensorFilteredVoltage > 0.009;
+            isPurple = !isGreen && lightSensorFilteredVoltage > 0.004;
             light0G.setState(!isGreen);
             light0P.setState(!isPurple);
-            TelemetryUtil.packet.put("Intake : Color0 1Blue", blue);
-            TelemetryUtil.packet.put("Intake : Color0 2Red", red);
-            TelemetryUtil.packet.put("Intake : Color0 3Green", green);
+            TelemetryUtil.packet.put("Intake : Light Raw Voltage", lightSensorRawVoltage);
+            TelemetryUtil.packet.put("Intake : Light Filtered Voltage", lightSensorFilteredVoltage);
+            TelemetryUtil.packet.put("Intake : Light Voltage Green Thresh", 0.009);
+            TelemetryUtil.packet.put("Intake : Light Voltage Purple Thresh", 0.004);
             lastColorSensorUpdatedTime = System.currentTimeMillis();
         }
 

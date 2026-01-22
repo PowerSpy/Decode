@@ -49,6 +49,8 @@ public class Teleop extends LinearOpMode {
         ButtonToggle x2 = new ButtonToggle();
         ButtonToggle y2 = new ButtonToggle();
         ButtonToggle back2 = new ButtonToggle();
+        ButtonToggle lsb2 = new ButtonToggle();
+        ButtonToggle rsb2 = new ButtonToggle();
 
         boolean intakeReversed = false;
         boolean intakeOn = false;
@@ -181,15 +183,15 @@ public class Teleop extends LinearOpMode {
                 }
             }
 
-            if (gamepad2.left_stick_button) { // set to localize to blue goal side back corner
+            if (lsb2.isClicked(gamepad2.left_stick_button)) { // set to localize to blue goal side back corner
                 gamepad1.rumble(1000);
                 gamepad2.rumble(1000);
-                robot.drivetrain.setPoseEstimate(new Pose2d(72 - 6, (72 - 6) * -1, Math.PI));
+                robot.drivetrain.setPoseEstimate(new Pose2d(72 - 6.2, -(72 - 6.5), Math.PI));
             }
-            if (gamepad2.right_stick_button) { // set to localize to red goal side back corner
+            if (rsb2.isClicked(gamepad2.right_stick_button)) { // set to localize to red goal side back corner
                 gamepad1.rumble(1000);
                 gamepad2.rumble(1000);
-                robot.drivetrain.setPoseEstimate(new Pose2d(72 - 6, (72 - 6) * 1, Math.PI));
+                robot.drivetrain.setPoseEstimate(new Pose2d(72 - 6.2, 72 - 6.5, Math.PI));
             }
 
             robot.drivetrain.drive(gamepad1);

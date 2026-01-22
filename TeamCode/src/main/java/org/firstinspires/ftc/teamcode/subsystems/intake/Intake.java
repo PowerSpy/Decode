@@ -133,5 +133,7 @@ public class Intake {
     private void updateTelemetry() {
         TelemetryUtil.packet.put("Intake : state", this.state);
         LogUtil.intakeState.set(this.state.toString());
+        TelemetryUtil.packet.put("Intake : reversed", reversed);
+        LogUtil.intakeReversed.set(reversed);
     }
 }

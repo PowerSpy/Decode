@@ -43,6 +43,7 @@ public class LogUtil {
     public static Datalogger.GenericField flywheelVelocity = new Datalogger.GenericField("flywheelVelocity");
     public static Datalogger.GenericField flywheelTarget = new Datalogger.GenericField("flywheelTarget");
     public static Datalogger.GenericField hoodAngle = new Datalogger.GenericField("hoodAngle");
+    public static Datalogger.GenericField intakeReversed = new Datalogger.GenericField("intakeReversed");
     public static Datalogger.GenericField driveState = new Datalogger.GenericField("driveState");
     public static Datalogger.GenericField driveCurrentX = new Datalogger.GenericField("driveCurrentX");
     public static Datalogger.GenericField driveCurrentY = new Datalogger.GenericField("driveCurrentY");
@@ -72,7 +73,7 @@ public class LogUtil {
         long timeNow = System.currentTimeMillis();
         String fileName = "Log_" + timeNow + "_"
             + new SimpleDateFormat("yyyy-MM-dd_HH.mm.ss", Locale.US).format(new Date(timeNow))
-            + "_CAT3_Decode_" + Globals.RUNMODE.toString();
+            + "_CAT4_Decode_" + Globals.RUNMODE.toString();
         TelemetryUtil.packet.put("LogUtil : filename", fileName);
 
         if (datalogger != null) throw new IllegalStateException("LogUtil was already initialized");
@@ -94,6 +95,7 @@ public class LogUtil {
                 flywheelVelocity,
                 flywheelTarget,
                 hoodAngle,
+                intakeReversed,
                 driveCurrentX,
                 driveCurrentY,
                 driveCurrentAngle,
@@ -109,7 +111,7 @@ public class LogUtil {
         if (loopCountBeforeWrite <= 0 || stateTransition || drivePositionReset) {
             if (drivePositionReset) driveState.set("[reset]");
             datalogger.writeLine();
-            loopCountBeforeWrite = 20;
+            loopCountBeforeWrite = 5;
             stateTransition = false;
             drivePositionReset = false;
             TelemetryUtil.packet.put("LogUtil : stateTransition", "[ none ]");
