@@ -32,7 +32,7 @@ public class PriorityCRServo extends PriorityDevice {
     double lastPower = 0;
     boolean reversed[];
     private double angle = 0;
-    final ServoType servoType;
+    public final ServoType servoType;
 
     public PriorityCRServo(CRServo servo, String name, ServoType servoType, boolean[] reversed, double basePriority, double priorityScale) {
         super(basePriority, priorityScale, name);
