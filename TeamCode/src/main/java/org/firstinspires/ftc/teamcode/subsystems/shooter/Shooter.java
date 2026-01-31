@@ -495,7 +495,7 @@ public class Shooter {
 
     // further separation :)
     // bootleg LM1 strat being used in LM2 & LM3 code
-    public static double closeAngle = 0.2, closeVel = 470, midAngle = 0.5, midVel = 550, farAngle = 0.5, farVel = 600;
+    public static double closeAngle = 0.2, closeVel = 470, midAngle = 0.5, midVel = 550, farAngle = 0.50, farVel = 625;
 
     public enum Dist {
         CLOSE(closeAngle, closeVel),
