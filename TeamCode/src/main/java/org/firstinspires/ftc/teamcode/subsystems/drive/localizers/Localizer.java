@@ -60,7 +60,7 @@ public class Localizer {
 
         relHistory.add(new Pose2d(0,0,0));
         poseHistory.add(new Pose2d(0,0,0));
-        nanoTimes.add(Long.valueOf(0));
+        nanoTimes.add(0L);
     }
 
     public void updateEncoders(int[] encoders) {
@@ -205,7 +205,7 @@ public class Localizer {
             relCurrentVel = new Pose2d(
                     (relDeltaXTotal) / actualVelTime,
                     (relDeltaYTotal) / actualVelTime,
-                    (poseHistory.get(0).getHeading() - poseHistory.get(lastIndex).getHeading()) / actualVelTime
+                    Utils.headingClip(poseHistory.get(0).getHeading() - poseHistory.get(lastIndex).getHeading()) / actualVelTime
             );
 
             currentVel = new Pose2d(

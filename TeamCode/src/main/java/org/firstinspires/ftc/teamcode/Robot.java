@@ -63,6 +63,8 @@ public class Robot {
         intake.update();
         shooter.update();
 
+        if (this.stopChecker != null && this.stopChecker.getAsBoolean()) return;
+
         hardwareQueue.update();
         this.updateTelemetry();
     }

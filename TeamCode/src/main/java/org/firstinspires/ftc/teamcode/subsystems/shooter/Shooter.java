@@ -49,7 +49,7 @@ public class Shooter {
 
     public static PID turretPID = new PID (0.4, 0.0, 0.02);
     public static double turretKStatic = 0.05;
-    public static double turretVelFactor = 0.2;
+    public static double turretVelFactor = 0.1;
 
     // velocity is in inches / second
     public static PID velocityPID = new PID (0.0, 0.0002, 0.0001);
@@ -62,7 +62,7 @@ public class Shooter {
     public static double velocityNoSkipThresh = 200;
     public static double velocityNoSkipAccel = 0.8;
     public static double flywheelScaleVoltage = 12;
-    public static double atVelThresh = 15;
+    public static double atVelThresh = 20;
     public static double latchBlockAngle = 2.5;
     private double targetVelocity = 0.0;
     private double filteredVelocity = 0.0;
@@ -258,7 +258,7 @@ public class Shooter {
         double turretAngle = robot.sensors.getTurretAngle();
         double turretError = targetTurretAngle - Sensors.turretAngleClip(turretAngle);
         double turretPow = turretPID.update(turretError, -1, 1) + turretKStatic * Math.signum(turretError);
-        if (Math.abs(turretError) < Math.toRadians(1) && Math.abs(currVel.heading) < Math.toRadians(3)) turretPow = 0; // turretMinPow * turretError / Math.toRadians(2)
+        if (Math.abs(turretError) < Math.toRadians(1) && Math.abs(currVel.heading) < Math.toRadians(5)) turretPow = 0; // turretMinPow * turretError / Math.toRadians(2)
         turretPow -= currVel.heading / (turret.servoType.speed) * turretVelFactor; // meant to account for robot rotating
         if (turretAngle >= Sensors.turretLimitLeft) turretPow = Math.min(turretPow, -turretKStatic);
         if (turretAngle <= Sensors.turretLimitRight) turretPow = Math.max(turretPow, turretKStatic);
@@ -268,7 +268,7 @@ public class Shooter {
         TelemetryUtil.packet.put("Shooter : Robot Velocity", (this.V != null ? this.V.getMag() : 0));
         TelemetryUtil.packet.put("Shooter : currVel x", currVel.x);
         TelemetryUtil.packet.put("Shooter : currVel y", currVel.y);
-        TelemetryUtil.packet.put("Shooter : currVel heading", currVel.heading);
+        TelemetryUtil.packet.put("Shooter : currVel heading (deg)", Math.toDegrees(currVel.heading));
         TelemetryUtil.packet.put("Shooter : state", this.state);
         TelemetryUtil.packet.put("Shooter : Flywheel Power Applied", pow * 100);
         TelemetryUtil.packet.put("Shooter : Flywheel Target Velocity", targetVelocity);

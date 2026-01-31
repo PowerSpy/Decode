@@ -160,7 +160,7 @@ public class Sensors {
     private void updateTelemetry() {
         TelemetryUtil.packet.put("Voltage", voltage);
         //TelemetryUtil.packet.put("Shooter : Flywheel Angular Velocity", flywheelAngularVel);
-        TelemetryUtil.packet.put("Shooter : Flywheel RPM", flywheelAngularVel * 60);
+        //TelemetryUtil.packet.put("Shooter : Flywheel RPM", flywheelAngularVel * 60);
         TelemetryUtil.packet.put("Shooter : Flywheel Current Velocity", flywheelVelocity);
         TelemetryUtil.packet.put("Shooter : Turret angle (deg)", Math.toDegrees(turretAngle));
         TelemetryUtil.packet.put("Shooter : Hood top angle (deg)", Math.toDegrees(robot.shooter.hood.getCurrentAngle()) * 30 / 48 + 34);

@@ -21,7 +21,7 @@ public class RedGoalPreloadAuto extends LinearOpMode {
         Globals.RUNMODE = RunMode.AUTO;
         robot = new Robot(hardwareMap);
         robot.setStopChecker(this::isStopRequested);
-        robot.drivetrain.setPoseEstimate(new Pose2d(-65, 28, 0));
+        robot.drivetrain.setPoseEstimate(new Pose2d(-72 + 6, 24 + 6.5, 0));
 
         robot.shooter.state = Shooter.State.TEST;
         robot.shooter.setShooterBlocker(true);
@@ -40,14 +40,14 @@ public class RedGoalPreloadAuto extends LinearOpMode {
 
         robot.shooter.setShooter(Shooter.Dist.CLOSE);
         shoot(Math.PI / 4);
-        intake(-11, 48);
+        intake(-12, 48);
         shoot(Math.PI);
-        intake(13, 54);
+        intake(12, 54);
         shoot(Math.PI);
         intake(36, 54);
         shoot(Math.PI);
         robot.shooter.setShooter(Shooter.Dist.OFF);
-        robot.drivetrain.goToPoint(new Pose2d(0, 36, 0), 1.0);
+        robot.drivetrain.goToPoint(new Pose2d(0, 36, Math.PI), 1.0);
 
         Globals.AUTO_ENDING_POSE = Globals.ROBOT_POSITION.clone();
         robot.waitWhile(() -> {
@@ -84,7 +84,7 @@ public class RedGoalPreloadAuto extends LinearOpMode {
         robot.drivetrain.goToPoint(new Pose2d(x, y, Math.toRadians(90)), 0.3);
         robot.waitWhile(() -> robot.drivetrain.state != Drivetrain.State.WAIT && System.currentTimeMillis() - timer <= 3500);
 
-        robot.drivetrain.goToPoint(new Pose2d(x, 48, Math.toRadians(90)), 1.0);
+        robot.drivetrain.goToPoint(new Pose2d(x, 48, Math.toRadians(90)), 1.0, true);
         robot.waitWhile(() -> robot.drivetrain.state != Drivetrain.State.WAIT);
         robot.intake.reqOff(true);
     }

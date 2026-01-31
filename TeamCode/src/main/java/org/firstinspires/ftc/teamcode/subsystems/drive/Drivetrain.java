@@ -180,7 +180,7 @@ public class Drivetrain {
     public static PID yPID = new PID (0.1, 0.0, 0.003);
     public static PID hPID = new PID (0.15, 0.0, 0.003);
 
-    public static double xThresh = 1.0, yThresh = 1.0, hThresh = 2.0;
+    public static double xThresh = 1.0, yThresh = 1.0, hThresh = 2.0, waypointThresh = 3.0;
     private double xError = 0.0, yError = 0.0, hError = 0.0;
 
     public void update() {
@@ -294,22 +294,24 @@ public class Drivetrain {
         setMoveVector(move, h);
     }
 
-    private boolean atPoint(){
+    private boolean atPoint() {
+        if (isWaypoint) return Math.abs(xError) < waypointThresh && Math.abs(yError) < waypointThresh;
         return Math.abs(xError) < xThresh && Math.abs(yError) < yThresh && Math.abs(hError) < Math.toRadians(hThresh);
     }
 
-    private Pose2d lastTargetPoint = new Pose2d(0, 0, 0);
-    double maxPower = 1.0;
-    public void goToPoint(Pose2d targetPoint, double maxPower){
-        lastTargetPoint = this.targetPoint;
+    private double maxPower = 1.0;
+    private boolean isWaypoint = false;
+    public void goToPoint(Pose2d targetPoint, double maxPower) { goToPoint(targetPoint, maxPower, false); };
+    public void goToPoint(Pose2d targetPoint, double maxPower, boolean isWaypoint) {
+        Pose2d lastTargetPoint = this.targetPoint;
         this.targetPoint = targetPoint;
         this.maxPower = maxPower;
+        this.isWaypoint = isWaypoint;
 
-        if(lastTargetPoint.x != targetPoint.x || lastTargetPoint.y != targetPoint.y || lastTargetPoint.heading != targetPoint.heading){
+        if (lastTargetPoint.x != targetPoint.x || lastTargetPoint.y != targetPoint.y || lastTargetPoint.heading != targetPoint.heading) {
             xPID.resetIntegral();
             yPID.resetIntegral();
             hPID.resetIntegral();
-
             state = State.PID_TO_POINT;
         }
     }
