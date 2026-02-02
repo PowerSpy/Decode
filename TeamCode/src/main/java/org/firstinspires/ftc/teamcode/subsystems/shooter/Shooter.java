@@ -47,9 +47,9 @@ public class Shooter {
 
     private boolean aimRequest = false, shootRequest = false, stopRequest = false;
 
-    public static PID turretPID = new PID (0.2, 0.0, 0.015);
-    public static double turretKStatic = 0.05;
-    public static double turretVelFactor = 0.1;
+    public static PID turretPID = new PID (0.25, 0.0, 0.003);
+    public static double turretKStatic = 0.11;
+    public static double turretVelFactor = 0.5;
     private double lastTurretTarget = 0.0;
     public double targetTurretAngle = 0.0;
     private double targetTurretAngleVel = 0.0;
@@ -264,7 +264,7 @@ public class Shooter {
         targetTurretAngleVel = Utils.minMaxClip(targetTurretAngleVel, -150, 150);
         lastTurretTarget = targetTurretAngle;
         double turretAngle = robot.sensors.getTurretAngle();
-        double turretError = targetTurretAngle - Sensors.turretAngleClip(turretAngle) + targetTurretAngleVel * turretVelFactor;
+        double turretError = targetTurretAngle - Sensors.turretAngleClip(turretAngle);
         double turretPow = turretPID.update(turretError, -1, 1) + turretKStatic * Math.signum(turretError);
         if (Math.abs(turretError) < Math.toRadians(2)) turretPow = 0;
         turretPow += targetTurretAngleVel / (turret.servoType.speed) * turretVelFactor; // meant to account for robot rotating

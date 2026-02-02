@@ -11,7 +11,7 @@ import java.util.ArrayList;
 @Config
 public class HardwareQueue {
     public ArrayList<PriorityDevice> devices = new ArrayList<>();
-    public static double targetLoopLength = 0.020; // sets the target loop time in seconds
+    public static double targetLoopLength = 0.016; // sets the target loop time in seconds
     //profe^ prob keep around 0.012
 
     public PriorityDevice getDevice(String name){
