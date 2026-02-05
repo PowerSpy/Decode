@@ -50,6 +50,8 @@ public class Teleop extends LinearOpMode {
         ButtonToggle x2 = new ButtonToggle();
         ButtonToggle y2 = new ButtonToggle();
         ButtonToggle back2 = new ButtonToggle();
+        ButtonToggle lb2 = new ButtonToggle();
+        ButtonToggle rb2 = new ButtonToggle();
         ButtonToggle lsb2 = new ButtonToggle();
         ButtonToggle rsb2 = new ButtonToggle();
 
@@ -188,13 +190,11 @@ public class Teleop extends LinearOpMode {
             if (lsb2.isClicked(gamepad2.left_stick_button)) { // set to localize to blue goal side back corner
                 gamepad1.rumble(1000);
                 gamepad2.rumble(1000);
-                robot.drivetrain.setPoseEstimate(new Pose2d(72 - 6.2, -(72 - 6.5), Math.PI));
+                robot.drivetrain.setPoseEstimate(new Pose2d(71 - 6.2, (ROBOT_POSITION.y > 0 ? 1 : -1) * (71 - 6.5), Math.PI));
             }
-            if (rsb2.isClicked(gamepad2.right_stick_button)) { // set to localize to red goal side back corner
-                gamepad1.rumble(1000);
-                gamepad2.rumble(1000);
-                robot.drivetrain.setPoseEstimate(new Pose2d(72 - 6.2, 72 - 6.5, Math.PI));
-            }
+
+            if (rb2.isClicked(gamepad2.right_bumper));
+            if (lb2.isClicked(gamepad2.left_bumper));
 
             robot.drivetrain.drive(gamepad1);
 

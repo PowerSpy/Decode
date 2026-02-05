@@ -79,9 +79,6 @@ public class Shooter {
     private double prevPow = 0;
 
     // auto-aim
-    public final double fieldWidth = 141.0;
-    public final double halfFieldWidth = fieldWidth/2.0;
-    public final double thirdFieldWidth = fieldWidth/3.0;
     public final double dLauncher = 3.6 / 2.54;
     public final double g = 9.805 * 100 / 2.54; // gravitational accel in in/s/s
     public final double launcherHeight = 13.5;
@@ -89,23 +86,21 @@ public class Shooter {
     public double a = g * g / 4, c, d, e;
     public double v0, cv0;
     public double minV0 = 0.0, minFlywheelVelocity = 0.0;
-    public static double minV0Superthresh = 5; // TODO: need to tune this, controls how much over minV0 we make the v0 strive for pre mult
-    public double minV0factor = 1.07;
-    public static double minV0factorClose = 1.22; // TODO: tune for triple shot
-    public static double voltageV0factor = 12.4;
+    public static double minV0Superthresh = 0; // perhaps eliminate
+    public static double minV0factorClose = 1.243; // TODO: tune for triple shot
     public static double ballInterpolateYFar = 63;
     public static double ballInterpolateZFar = 46;
     public static double ballInterpolateZCloseB = 43;
     public static double ballInterpolateYCloseB = 64;
     public static double ballInterpolateZCloseS = 38.75;
     public static double ballInterpolateYCloseS = 60;
-    public static double minV0factorFar = 1.25  ; // TODO: tune for triple shot
-    public static double flywheelEfficiency = 0.94;
-    public static double flywheelEfficiencyConstantFarAddition = -0.03;
+    public static double minV0factorFar = 1.25; // TODO: tune for triple shot
+    public static double flywheelEfficiency = 0.96;
+    public static double flywheelEfficiencyConstantFarAddition = -0.02;
     private Pose2d lastPos, currVel, lastVel;
     public static double posFilter = 0.9;
-    private final double wallM = (58.3414785 - thirdFieldWidth) / (-55.6424675 + halfFieldWidth);
-    private final double wallB = wallM * halfFieldWidth + thirdFieldWidth;
+    private final double wallM = 17.25 / 23.75 * 0.5;
+    private final double wallB = wallM * 23.75 * 3 + 23.75 * 2;
 
     public Shooter(Robot robot) {
         this.robot = robot;
@@ -298,6 +293,7 @@ public class Shooter {
         TelemetryUtil.packet.put("Shooter : Turret Target (deg)", Math.toDegrees(targetTurretAngle));
         TelemetryUtil.packet.put("Shooter : Hood Target (deg)", Math.toDegrees(hood.getTargetAngle()));
         TelemetryUtil.packet.put("Shooter : Turret Power Applied", turretPow * 100);
+        TelemetryUtil.packet.put("Shooter : Balltarget", ballTarget.toString());
         LogUtil.flywheelTarget.set(targetVelocity);
         LogUtil.shooterState.set(this.state.toString());
         LogUtil.turretTarget.set(targetTurretAngle);
@@ -348,7 +344,7 @@ public class Shooter {
     public void updateBallTargetInterpolate() {
         if (ROBOT_POSITION.x >= 24) ballTarget = new Vector3(-68, ballInterpolateYFar * (Globals.isRed ? 1 : -1), ballInterpolateZFar);
         else {
-            double k = Utils.minMaxClip(Math.hypot(-halfFieldWidth - ROBOT_POSITION.x, halfFieldWidth * (Globals.isRed ? 1 : -1) - ROBOT_POSITION.y), 0, 126) / 126;
+            double k = Utils.minMaxClip(Math.hypot(-71 - ROBOT_POSITION.x, 71 * (Globals.isRed ? 1 : -1) - ROBOT_POSITION.y), 0, 126) / 126;
             ballTarget = new Vector3(-68, (ballInterpolateYCloseS * k + ballInterpolateYCloseB * (1 - k)) * (Globals.isRed ? 1 : -1), ballInterpolateZCloseS * k + ballInterpolateZCloseB * (1 - k));
         }
     }
