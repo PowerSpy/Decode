@@ -86,19 +86,20 @@ public class Shooter {
     public double v0, cv0;
     public double minV0 = 0.0, minFlywheelVelocity = 0.0;
     public static double minV0Superthresh = 0; // perhaps eliminate
-    public static double minV0factorClose = 1.243; // TODO: tune for triple shot
     public static double ballInterpolateYCloseB = 68;
     public static double ballInterpolateYCloseS = 64;
     public static double ballInterpolateYFar = 63;
     public static double ballInterpolateZCloseB = 44;
     public static double ballInterpolateZCloseS = 40;
     public static double ballInterpolateZFar = 46;
-    public static double minV0factorFar = 1.25; // TODO: tune for triple shot
+    public static double minV0factorArc = 1.17; // TODO: tune for triple shot
+    public static double minV0factorFlat = 1.24; // TODO: tune for triple shot
     public static double flywheelEfficiency = 0.955;
     public static double flywheelEfficiencyConstantFarAddition = -0.02;
     private Pose2d lastPos, currVel, lastVel;
     public static double posFilter = 0.9;
     public static double arcDistThresh = 3200;
+    public static int arcFlip = 1;
 
     /*
     (-71, 48)
@@ -391,11 +392,11 @@ public class Shooter {
         this.V = V;
         Log.i("Points", "Set target turret angle & Starting MinV0");
 
-        double a = g * g / 4;
+        a = g * g / 4;
         // double b = 0;
-        double c = V.x * V.x + V.y * V.y + g * P.z;
-        double d = 2 * Vector3.dot(P, V);
-        double e = P.x * P.x + P.y * P.y + P.z * P.z;
+        c = V.x * V.x + V.y * V.y + g * P.z;
+        d = 2 * Vector3.dot(P, V);
+        e = P.x * P.x + P.y * P.y + P.z * P.z;
         List<Double> tRoots = Polynomial.findRealRoots(new double[]{1, 0.0, 0.0, -d/(2 * a), -e/a}, 1e-4);
         for (int i = 0; i < tRoots.size(); i++) {
             if(tRoots.get(i) < 0) {
@@ -403,7 +404,7 @@ public class Shooter {
                 i--;
             }
         }
-        Log.i("MinV0", tRoots.size() + "");
+        Log.i("MinV0", "Num Roots: " + tRoots.size());
         if (tRoots.isEmpty()) {
             Log.i("Points", "Shot dies in MinV0, tRoots is empty");
             TelemetryUtil.packet.put("Aim: aimLauncherV8", "Shot dies in MinV0, tRoots is empty");
@@ -413,15 +414,11 @@ public class Shooter {
 
         double dist2 = e - P.z * P.z; // 2D dist squared
         minV0 = (Math.sqrt(2 * a * tRoots.get(0) * tRoots.get(0) + c + d / 2 / tRoots.get(0)) + minV0Superthresh);
-        if (ROBOT_POSITION.x >= 24) {
-            minV0 *= minV0factorFar;
-            Log.i("MinV0", "minV0: " + minV0);
-            minFlywheelVelocity = minV0 * 2 / (flywheelEfficiency + flywheelEfficiencyConstantFarAddition);
-        } else {
-            minV0 *= minV0factorClose;
-            Log.i("MinV0", "minV0: " + minV0);
-            minFlywheelVelocity = minV0 * 2 / flywheelEfficiency;
-        }
+        if (arcFlip == 1) minV0 *= minV0factorFlat;
+        else minV0 *= minV0factorArc;
+        if (ROBOT_POSITION.x >= 24) minFlywheelVelocity = minV0 * 2 / (flywheelEfficiency + flywheelEfficiencyConstantFarAddition);
+        else minFlywheelVelocity = minV0 * 2 / flywheelEfficiency;
+        Log.i("MinV0", "minV0: " + minV0);
         Log.i("MinV0", "min flywheel:" + minFlywheelVelocity);
 
         double v0 = getBallExitSpd();
@@ -431,6 +428,7 @@ public class Shooter {
 
         double[] thetas;
         double[] phis;
+        double savedFlightTime = 0.0;
         if (v0 > 120)  {
             Log.i("Points", "Entering the hood calculator");
             Log.i("Points", "Entering Dynamic");
@@ -456,47 +454,14 @@ public class Shooter {
             Log.i("Dynamic", "Roots: " + roots.toString() + "]");
             phis = new double[tRoots.size() + 1];
             thetas = new double[phis.length];
+            arcFlip = (dist2 < arcDistThresh ? 1 : -1);
             for (int i = 0; i < tRoots.size(); i++) {
                 double t0 = tRoots.get(i);
                 Vector3 pf = new Vector3(P.x + V.x * t0, P.y + V.y * t0, P.z + g * t0 * t0 / 2);
                 thetas[i] = pf.theta();
                 phis[i] = pf.phi();
 
-                /*
-                if (ROBOT_POSITION.y + v0 * Math.sin(phis[i]) / g * (v0 * Math.sin(phis[i]) * Math.sin(thetas[i]) + V.y)
-                        > (Globals.isRed ? 1 : -1) * (wallM * (ROBOT_POSITION.x + v0 * Math.sin(phis[i]) / g * (v0 * Math.sin(phis[i]) * Math.cos(thetas[i]) + V.x)) + wallB)) {
-                    Log.i("Dynamic", "Point 5: i = " + i + ", peak of trajectory is behind the wall :(");
-                    phis[i] = -100;
-                }
-                */
-
-                /*
-                Vector3 peakPos = new Vector3(ROBOT_POSITION.x, ROBOT_POSITION.y, launcherHeight);
-                // [ -P.y / P.x, 1 ][ x ] = [ ROBOT_POSITION.y - P.y * ROBOT_POSITION.x / P.x ]
-                // [ -wallM    , 1 ][ y ] = [ wallB                                           ]
-                int flip = Globals.isRed ? 1 : -1;
-                double yAtWall = wallM * flip * (ROBOT_POSITION.y - P.y * ROBOT_POSITION.x / P.x) - P.y / P.x * wallB * flip;
-                yAtWall /= wallM * flip - P.y / P.x;
-
-                canvas.setStroke("#808080");
-                canvas.strokeLine(-72 + i * 12, yAtWall, -60 + i * 12, yAtWall);
-
-                double t = (yAtWall - ROBOT_POSITION.y) / (v0 * Math.sin(phis[i]) * Math.sin(thetas[i]) + V.y);
-                Log.i("Dynamic", "Point  : i = " + i + ", t = " + t + ", yAtWall = " + yAtWall);
-                if (t <= 0) {
-                    phis[i] = -100; // this makes sure the ball goes into the target through the restricted diagonal plane
-                    Log.i("Dynamic", "Point 2: i = " + i + ", t = " + t);
-                } else {
-                    double heightAtWall = launcherHeight + v0 * Math.cos(phis[i]) * t - g * t * t / 2;
-                    if (heightAtWall < 38.75 + 2.5) {
-                        phis[i] = -100;
-                        Log.i("Dynamic", "Point 3: i = " + i + ", t = " + t + ", height at wall = " + heightAtWall);
-                    }
-                }
-                */
-
-                int arcFlip = (dist2 < arcDistThresh ? 1 : -1);
-                Log.i("Dynamic", "Flip val = " + arcFlip + ", " + (arcFlip == 1 ? "flat shot" : "arc shot"));
+                Log.i("Dynamic", "Flip val = " + arcFlip + ", " + (arcFlip == 1 ? "arc shot" : "flat shot"));
                 if (phis[i] - hoodSweep <= 0) {
                     Log.i("Dynamic", "Point 4: i = " + i + ", phis[i] = " + phis[i]);
                     phis[i] = 100 * arcFlip;
@@ -504,16 +469,19 @@ public class Shooter {
                 if (i == 0) {
                     thetas[tRoots.size()] = thetas[0];
                     phis[tRoots.size()] = phis[0];
+                    savedFlightTime = t0;
                 } else {
                     if (arcFlip == 1) {
                         if (phis[i] < phis[tRoots.size()]) {
                             phis[tRoots.size()] = phis[i];
                             thetas[tRoots.size()] = thetas[i];
+                            savedFlightTime = t0;
                         }
                     } else {
                         if (phis[i] > phis[tRoots.size()]) {
                             phis[tRoots.size()] = phis[i];
                             thetas[tRoots.size()] = thetas[i];
+                            savedFlightTime = t0;
                         }
                     }
                 }
@@ -533,7 +501,7 @@ public class Shooter {
             return false;
         }
         targetHoodAngle = (phis[tRoots.size()] - hoodSweep) * hoodGearRatio; // subtracts the sweep of the hood
-        Log.i("Points", "The shot is possible and we're returning true!!");
+        Log.i("Points", "The shot is possible, returning true, time: " + savedFlightTime + ", flat?: " + arcFlip);
         TelemetryUtil.packet.put("Aim: aimLauncherV8", "The shot is possible and we're returning true!!");
         return true;
     }

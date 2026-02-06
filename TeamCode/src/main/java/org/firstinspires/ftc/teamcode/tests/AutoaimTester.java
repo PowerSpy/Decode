@@ -7,7 +7,6 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import org.firstinspires.ftc.teamcode.Robot;
 import org.firstinspires.ftc.teamcode.subsystems.intake.Intake;
 import org.firstinspires.ftc.teamcode.subsystems.shooter.Shooter;
-import org.firstinspires.ftc.teamcode.utils.ButtonToggle;
 import org.firstinspires.ftc.teamcode.utils.Globals;
 import org.firstinspires.ftc.teamcode.utils.Pose2d;
 import org.firstinspires.ftc.teamcode.utils.RunMode;
@@ -15,7 +14,7 @@ import org.firstinspires.ftc.teamcode.utils.RunMode;
 @Config
 @TeleOp(group = "Test")
 public class AutoaimTester extends LinearOpMode {
-    public static double rollerPower = 0.8, feedPower = 0.6, minV0FactorClose = Shooter.minV0factorClose, minV0FactorFar = Shooter.minV0factorFar, minV0SuperThresh = 0.0, flywheelEfficiency = 0.63, flywheelEfficiencyConstantFarAddition = -0.05;
+    public static double rollerPower = 0.8, feedPower = 0.6, minV0FactorArc = Shooter.minV0factorArc, minV0FactorFlat = Shooter.minV0factorFlat, minV0SuperThresh = 0.0, flywheelEfficiency = 0.63, flywheelEfficiencyConstantFarAddition = -0.05;
     public static double posX = -24.0, posY = 24, posHeading = 0.75 * Math.PI;
     public static boolean latchBlock = false, aimReq = false, shootReq = false, stopReq = false;
 
@@ -36,8 +35,8 @@ public class AutoaimTester extends LinearOpMode {
             robot.intake.roller.setTargetPower(rollerPower);
             robot.intake.feed.setTargetPower(feedPower);
             robot.shooter.minV0Superthresh = minV0SuperThresh;
-            Shooter.minV0factorClose = minV0FactorClose;
-            Shooter.minV0factorFar = minV0FactorFar;
+            Shooter.minV0factorArc = minV0FactorArc;
+            Shooter.minV0factorFlat = minV0FactorFlat;
             Shooter.flywheelEfficiency = flywheelEfficiency;
             Shooter.flywheelEfficiencyConstantFarAddition = flywheelEfficiencyConstantFarAddition;
             robot.shooter.setShooterBlocker(latchBlock);
