@@ -44,6 +44,7 @@ public class Shooter {
     public final PriorityMotor flywheel;
     public final nPriorityServo hood, flywheelBlocker;
     public final PriorityCRServo turret;
+    private ShotTable shooterTable;
 
     private boolean aimRequest = false, shootRequest = false, stopRequest = false;
     public boolean turretTrackInManual = false;
@@ -119,6 +120,13 @@ public class Shooter {
         this.ms2 = robot.hardwareMap.get(DcMotorEx.class, "shooter2");
         flywheel = new PriorityMotor(new DcMotorEx[]{ms1, ms2},"flywheel",3, 5, new double[] {1, -1}, robot.sensors, false);
 
+        ShotTable shooterTable = new ShotTable();
+
+        // Add: addSetpoint(distanceInches(from goal), new ShotSetpoint(flywheelVel, hoodPos, timeOfFlight(seconds)))
+        shooterTable.addSetpoint(36, new ShotSetpoint(470,0.2 , 0));
+        shooterTable.addSetpoint(68, new ShotSetpoint(545,0.5 , 0));
+        shooterTable.addSetpoint(94, new ShotSetpoint(0.65,625 , 0));
+
         hood = new nPriorityServo(
             new Servo[]{robot.hardwareMap.get(Servo.class, "hood1")},
             "hood", nPriorityServo.ServoType.AXON_MINI,
@@ -170,11 +178,13 @@ public class Shooter {
 
                 setShooterBlocker(true);
                 TelemetryUtil.packet.put("Aim: aimLauncherV8", "before");
-                boolean aimResult = aimLauncherV8();
+                //boolean aimResult = aimLauncherV8();
+                turretTrackTarget();
+                shootRegression();
                 boolean turretResult = Math.abs(targetTurretAngle - robot.sensors.getTurretAngle()) <= Math.toRadians(ROBOT_POSITION.x >= 24 ? 3 : 2);
-                TelemetryUtil.packet.put("Aim: aimResult", aimResult);
+                //TelemetryUtil.packet.put("Aim: aimResult", aimResult);
                 TelemetryUtil.packet.put("Aim: turretResult", turretResult);
-                if (aimResult && hood.inPosition() && turretResult) {
+                if (hood.inPosition() && turretResult) {
                     state = State.READY;
                 }
                 setTargetVelocity(minFlywheelVelocity);
@@ -192,14 +202,15 @@ public class Shooter {
                 setShooterBlocker(true);
 
                 TelemetryUtil.packet.put("Aim: aimLauncherV8", "before");
-                boolean aimResult = aimLauncherV8();
-                boolean turretResult = Math.abs(targetTurretAngle - robot.sensors.getTurretAngle()) <= Math.toRadians(ROBOT_POSITION.x >= 24 ? 3 : 2);
-                TelemetryUtil.packet.put("Aim: aimResult", aimResult);
-                TelemetryUtil.packet.put("Aim: turretResult", turretResult);
+                //boolean aimResult = aimLauncherV8();
+                //TelemetryUtil.packet.put("Aim: aimResult", aimResult);
+                shootRegression();
+                /*
                 if (aimResult && Globals.RUNMODE != RunMode.AUTO) {
                     robot.sensors.light0G.set(true);
                     robot.sensors.light0P.set(true);
                 }
+                */
                 setTargetVelocity(minFlywheelVelocity);
                 setHoodAngle(targetHoodAngle);
                 if (shootRequest) {
@@ -224,7 +235,7 @@ public class Shooter {
                 shootRequest = false;
 
                 setShooterBlocker(false);
-                aimLauncherV8();
+                //aimLauncherV8();
                 setTargetVelocity(minFlywheelVelocity);
                 setHoodAngle(targetHoodAngle);
 
@@ -572,5 +583,14 @@ public class Shooter {
             double finalTime;
         }
         return result;
+    }
+
+    public void shootRegression(){
+        double dist = Math.hypot(ballTarget.x - ROBOT_POSITION.x, ballTarget.y - ROBOT_POSITION.y);
+        ShotSetpoint target = shooterTable.getSetpoint(dist);
+        if (target != null) {
+            minFlywheelVelocity = target.flywheelVel;
+            targetHoodAngle = target.hoodAngle;
+        }
     }
 }

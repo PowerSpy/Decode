@@ -6,8 +6,8 @@ class ShotSetpoint {
     public final double hoodAngle;
     public final double timeOfFlight;
 
-    public ShotSetpoint(double rpm, double hood, double time) {
-        this.flywheelVel = rpm;
+    public ShotSetpoint(double shootVel, double hood, double time) {
+        this.flywheelVel = shootVel;
         this.hoodAngle = hood;
         this.timeOfFlight = time;
     }
