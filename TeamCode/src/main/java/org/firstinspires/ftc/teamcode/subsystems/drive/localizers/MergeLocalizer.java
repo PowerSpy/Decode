@@ -48,7 +48,7 @@ public class MergeLocalizer extends Localizer {
     // Pinpoint
     private GoBildaPinpointDriver pinpoint;
     private Pose2d lastPinpointPose = null, lastPinpointMergePose = null;
-    public static boolean constantCorrection = false;
+    public static boolean constantCorrection = true;
     public static boolean usePinpoint = true;
     public static double pinpointPollDist = 6;
 
@@ -65,7 +65,7 @@ public class MergeLocalizer extends Localizer {
         lastTime = currentTime;
 
         // 3 WHEEL ODOMETRY
-
+        /*
         double deltaLeft = encoders[0].getDelta();
         double deltaRight = encoders[1].getDelta();
         double deltaBack = encoders[2].getDelta();
@@ -84,6 +84,9 @@ public class MergeLocalizer extends Localizer {
         Pose2d relDelta = new Pose2d (relDeltaX,relDeltaY,deltaHeading);
         constAccelMath.calculate(loopTime, relDelta, currentPose);
         constAccelMath.calculate(loopTime, relDelta, poseWithoutLL);
+
+
+         */
 
         // PINPOINT
 
@@ -110,31 +113,27 @@ public class MergeLocalizer extends Localizer {
             );
 
             lastPinpointPose = new Pose2d (pinpoint.getPosX(), pinpoint.getPosY(), pinpoint.getHeading());
-            currentPose = globalPinpointEstimate.clone();
+            currentPose = new Pose2d (pinpoint.getPosX(), pinpoint.getPosY(), pinpoint.getHeading());
             poseWithoutLL = globalPinpointEstimate.clone();
             lastPinpointMergePose = globalPinpointEstimate.clone();
         }
 
         if (lastPinpointPose != null) {
             Canvas fieldOverlay = TelemetryUtil.packet.fieldOverlay();
-            DashboardUtil.drawRobot(fieldOverlay, lastPinpointPose, this.expectedColor); // pink / magenta
+            DashboardUtil.drawRobot(fieldOverlay, new Pose2d(pinpoint.getPosX(), pinpoint.getPosY(), pinpoint.getHeading()), this.expectedColor); // pink / magenta
         }
 
         // LIMELIGHT
 
         if (useLimelight && drivetrain.vision != null) {
-            //drivetrain.vision.reOrient(Math.toDegrees(poseWithoutLL.heading));
-            drivetrain.vision.reOrient(currentPose.heading);
             drivetrain.vision.update();
             result = drivetrain.vision.getResult();
 
             // Assume 90FPS, essentially must be most recent frame
             if (result != null && result.isValid()) {
-                Pose3D llPose = result.getBotpose_MT2();
+                double D = (Globals.tagHeight - Vision.cameraHeight) / Math.tan(Math.toRadians(0.97 - 0.729 * result.getTx() + 9.37 * 0.001 * result.getTx() * result.getTx()));
+                double ty = Math.toRadians(2.88 + 0.249 * result.getTy() + 0.0325 * result.getTy() * result.getTy());
 
-                //39.3700787 is meters to inches
-                //x and y are meant to be switched with a negative, limelight coordinate system is different then ours
-                estimatedLLPose = new Pose2d(llPose.getPosition().y * 39.3700787,  -1 *  llPose.getPosition().x * 39.3700787, llPose.getOrientation().getYaw());
 
                 currentPose.x = currentPose.x * 0.5 + estimatedLLPose.x * 0.5;
                 currentPose.y = currentPose.y * 0.5 + estimatedLLPose.y * 0.5;
@@ -146,11 +145,11 @@ public class MergeLocalizer extends Localizer {
         y = currentPose.y;
         heading = currentPose.heading;
 
-        relHistory.add(0,relDelta);
+        //relHistory.add(0,relDelta);
         nanoTimes.add(0, currentTime);
         poseHistory.add(0, currentPose.clone());
 
-        updateVelocity();
+        //updateVelocity();
         updateExpected();
         updateField();
     }
