@@ -96,7 +96,7 @@ public class LogUtil {
         long timeNow = System.currentTimeMillis();
         String fileName = "Log_" + timeNow + "_"
             + new SimpleDateFormat("yyyy-MM-dd_HH.mm.ss", Locale.US).format(new Date(timeNow))
-            + "_CAT4_Decode_" + Globals.RUNMODE.toString();
+            + "_CAT5_Decode_" + Globals.RUNMODE.toString();
         //TelemetryUtil.packet.put("LogUtil : filename", fileName);
 
         if (datalogger != null) throw new IllegalStateException("LogUtil was already initialized");

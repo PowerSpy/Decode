@@ -32,7 +32,7 @@ public class MergeLocalizer extends Localizer {
 
         pinpoint = hardwareMap.get(GoBildaPinpointDriver.class, "pinpoint");
         // these offsets refer to the center of the turret
-        pinpoint.setOffsets(74, -80, DistanceUnit.MM);
+        pinpoint.setOffsets(3.391, 0.582, DistanceUnit.INCH);
         pinpoint.setEncoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD);
         pinpoint.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.FORWARD, GoBildaPinpointDriver.EncoderDirection.REVERSED);
 

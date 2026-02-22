@@ -48,12 +48,12 @@ public class Shooter {
     private boolean aimRequest = false, shootRequest = false, stopRequest = false;
     public boolean turretTrackInManual = false;
 
-    public static PID turretPID = new PID (0.15, 0.0, 0.008);
-    public static double turretKStatic = 0.07;
-    public static double turretKStaticLeft = 0.07;
-    public static double turretKStaticRight = -0.07;
-    public static double turretDeadzone = 2.5;
-    public static double turretVelFactor = 0.3;
+    public static PID turretPID = new PID (0.1, 0.0, 0.01);
+    public static double turretKStatic = 0.08;
+    public static double turretKStaticLeft = 0.08;
+    public static double turretKStaticRight = -0.08;
+    public static double turretDeadzone = 0.5;
+    public static double turretVelFactor = 0.25;
     private double lastTurretTarget = 0.0;
     public double targetTurretAngle = 0.0;
     private double targetTurretAngleVel = 0.0;
