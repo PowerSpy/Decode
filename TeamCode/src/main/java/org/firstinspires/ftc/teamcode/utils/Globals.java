@@ -19,6 +19,9 @@ public class Globals {
     public static long autoStartTime = -1;
     public static boolean autoHang = true;
     public static boolean gotBloodyAnnihilated = false; // STOP DELETEING THIS FOR GODS SAKE
+    //true if full field
+    public static boolean fullField = false;
+
 
     // drivetrain
     public static boolean DRIVETRAIN_ENABLED = true;
