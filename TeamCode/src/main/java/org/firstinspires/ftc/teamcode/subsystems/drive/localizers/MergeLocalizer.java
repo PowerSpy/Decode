@@ -21,6 +21,7 @@ import org.firstinspires.ftc.teamcode.utils.Lerp;
 import org.firstinspires.ftc.teamcode.utils.Pose2d;
 import org.firstinspires.ftc.teamcode.utils.TelemetryUtil;
 import org.firstinspires.ftc.teamcode.vision.Vision;
+import org.firstinspires.ftc.vision.VisionPortal;
 
 import java.util.Locale;
 
@@ -132,11 +133,17 @@ public class MergeLocalizer extends Localizer {
 
         // Camera
 
-        if (useCamera && drivetrain.vision != null) {
+        if(currentPose.heading % (Math.PI * 2) > Math.PI / 2 && currentPose.heading % (Math.PI * 2) < Math.PI * 3 / 2) {
+            drivetrain.vision.visionPortal.setProcessorEnabled(drivetrain.vision.aprilTagProcessor, true);
+        } else {
+            drivetrain.vision.visionPortal.setProcessorEnabled(drivetrain.vision.aprilTagProcessor, false);
+        }
+
+        if (useCamera && drivetrain.vision != null && drivetrain.vision.visionPortal.getCameraState() == VisionPortal.CameraState.STREAMING && drivetrain.vision.visionPortal.getProcessorEnabled(drivetrain.vision.aprilTagProcessor)) {
             estimatedCameraPose = drivetrain.vision.update();
             if(estimatedCameraPose != null && lastCameraPose != null) {
                 //10 ms delay maximum
-                if(drivetrain.vision.timeSinceLastFrame < 1e7) {
+                if(drivetrain.vision.timeSinceLastFrame < 1e-7) {
                     numberOfTimesRelocalizedWithCamera++;
 
                     //low pass filter
@@ -154,7 +161,7 @@ public class MergeLocalizer extends Localizer {
                     lastCameraPose = estimatedCameraPose.clone();
                 }
             } else if (estimatedCameraPose != null){
-                if(drivetrain.vision.timeSinceLastFrame < 1e7) {
+                if(drivetrain.vision.timeSinceLastFrame < 1e-7) {
                     numberOfTimesRelocalizedWithCamera++;
 
                     currentPose.x = Lerp.lerp(currentPose.x, estimatedCameraPose.x, 0.5);

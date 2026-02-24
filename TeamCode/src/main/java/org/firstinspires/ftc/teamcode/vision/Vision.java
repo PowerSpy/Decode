@@ -75,10 +75,11 @@ public class Vision {
         } catch (Exception e) {
             Log.i("WHAT A TERRIBLE FAILURE.", "Camera Exposure/Gain Control got fried \n" + e);
         }
+
+        visionPortal.setProcessorEnabled(aprilTagProcessor, true);
     }
 
     public Pose2d update() {
-        visionPortal.setProcessorEnabled(aprilTagProcessor, true);
         detections = aprilTagProcessor.getFreshDetections();
 
         Log.i("Number of apriltags", "0");
@@ -105,8 +106,6 @@ public class Vision {
                 }
             } else {
                 AprilTagDetection detection = detections.get(0);
-
-
 
                 TelemetryUtil.packet.put("Decision Margin", String.valueOf(detection.decisionMargin));
 
