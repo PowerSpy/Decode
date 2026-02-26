@@ -14,10 +14,33 @@ public class Flywheel {
     private final Robot robot;
     public final PriorityMotor flywheel;
 
+    /*
+
+    Vel - FF - Tuned 2/25/26
+    0.09 - 40
+    0.15 - 87
+    0.22 - 175
+    0.28 - 222
+    0.33 - 276
+    0.39 - 329
+    0.47 - 417
+    0.55 - 491
+    0.64 - 565
+    0.69 - 606
+    0.74 - 670
+    0.82 - 706
+    0.91 - 767
+    0.96 - 807
+    1 - 848
+
+
+
+     */
+
     // velocity is in inches / second
     public static PID velocityPID = new PID (0.0, 0.0002, 0.0001);
-    public static double velocityFFm = 0.00126259;
-    public static double velocityFFb = 0.0507448;
+    public static double velocityFFm = 0.00124059;
+    public static double velocityFFb = 0.0264087;
     public static double velocityFilterLow = 0.05;
     public static double velocityFilterHigh = 0.5;
     public static double velocityFilterThresh = 60;
@@ -72,4 +95,8 @@ public class Flywheel {
     public double getFilteredVelocity() { return filteredVelocity; }
 
     public boolean atVel() { return Math.abs(targetVelocity - filteredVelocity) <= atVelThresh; }
+
+    public double getError() {
+        return Math.abs(targetVelocity - filteredVelocity);
+    }
 }

@@ -101,7 +101,7 @@ public class Shooter {
         shooterTable.addSetpoint(61.3, new ShotSetpoint(480,Math.toRadians(42)));
         shooterTable.addSetpoint(81.5, new ShotSetpoint(520,Math.toRadians(48)));
         shooterTable.addSetpoint(95.6, new ShotSetpoint(520,Math.toRadians(51)));
-        shooterTable.addSetpoint(Math.hypot(120, 60), new ShotSetpoint(580,0.847));
+        shooterTable.addSetpoint(129, new ShotSetpoint(605,1.5));
         /*
         shooterTable.addSetpoint(40.3, new ShotSetpoint(430,0));
         shooterTable.addSetpoint(43.6, new ShotSetpoint(440,0.05));
@@ -166,7 +166,7 @@ public class Shooter {
                 TelemetryUtil.packet.put("Aim: turretResult", turretResult);
                 TelemetryUtil.packet.put("Aim: hood.inPosition", hood.inPosition());
                 TelemetryUtil.packet.put("Aim: atVel", atVel());
-                if (hood.inPosition() && turretResult && this.atVel()) {
+                if (turretResult && this.atVel()) {
                     state = State.READY;
                 }
                 flywheel.setTargetVelocity(minFlywheelVelocity);
