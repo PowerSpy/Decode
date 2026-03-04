@@ -558,6 +558,15 @@ public class Shooter {
         // Setting initial goal for the virtual
         double virtualX = ballTarget.x;
         double virtualY = ballTarget.y;
+        /*
+        if(ROBOT_POSITION.x < - 32) {
+
+            double temp = virtualY;
+            virtualY = virtualX * (Globals.isRed ? -1 : 1);
+            virtualX = temp * (Globals.isRed ? -1 : 1);
+        }
+
+         */
 
         // Looping through virtual goal
         //getting time of flight

@@ -62,6 +62,8 @@ public class MergeLocalizer extends Localizer {
     private int consecutiveFrames = 0;
     private int notVisibleCooldown = 0;
 
+    public static int cameraSearch = 25; // number of loops
+
     public static double a = 0.4;
     public static double b = 0.4;
     public static double c = 0.4;
