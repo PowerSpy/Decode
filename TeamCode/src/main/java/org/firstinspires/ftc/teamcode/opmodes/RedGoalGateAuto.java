@@ -21,7 +21,7 @@ import org.firstinspires.ftc.teamcode.utils.TelemetryUtil;
 @Autonomous(name = "* Red Goal Gate Auto", group = "Auto", preselectTeleOp = "A. Teleop")
 public class RedGoalGateAuto extends LinearOpMode {
     private Robot robot;
-    public static long shootDuration = 850, intakeDuration = 1200, gateIntakeDuration = 1100, gateOpenDuration = 600;
+    public static long shootDuration = 700, intakeDuration = 1000, gateIntakeDuration = 1000, gateOpenDuration = 700;
 
     public void runOpMode() {
         Globals.isRed = true;
@@ -32,6 +32,7 @@ public class RedGoalGateAuto extends LinearOpMode {
 
         robot.shooter.state = Shooter.State.IDLE;
         robot.shooter.setShooterBlocker(true);
+        robot.shooter.autoToggle();
         //robot.shooter.turretTrackInManual = true;
 
         while (opModeInInit()) {
@@ -55,19 +56,19 @@ public class RedGoalGateAuto extends LinearOpMode {
         shoot(Math.toRadians(45), 1);
         intake(11, 60, true, false);
         //middle spikemarks
-        shoot(Math.toRadians(80), 1);
+        shoot(Math.toRadians(90), 1);
         //gate intake and shoot
         gate_intake(true);
-        shoot(Math.toRadians(80), 1);
+        shoot(Math.toRadians(90), 1);
         //close spikemarks
         intake(-13, 53, true, false);
-        shoot(Math.toRadians(80), 2);
+        shoot(Math.toRadians(90), 2);
         //robot.shooter.setShooter(Shooter.Dist.CLOSE);
         //robot.drivetrain.goToPoint(new Pose2d(18, 22, Math.PI), 1.0, true);
         //robot.waitWhile(() -> robot.drivetrain.state != Drivetrain.State.WAIT);
         //far spikemarks
-        intake(35, 60, true, true);
-        shoot(Math.toRadians(20), 1);
+        intake(35, 60, true, false);
+        shoot(Math.toRadians(90), 1);
 
         robot.shooter.reqStop(true);
         robot.shooter.turret.setTargetAngle(0.0);
@@ -81,6 +82,7 @@ public class RedGoalGateAuto extends LinearOpMode {
         robot.waitWhile(() -> {
             Globals.AUTO_ENDING_POSE = Globals.ROBOT_POSITION.clone();
             robot.shooter.flywheel.setTargetVelocity(0);
+            robot.shooter.autoToggle();
             return true;
         });
     }

@@ -49,6 +49,7 @@ public class Shooter {
 
     private boolean aimRequest = false, shootRequest = false, stopRequest = false;
     public boolean turretTrackInManual = false;
+    public boolean autoOn = false;
 
     public double targetHoodAngle = 0.0;
     public static double hoodSweep = Math.toRadians(26.43);
@@ -105,7 +106,7 @@ public class Shooter {
         shooterTable.addSetpoint(39.9, new ShotSetpoint(400,Math.toRadians(27)));
         shooterTable.addSetpoint(51.9, new ShotSetpoint(450,Math.toRadians(34)));
         shooterTable.addSetpoint(61.3, new ShotSetpoint(480,Math.toRadians(42)));
-        shooterTable.addSetpoint(81.5, new ShotSetpoint(520,Math.toRadians(48)));
+        shooterTable.addSetpoint(81.5, new ShotSetpoint(520,Math.toRadians(50)));
         shooterTable.addSetpoint(95.6, new ShotSetpoint(520,Math.toRadians(50)));
         shooterTable.addSetpoint(129, new ShotSetpoint(620,Math.toRadians(47)));
         /*
@@ -530,8 +531,7 @@ public class Shooter {
             // Barycentric weight calculation
             double w1 = ((y2 - y3) * (px - x3) + (x3 - x2) * (py - y3)) / denom;
             double w2 = ((y3 - y1) * (px - x3) + (x1 - x3) * (py - y3)) / denom;
-            double w3 = 1.0 - w1 - w2;
-
+            double w3 = ((y1 - y2) * (px - x3) + (x2 - x1) * (py - y3)) / denom;
             //none of the triangle areas are negative meaning robot is inside the triangle
             if (w1 >= 0 && w2 >= 0 && w3 >= 0) {
                 return true;
@@ -539,6 +539,9 @@ public class Shooter {
         }
 
         return false;
+    }
+    public void autoToggle(){
+        autoOn = !autoOn;
     }
 
     public void predictGoal() {
@@ -553,6 +556,8 @@ public class Shooter {
         */
         if (ROBOT_POSITION.x > 24) {
             ballTarget = new Vector3(-70,71 * (Globals.isRed ? 1 : -1),42);
+        } else if(autoOn){
+            ballTarget = new Vector3(-66, 68 *  (Globals.isRed ? 1 : -1),42);
         } else {
             ballTarget = new Vector3(-68,69 * (Globals.isRed ? 1 : -1),42);
         }
