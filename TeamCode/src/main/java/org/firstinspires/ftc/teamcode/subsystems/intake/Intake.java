@@ -21,6 +21,7 @@ public class Intake {
     private boolean requestIntake = false, requestShoot = false, requestOff = false, reversed = false;
 
     public static double intakeRollerPower = 1.0, intakeFeedPower = 0.4, shootRollerPower = 1.0, shootFeedPower = 0.8;
+    public static long intakeReverseDuration = 100;
 
     public enum State {
         IDLE,
@@ -79,7 +80,7 @@ public class Intake {
                 requestOff = false;
 
                 roller.setTargetPower(0.0);
-                feed.setTargetPower(System.currentTimeMillis() < turnedOffTime + 250 ? -intakeFeedPower : 0.0);
+                feed.setTargetPower(System.currentTimeMillis() < turnedOffTime + intakeReverseDuration ? -intakeFeedPower : 0.0);
 
                 if (requestIntake) {
                     requestIntake = false;

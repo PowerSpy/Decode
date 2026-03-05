@@ -24,7 +24,7 @@ public class SensorTester extends LinearOpMode {
         Globals.RUNMODE = RunMode.TESTER;
         Globals.TESTING_DISABLE_CONTROL = true;
 
-        Robot robot = new Robot(hardwareMap);
+        Robot robot = new Robot(hardwareMap, true);
 
         //robot.update();
         waitForStart();

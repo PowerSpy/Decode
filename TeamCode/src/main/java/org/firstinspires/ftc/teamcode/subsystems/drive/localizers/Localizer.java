@@ -47,7 +47,7 @@ public class Localizer {
     protected String color;
     protected String expectedColor;
 
-    public static double targetVelTimeEstimate = 0.1;
+    public static double targetVelTimeEstimate = 0.2;
 
     public Localizer(Sensors sensors, Drivetrain drivetrain, String color, String expectedColor) {
         this.sensors = sensors;

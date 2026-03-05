@@ -55,17 +55,13 @@ public class MergeLocalizer extends Localizer {
     public static boolean useCamera = true;
     private int numberOfTimesRelocalizedWithCamera = 0;
     private long lastFrameAcquisitionNanoTime = 0;
-    public static double cameraSmoothFactor = 0.05;
+    public static double cameraFilterFactor = 0.2, cameraSmoothFactor = 0.01;
     //how many frames the camera has to see consecutively before it updates the pose
     public static int frameRequirement = 3;
     private int consecutiveFrames = 0;
     private int notVisibleCooldown = 0;
 
     public static int cameraSearch = 25; // number of loops
-
-    public static double a = 0.4;
-    public static double b = 0.4;
-    public static double c = 0.4;
 
     public void update() {
         long currentTime = System.nanoTime();
@@ -146,9 +142,14 @@ public class MergeLocalizer extends Localizer {
         if (useCamera && Math.hypot(Globals.ROBOT_VELOCITY.x, Globals.ROBOT_VELOCITY.y) < 20 && drivetrain.vision != null && drivetrain.vision.visionPortal.getCameraState() == VisionPortal.CameraState.STREAMING && drivetrain.vision.visionPortal.getProcessorEnabled(drivetrain.vision.aprilTagProcessor)) {
             Pose2d cameraResult = drivetrain.vision.update();
             if (cameraResult != null) {
-                estimatedCameraPose = cameraResult;
+                if (estimatedCameraPose == null) estimatedCameraPose = cameraResult;
+                else estimatedCameraPose = new Pose2d(
+                    Lerp.lerp(estimatedCameraPose.x, cameraResult.x, cameraFilterFactor),
+                    Lerp.lerp(estimatedCameraPose.y, cameraResult.y, cameraFilterFactor),
+                    Lerp.lerpAngle(estimatedCameraPose.heading, cameraResult.heading, cameraFilterFactor)
+                );
                 consecutiveFrames++;
-                notVisibleCooldown = 15;
+                notVisibleCooldown = 20;
             } else {
                 --notVisibleCooldown;
                 if (notVisibleCooldown < 0) {
@@ -164,22 +165,24 @@ public class MergeLocalizer extends Localizer {
                 //if(consecutiveFrames >= frameRequirement) {
                 //  consecutiveFrames = 0;
                 //we want to find the last pinpoint/odo pose at the time that the camera was taken
-                if (nanoTimes.size() > 5 /* && lastFrameAcquisitionNanoTime < frameAcquisitionNanoTime*/) {
+                if (nanoTimes.size() > 5 && consecutiveFrames >= frameRequirement /* && lastFrameAcquisitionNanoTime < frameAcquisitionNanoTime*/) {
                     findPastInterpolatedPose(frameAcquisitionNanoTime);
                     //then find the offset between that and the camera pose
 
                     //cameraOffsets = new Pose2d(pastPose.x - estimatedCameraPose.x, pastPose.y - estimatedCameraPose.y, pastPose.heading - estimatedCameraPose.heading);
                     Pose2d smoothCameraPose = new Pose2d(
-                        Lerp.lerp(estimatedCameraPose.x, interpolatedPastPose.x, cameraSmoothFactor),
-                        Lerp.lerp(estimatedCameraPose.y, interpolatedPastPose.y, cameraSmoothFactor),
-                        Lerp.lerpAngle(estimatedCameraPose.heading, interpolatedPastPose.heading, cameraSmoothFactor)
+                        Lerp.lerp(interpolatedPastPose.x, estimatedCameraPose.x, cameraSmoothFactor),
+                        Lerp.lerp(interpolatedPastPose.y, estimatedCameraPose.y, cameraSmoothFactor),
+                        Lerp.lerpAngle(interpolatedPastPose.heading, estimatedCameraPose.heading, cameraSmoothFactor)
                     );
                     Pose2d newPose = offsetPoseUsingGlobalDelta(currentPose, interpolatedPastPose, smoothCameraPose);
+                    TelemetryUtil.packet.put("Vision : estimatedCameraPose", estimatedCameraPose);
                     TelemetryUtil.packet.put("Vision : pastPose", interpolatedPastPose);
                     TelemetryUtil.packet.put("Vision : newPose", newPose);
                     Canvas fieldOverlay = TelemetryUtil.packet.fieldOverlay();
-                    DashboardUtil.drawRobot(fieldOverlay, interpolatedPastPose, "#ffff00", 3);
-                    DashboardUtil.drawRobot(fieldOverlay, newPose, "#ff8000", 3);
+                    DashboardUtil.drawRobot(fieldOverlay, interpolatedPastPose, "#ff8000", 1);
+                    DashboardUtil.drawRobot(fieldOverlay, newPose, "#0000ff", 4);
+                    DashboardUtil.drawRobot(fieldOverlay, estimatedCameraPose, "#90d5ff", 2);
                     currentPose = newPose;
                     lastPinpointMergePose = offsetPoseUsingGlobalDelta(lastPinpointMergePose, interpolatedPastPose, smoothCameraPose);
                     poseHistory.replaceAll(now -> offsetPoseUsingGlobalDelta(now, interpolatedPastPose, smoothCameraPose));
@@ -255,12 +258,5 @@ public class MergeLocalizer extends Localizer {
         Canvas fieldOverlay = TelemetryUtil.packet.fieldOverlay();
         DashboardUtil.drawRobot(fieldOverlay, currentPose, this.color); // blue
         DashboardUtil.drawPoseHistory(fieldOverlay, poseHistory);
-
-        if (estimatedCameraPose != null) {
-            TelemetryUtil.packet.put("Camera x", estimatedCameraPose.x);
-            TelemetryUtil.packet.put("Camera y", estimatedCameraPose.y);
-            TelemetryUtil.packet.put("Camera heading", estimatedCameraPose.heading);
-            DashboardUtil.drawRobot(fieldOverlay, estimatedCameraPose, "#90d5ff");
-        }
     }
 }

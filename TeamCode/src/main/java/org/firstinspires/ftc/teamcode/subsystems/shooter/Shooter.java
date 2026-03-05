@@ -8,16 +8,11 @@ import android.util.Log;
 
 import com.acmerobotics.dashboard.canvas.Canvas;
 import com.acmerobotics.dashboard.config.Config;
-import com.qualcomm.robotcore.hardware.CRServo;
-import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.Servo;
 
 import org.firstinspires.ftc.teamcode.Robot;
-import org.firstinspires.ftc.teamcode.sensors.Sensors;
-import org.firstinspires.ftc.teamcode.utils.AngleUtil;
 import org.firstinspires.ftc.teamcode.utils.Globals;
 import org.firstinspires.ftc.teamcode.utils.LogUtil;
-import org.firstinspires.ftc.teamcode.utils.PID;
 import org.firstinspires.ftc.teamcode.utils.Polynomial;
 import org.firstinspires.ftc.teamcode.utils.Pose2d;
 import org.firstinspires.ftc.teamcode.utils.RunMode;
@@ -25,8 +20,6 @@ import org.firstinspires.ftc.teamcode.utils.TelemetryUtil;
 import org.firstinspires.ftc.teamcode.utils.Utils;
 import org.firstinspires.ftc.teamcode.utils.Vector2;
 import org.firstinspires.ftc.teamcode.utils.Vector3;
-import org.firstinspires.ftc.teamcode.utils.priority.PriorityCRServo;
-import org.firstinspires.ftc.teamcode.utils.priority.PriorityMotor;
 import org.firstinspires.ftc.teamcode.utils.priority.nPriorityServo;
 
 import java.util.List;
@@ -45,7 +38,7 @@ public class Shooter {
     public final Flywheel flywheel;
     public final Turret turret;
     public final nPriorityServo hood, flywheelBlocker;
-    private ShotTable shooterTable;
+    private final ShotTable shooterTable;
 
     private boolean aimRequest = false, shootRequest = false, stopRequest = false;
     public boolean turretTrackInManual = false;
@@ -115,19 +108,19 @@ public class Shooter {
 
 
         hood = new nPriorityServo(
-                new Servo[]{robot.hardwareMap.get(Servo.class, "hood1")},
-                "hood", nPriorityServo.ServoType.AXON_MINI,
-                0.03, 0.33, 0.03,
-                new boolean[] {false},
-                3, 7
+            new Servo[]{robot.hardwareMap.get(Servo.class, "hood1")},
+            "hood", nPriorityServo.ServoType.AXON_MINI,
+            0.03, 0.33, 0.03,
+            new boolean[] {false},
+            3, 7
         );
 
         flywheelBlocker = new nPriorityServo(
-                new Servo[]{robot.hardwareMap.get(Servo.class, "flywheelBlocker")},
-                "flywheelBlocker", nPriorityServo.ServoType.AXON_MICRO,
-                0, 0.7, 0.1,
-                new boolean[] {false},
-                2, 2
+            new Servo[]{robot.hardwareMap.get(Servo.class, "flywheelBlocker")},
+            "flywheelBlocker", nPriorityServo.ServoType.AXON_MICRO,
+            0, 0.7, 0.1,
+            new boolean[] {false},
+            2, 2
         );
 
         robot.hardwareQueue.addDevices(hood, flywheelBlocker);
@@ -366,7 +359,7 @@ public class Shooter {
         double arcFlip = (dist2 < arcDistThresh ? 1 : -1);
         minV0 = (Math.sqrt(2 * a * tRoots.get(0) * tRoots.get(0) + c + d / 2 / tRoots.get(0)) + minV0Superthresh);
         if (arcFlip == 1 && ROBOT_POSITION.x >= 24) minV0 *= minV0factorFlat;
-            //else if (arcFlip == 1) minV0*= minV0factorFlat; use if the close flat shot is jank to have 2 constants
+        //else if (arcFlip == 1) minV0*= minV0factorFlat; use if the close flat shot is jank to have 2 constants
         else minV0 *= minV0factorArc;
         if (ROBOT_POSITION.x >= 24) minFlywheelVelocity = minV0 * 2 / (flywheelEfficiency + flywheelEfficiencyConstantFarAddition);
         else minFlywheelVelocity = minV0 * 2 / flywheelEfficiency;
@@ -482,7 +475,7 @@ public class Shooter {
         FAR(1.3, 610),
         OFF(0.0, 0.0);
 
-        private double hoodAngle, flywheelVel;
+        private final double hoodAngle, flywheelVel;
 
         Dist(double hoodAngle, double flywheelVel) {
             this.hoodAngle = hoodAngle;
@@ -571,7 +564,7 @@ public class Shooter {
         double time = initialDist / (values.flywheelVel / 2 * Math.sin(values.hoodAngle));
         double sotmCompensation = 0;
 
-        TelemetryUtil.packet.put("Shooter Velocity :", Math.hypot(ROBOT_GLOBAL_VELOCITY.x, ROBOT_GLOBAL_VELOCITY.y));
+        TelemetryUtil.packet.put("Shooter : Robot Velocity", Math.hypot(ROBOT_GLOBAL_VELOCITY.x, ROBOT_GLOBAL_VELOCITY.y));
 
         // Offset the virtual goal by the robot's velocity during flight
         if (Math.hypot(ROBOT_GLOBAL_VELOCITY.x, ROBOT_GLOBAL_VELOCITY.y) > 10) {

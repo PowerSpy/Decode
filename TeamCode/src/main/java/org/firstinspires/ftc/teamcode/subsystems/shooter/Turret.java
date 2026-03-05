@@ -17,11 +17,11 @@ public class Turret {
     private final Robot robot;
     public final PriorityCRServo turret;
 
-    public static PID turretPID = new PID (0.15, 0.0, 0.035);
+    public static PID turretPID = new PID (0.1, 0.0, 0.02);
     public static double turretKStatic = 0.09;
     public static double turretDeadzone = Math.toRadians(2.5);
-    public static double inPositionThresh = Math.toRadians(2.5);
-    public static double turretVelFactor = 0.25;
+    public static double inPositionThresh = Math.toRadians(3.5);
+    public static double turretVelFactor = 0.2;
     private double lastTurretTarget = 0.0;
     private double targetTurretAngle = 0.0;
     private double targetTurretAngleVel = 0.0;

@@ -12,6 +12,7 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
 import org.firstinspires.ftc.teamcode.Robot;
 import org.firstinspires.ftc.teamcode.sensors.Sensors;
+import org.firstinspires.ftc.teamcode.subsystems.drive.localizers.MergeLocalizer;
 import org.firstinspires.ftc.teamcode.subsystems.shooter.Shooter;
 import org.firstinspires.ftc.teamcode.utils.ButtonToggle;
 import org.firstinspires.ftc.teamcode.utils.Globals;
@@ -50,6 +51,7 @@ public class Teleop extends LinearOpMode {
         ButtonToggle x1 = new ButtonToggle();
         ButtonToggle lt1 = new ButtonToggle();
         ButtonToggle rt1 = new ButtonToggle();
+        ButtonToggle back1 = new ButtonToggle();
 
         ButtonToggle a2 = new ButtonToggle();
         ButtonToggle b2 = new ButtonToggle();
@@ -60,6 +62,7 @@ public class Teleop extends LinearOpMode {
         ButtonToggle v2 = new ButtonToggle();
         ButtonToggle lb2 = new ButtonToggle();
         ButtonToggle rb2 = new ButtonToggle();
+        ButtonToggle guide2 = new ButtonToggle();
 
         boolean intakeReversed = false;
         boolean intakeOn = false;
@@ -232,6 +235,23 @@ public class Teleop extends LinearOpMode {
                 robot.drivetrain.setPoseEstimate(new Pose2d(0,0,0));
                 gamepad1.rumble(1200);
                 gamepad2.rumble(1200);
+            }
+
+            if (back1.isClicked(gamepad1.back)) { // turret encoder
+                Sensors.resetTurretAngleEncoder = true;
+                gamepad1.rumble(200);
+                gamepad2.rumble(200);
+            }
+
+            if (guide2.isClicked(gamepad2.guide)) { // camera
+                MergeLocalizer.useCamera = !MergeLocalizer.useCamera;
+                if (MergeLocalizer.useCamera) {
+                    gamepad1.rumble(250);
+                    gamepad2.rumble(250);
+                } else {
+                    gamepad1.rumble(100);
+                    gamepad2.rumble(100);
+                }
             }
 
             if (h2.isClicked(gamepad2.dpad_left || gamepad2.dpad_right)) { // localize to left/right edge (unchanged x, auto y, auto h)

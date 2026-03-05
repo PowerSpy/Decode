@@ -62,7 +62,7 @@ public class Vision {
 
         visionPortal = builder.build();
 
-        TelemetryUtil.dashboard.startCameraStream(visionPortal, 30);
+        //TelemetryUtil.dashboard.startCameraStream(visionPortal, 30);
 
         try {
             ExposureControl exposureControl = visionPortal.getCameraControl(ExposureControl.class);
@@ -112,7 +112,8 @@ public class Vision {
             } else if (!detections.isEmpty()) {
                 AprilTagDetection detection = detections.get(0);
 
-                TelemetryUtil.packet.put("Decision Margin", String.valueOf(detection.decisionMargin));
+                TelemetryUtil.packet.put("Vision : Decision Margin", String.valueOf(detection.decisionMargin));
+                if (detection.decisionMargin < 110) return null;
 
                 frameAcquisitionNanoTime = detection.frameAcquisitionNanoTime;
 
