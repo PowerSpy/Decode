@@ -41,7 +41,10 @@ public class RedTunnelCycleAuto extends LinearOpMode {
         if (!isStopRequested()) LogUtil.init();
         LogUtil.drivePositionReset = true;
 
-        robot.shooter.setShooter(Shooter.Dist.FAR);
+        robot.shooter.setManual(false);
+
+        robot.shooter.reqAim(true);
+
 
         shoot(Math.PI / 2, true);
         for (int i = 0; i < 3; ++i) {
@@ -61,15 +64,15 @@ public class RedTunnelCycleAuto extends LinearOpMode {
     }
 
     private void shoot(double heading, boolean firstShot) {
+
         robot.drivetrain.goToPoint(new Pose2d(63, 16, heading), 0.4);
-        robot.waitWhile(() ->  robot.drivetrain.state != Drivetrain.State.WAIT || !robot.shooter.atVel() || !robot.shooter.turret.inPosition());
+        robot.waitWhile(() -> robot.drivetrain.state != Drivetrain.State.WAIT || robot.shooter.state != Shooter.State.READY);
         robot.waitFor(firstShot ? 200 : 100);
 
-        robot.shooter.setShooterBlocker(false);
-        robot.intake.reqShoot(true);
+        robot.shooter.reqShoot(true);
         robot.waitFor(shootDuration);
-        robot.shooter.setShooterBlocker(true);
-        robot.intake.reqOff(true);
+        robot.shooter.reqStop(true);
+
     }
 
     private void intake(double x, double y) {
@@ -83,5 +86,8 @@ public class RedTunnelCycleAuto extends LinearOpMode {
         robot.drivetrain.goToPoint(new Pose2d(x, 16, Math.PI / 2), 1, true);
         robot.waitWhile(() -> robot.drivetrain.state != Drivetrain.State.WAIT);
         //robot.intake.reqOff(true);
+
+        robot.shooter.reqAim(true);
+
     }
 }

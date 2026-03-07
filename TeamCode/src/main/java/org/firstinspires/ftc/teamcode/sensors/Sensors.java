@@ -44,7 +44,7 @@ public class Sensors {
     public static double turretAngleFilter = 0.6;
     public static double turretLimitLeft = Math.toRadians(330), turretLimitRight = Math.toRadians(-20), turretWrapMid = Math.toRadians(155);
     public static boolean resetTurretAngleEncoder = true;
-    private static double turretAnalogEncoderVoltage;
+    private double turretAnalogEncoderVoltage;
 
     private double lightSensorFilteredVoltage = 0;
     public static double lightSensorFilter = 0.5;
@@ -108,6 +108,7 @@ public class Sensors {
         ROBOT_VELOCITY = robot.drivetrain.mergeLocalizer.getRelativePoseVelocity();
         ROBOT_GLOBAL_VELOCITY = robot.drivetrain.mergeLocalizer.getGlobalVelocity();
 
+        if (currentTime - initialTime < 200_000_000) resetTurretAngleEncoder = true;
         turretAngleEncoderPosition = robot.intake.feed.motor[0].getCurrentPosition() * (Math.PI) / -8192 / 2;
         double newTurretAngle = (turretAngleEncoderPosition - turretAngleEncoderOffset) % (2 * Math.PI);
         if (resetTurretAngleEncoder) {
@@ -120,13 +121,17 @@ public class Sensors {
         }
         turretAngle = turretAngle * (1 - turretAngleFilter) + newTurretAngle * turretAngleFilter;
 
-        double lightSensorRawVoltage = lightSensor0.getVoltage();
         if (Globals.RUNMODE != RunMode.AUTO && currentTime - lastColorSensorUpdatedTime > colorSensorUpdateTime * 1e6) {
+            double lightSensorRawVoltage = lightSensor0.getVoltage();
             lightSensorFilteredVoltage = lightSensorFilteredVoltage * (1 - lightSensorFilter) + lightSensorRawVoltage * lightSensorFilter;
             isGreen = lightSensorFilteredVoltage > 0.01;
             isPurple = !isGreen && lightSensorFilteredVoltage > 0.005;
             light0G.set(isGreen);
             light0P.set(isPurple);
+            TelemetryUtil.packet.put("Intake : Light Raw Voltage", lightSensorRawVoltage);
+            TelemetryUtil.packet.put("Intake : Light Filtered Voltage", lightSensorFilteredVoltage);
+            //TelemetryUtil.packet.put("Intake : Light Voltage Green Thresh", 0.009);
+            //TelemetryUtil.packet.put("Intake : Light Voltage Purple Thresh", 0.004);
             lastColorSensorUpdatedTime = currentTime;
         }
 
@@ -135,7 +140,7 @@ public class Sensors {
             lastVoltageUpdatedTime = currentTime;
         }
 
-        updateTelemetry(lightSensorRawVoltage);
+        updateTelemetry();
     }
 
     public double getFlywheelVelocity() { return flywheelVelocity; }
@@ -159,7 +164,7 @@ public class Sensors {
 
     //position of the park slides
 
-    private void updateTelemetry(double lightSensorRawVoltage) {
+    private void updateTelemetry() {
         TelemetryUtil.packet.put("Sensors: Voltage", voltage);
 
         TelemetryUtil.packet.put("Sensors : Flywheel Velocity (in/s)", flywheelVelocity);
@@ -167,8 +172,6 @@ public class Sensors {
         TelemetryUtil.packet.put("Sensors : Hood Angle (deg)", Math.toDegrees(robot.shooter.hood.getCurrentAngle() / Shooter.hoodGearRatio + Shooter.hoodSweep));
 
         TelemetryUtil.packet.put("Sensors : Ball Color", isPurple ? "purple" : isGreen ? "green" : "none");
-        TelemetryUtil.packet.put("Sensors : Light Raw Voltage", lightSensorRawVoltage);
-        TelemetryUtil.packet.put("Sensors : Light Filtered Voltage", lightSensorFilteredVoltage);
 
         Canvas fieldOverlay = TelemetryUtil.packet.fieldOverlay();
         DashboardUtil.drawRobot(fieldOverlay, ROBOT_POSITION, "#00ff00", turretAngle, "#00e000c0", robot.shooter.turret.getTargetAngle(), "#8000ff");
