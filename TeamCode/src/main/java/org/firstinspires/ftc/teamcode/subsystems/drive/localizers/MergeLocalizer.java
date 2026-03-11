@@ -62,6 +62,7 @@ public class MergeLocalizer extends Localizer {
     private int consecutiveFrames = 0;
     private int notVisibleCooldown = 0;
     public static int maxVisionErrorThresh = 10;
+    public static int maxVisionErrorThreshHeading = 20; //degrees
 
     public static int cameraSearch = 25; // number of loops
 
@@ -168,7 +169,13 @@ public class MergeLocalizer extends Localizer {
                 //if(consecutiveFrames >= frameRequirement) {
                 //  consecutiveFrames = 0;
                 //we want to find the last pinpoint/odo pose at the time that the camera was taken
-                if (nanoTimes.size() > 5 && consecutiveFrames >= frameRequirement && estimatedCameraPose.getErrorInX(currentPose) < maxVisionErrorThresh && estimatedCameraPose.getErrorInY(currentPose) < maxVisionErrorThresh) {
+
+                double error = estimatedCameraPose.heading - currentPose.heading;
+                error = (error + Math.PI) % (2 * Math.PI);
+                if (error < 0) error += 2 * Math.PI;
+                error -= Math.PI;
+
+                if (nanoTimes.size() > 5 && consecutiveFrames >= frameRequirement && estimatedCameraPose.getErrorInX(currentPose) < maxVisionErrorThresh && estimatedCameraPose.getErrorInY(currentPose) < maxVisionErrorThresh && error < Math.toRadians(maxVisionErrorThreshHeading)) {
                     findPastInterpolatedPose(frameAcquisitionNanoTime);
                     //then find the offset between that and the camera pose
 
