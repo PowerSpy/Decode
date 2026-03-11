@@ -44,26 +44,26 @@ public class ShotTable2 {
             .addValue(580, Math.toRadians(49.3))
             .addValue(560, Math.toRadians(37))
         );
-        table.put(122.0, new ShotPoint(607)
-            .addValue(607, Math.toRadians(49.6))
-        );
-        table.put(131.0, new ShotPoint(625)
-            .addValue(625, Math.toRadians(51))
-            .addValue(615, Math.toRadians(47))
-        );
-        table.put(135.0, new ShotPoint(638)
-            .addValue(638, Math.toRadians(51))
-        );
-        table.put(137.0, new ShotPoint(640)
-            .addValue(640, Math.toRadians(48.5))
+        table.put(133.5, new ShotPoint(630)
+            .addValue(630, Math.toRadians(51))
+            .addValue(610, Math.toRadians(51.65))
+            .addValue(580, Math.toRadians(45.38))
+            .addValue(520, Math.toRadians(41.43))
         );
         table.put(140.0, new ShotPoint(660)
             .addValue(660, Math.toRadians(48.5))
             .addValue(635, Math.toRadians(50))
+            .addValue(620, Math.toRadians(48.5))
+            .addValue(600, Math.toRadians(38))
+            .addValue(580, Math.toRadians(37.4))
+            .addValue(560, Math.toRadians(39))
         );
         table.put(154.0, new ShotPoint(660)
             .addValue(660, Math.toRadians(48.5))
             .addValue(645, Math.toRadians(48))
+            .addValue(620, Math.toRadians(50.11))
+            .addValue(600, Math.toRadians(45))
+            .addValue(570, Math.toRadians(45.4))
         );
     }
 

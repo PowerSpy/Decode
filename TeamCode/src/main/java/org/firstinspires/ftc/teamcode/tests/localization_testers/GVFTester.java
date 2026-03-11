@@ -1,5 +1,5 @@
 package org.firstinspires.ftc.teamcode.tests.localization_testers;
-/*
+
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 
@@ -21,15 +21,11 @@ public class GVFTester extends LinearOpMode{
 
         robot.drivetrain.setPoseEstimate(new Pose2d (0, 0, 0));
 
-        ArrayList<RepulsionPoint> repel = new ArrayList<>();
-        repel.add(new RepulsionPoint(24, 54, 8));
-        repel.add(new RepulsionPoint(0, 54, 8));
-        repel.add(new RepulsionPoint(-24, 54, 8));
 
-        Path testPath = new Path(new Pose2d(0, 0, 0), repel)
-                .addPoint(new Pose2d(0, 48, 0))
-                .setDecel(true);
 
+        Path testPath = new Path(new Pose2d(0, 0, 0))
+                .addPoint(new Pose2d(0, 30, 0), false, false)
+                .addPoint(new Pose2d(10,10,Math.PI/2),false, false);
         waitForStart();
 
         while(opModeInInit()){
@@ -44,4 +40,4 @@ public class GVFTester extends LinearOpMode{
     }
 }
 
- */
+

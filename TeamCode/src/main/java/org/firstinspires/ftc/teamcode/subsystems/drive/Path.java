@@ -108,19 +108,26 @@ public class Path {
         return new GuidingVectors(v_t, v_p, v_r);
     }
 
+    private int lastIndex = 0;
+
     public PathData update(Pose2d robot) {
-        int index = 0;
-        while (index < segments.size() - 1 && segments.get(index).spline.getT(robot) > 0.98) {
+        int index = lastIndex;
+        while (index < segments.size() - 1 && segments.get(index).spline.getT(robot) > 0.99) {
             index++;
         }
 
         if (index == segments.size()) return null;
 
+        lastIndex = index;
+
         PathSegment currSeg = segments.get(index);
         GuidingVectors currentGVF = calculate(currSeg, robot);
         double t = currSeg.spline.getT(robot);
+        double blendThreshold = 0.95;
         Vector2 finalVel = currentGVF.theoreticalVel();
-        double blendThreshold = 0.9;
+
+        GuidingVectors current;
+        GuidingVectors predict;
 
         if (index < segments.size() - 1 && t > blendThreshold) {
             PathSegment nextSeg = segments.get(index + 1);
@@ -130,19 +137,24 @@ public class Path {
 
             finalVel.x = finalVel.x * (1 - weight) + nextGVF.theoreticalVel().x * weight;
             finalVel.y = finalVel.y * (1 - weight) + nextGVF.theoreticalVel().y * weight;
+
+            currSeg = segments.get(index+1);
+            currentGVF = calculate(currSeg, robot);
         }
 
-        GuidingVectors current = calculate(segments.get(index), robot);
-        GuidingVectors predict = calculate(segments.get(index), new Pose2d(robot.x + current.theoreticalVel().x * 0.001, robot.y + current.theoreticalVel().y * 0.001));
+        finalVel = currentGVF.theoreticalVel();
+        current = calculate(segments.get(index), robot);
+        predict = calculate(segments.get(index), new Pose2d(robot.x + current.theoreticalVel().x * 0.001, robot.y + current.theoreticalVel().y * 0.001));
 
         return new PathData(
-                current.theoreticalVel(),
-                current.getAccel(predict),
-                current.getRadius(predict),
-                segments.get(index).power,
-                segments.get(index).reversed,
-                segments.get(index).decel,
-                index
+            current.theoreticalVel(),
+            current.getAccel(predict),
+            current.getRadius(predict),
+            segments.get(index).power,
+            segments.get(index).reversed,
+            segments.get(index).decel,
+            index
         );
     }
 }
+

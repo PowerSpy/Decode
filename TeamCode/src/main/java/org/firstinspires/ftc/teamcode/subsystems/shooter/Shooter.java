@@ -96,7 +96,7 @@ public class Shooter {
             "hood", nPriorityServo.ServoType.AXON_MINI,
             0.03, 0.33, 0.03,
             new boolean[] {false},
-            3, 7
+            6, 7
         );
 
         flywheelBlocker = new nPriorityServo(
