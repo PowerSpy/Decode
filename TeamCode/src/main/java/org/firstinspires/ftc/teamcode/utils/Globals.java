@@ -3,9 +3,7 @@ package org.firstinspires.ftc.teamcode.utils;
 import com.acmerobotics.dashboard.config.Config;
 
 import org.firstinspires.ftc.teamcode.subsystems.drive.RepulsionPoint;
-import org.firstinspires.ftc.teamcode.subsystems.intake.Intake;
 
-import java.sql.Array;
 import java.util.ArrayList;
 
 @Config
@@ -19,8 +17,15 @@ public class Globals {
     public static long autoStartTime = -1;
     public static boolean autoHang = true;
     public static boolean gotBloodyAnnihilated = false; // STOP DELETEING THIS FOR GODS SAKE
+
+
+    //vision
     //true if full field
     public static boolean fullField = false;
+    public static double LLHeight = 5; //Todo - Change
+    public static double LlAngle = 180; //Todo - Change - Angle the limelight is looking below from the horizontal - Degrees
+    public static double ballRadius = 2.5;
+
 
 
     // drivetrain
