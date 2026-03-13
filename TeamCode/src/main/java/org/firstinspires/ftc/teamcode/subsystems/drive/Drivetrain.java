@@ -197,6 +197,21 @@ public class Drivetrain {
                     break;
                 }
 
+                long segmentStartTime = 5000;
+                int lastSegmentIndex = 0;
+                if (data.index != lastSegmentIndex) {
+                    lastSegmentIndex = data.index;
+                    segmentStartTime = System.currentTimeMillis();
+                }
+                else {
+                    if (System.currentTimeMillis() - segmentStartTime > 5000) {
+                        Log.i("Drivetrain", "Segment " + data.index + " timed out. Skipping to next index");
+                        path.setIndex(data.index + 1);
+                        segmentStartTime = System.currentTimeMillis();
+                        lastSegmentIndex = data.index + 1;
+                    }
+                }
+
                 Vector2 traverse = new Vector2(data.velocity.x, data.velocity.y);
                 Vector2 correct = new Vector2(0, traverse.mag() * traverse.mag() / data.radius * correctScalar);
                 correct.rotate(Math.atan2(traverse.y, traverse.x));

@@ -77,6 +77,16 @@ public class Path {
         return this;
     }
 
+    public Path setIndex(int newIndex){
+        if (newIndex >= segments.size()) {
+            this.lastIndex = segments.size();
+        } else if (newIndex < 0) {
+            this.lastIndex = 0;
+        } else {
+            this.lastIndex = newIndex;
+        }
+    }
+
     public Path addPoint(Pose2d p, boolean rev, boolean dec, double pow) {
         if (rev) p.heading += Math.PI;
         segments.add(new PathSegment (new Spline (lastPose, p), rev, dec, pow));
