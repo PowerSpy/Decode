@@ -15,6 +15,7 @@ import org.firstinspires.ftc.teamcode.utils.Globals;
 import org.firstinspires.ftc.teamcode.utils.LogUtil;
 import org.firstinspires.ftc.teamcode.utils.Polynomial;
 import org.firstinspires.ftc.teamcode.utils.Pose2d;
+import org.firstinspires.ftc.teamcode.utils.RunMode;
 import org.firstinspires.ftc.teamcode.utils.TelemetryUtil;
 import org.firstinspires.ftc.teamcode.utils.Utils;
 import org.firstinspires.ftc.teamcode.utils.Vector3;
@@ -159,7 +160,7 @@ public class Shooter {
                 break;
             }
             case READY: {
-                if (!this.atVelThresh(flywheelThresh)) {
+                if (!this.atVel(flywheelThresh) && Globals.RUNMODE == RunMode.TELEOP) {
                     state = State.AIMING;
                 }
 
@@ -463,7 +464,7 @@ public class Shooter {
     }
 
     public boolean atVel() { return flywheel.atVel(); }
-    public boolean atVelThresh(double thresh) { return flywheel.atVel(thresh); }
+    public boolean atVel(double thresh) { return flywheel.atVel(thresh); }
 
     // further separation :)
     // bootleg LM1 strat being used in LM2 & LM3 code

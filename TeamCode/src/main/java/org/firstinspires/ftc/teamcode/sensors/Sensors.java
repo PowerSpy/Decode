@@ -96,7 +96,7 @@ public class Sensors {
         odoWheelPositions[1] = robot.drivetrain.rightFront.motor[0].getCurrentPosition(); // right
         odoWheelPositions[2] = robot.drivetrain.leftRear.motor[0].getCurrentPosition(); // back
 
-        double flywheelAngularVel = robot.drivetrain.rightRear.motor[0].getVelocity() / 28.0; // rotations per second
+        double flywheelAngularVel = robot.drivetrain.rightRear.motor[0].getVelocity() / 28.0; // [* 14 / 20 for belt ratio] rotations per second
         flywheelVelocity = flywheelAngularVel * 3.0 * Math.PI;
 
         robot.drivetrain.localizer.updateEncoders(odoWheelPositions);
