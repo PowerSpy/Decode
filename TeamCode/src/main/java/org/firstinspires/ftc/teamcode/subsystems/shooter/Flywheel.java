@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode.subsystems.shooter;
 
 import com.acmerobotics.dashboard.config.Config;
+import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 
 import org.firstinspires.ftc.teamcode.Robot;
@@ -54,6 +55,8 @@ public class Flywheel {
 
         DcMotorEx ms1 = robot.hardwareMap.get(DcMotorEx.class, "shooter1");
         DcMotorEx ms2 = robot.hardwareMap.get(DcMotorEx.class, "shooter2");
+        ms1.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+        ms2.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
         flywheel = new PriorityMotor(new DcMotorEx[]{ms1, ms2},"flywheel",3, 5, new double[] {1, -1}, robot.sensors);
 
         robot.hardwareQueue.addDevice(flywheel);

@@ -79,7 +79,7 @@ public class Path {
 
     public Path setIndex(int newIndex){
         if (newIndex >= segments.size()) {
-            this.lastIndex = segments.size();
+            this.lastIndex = segments.size() - 1;
         } else if (newIndex < 0) {
             this.lastIndex = 0;
         } else {
@@ -123,7 +123,8 @@ public class Path {
 
     public PathData update(Pose2d robot) {
         int index = lastIndex;
-        while (index < segments.size() - 1 && segments.get(index).spline.getT(robot) > 0.99) {
+        // TODO Check intended index bounds behavior
+        while (index < segments.size() && segments.get(index).spline.getT(robot) > 0.99) {
             index++;
         }
 

@@ -19,6 +19,7 @@ public class Turret {
     private double targetTurretAngle = 0.0;
     private double targetTurretAngleVel = 0.0;
     public static double targetTurretAngleVelFilter = 0.9;
+    public static double targetPredictNumLoops = 1;
 
     public Turret(Robot robot) {
         this.robot = robot;
@@ -39,10 +40,7 @@ public class Turret {
         targetTurretAngleVel = targetTurretAngleVel * (1 - targetTurretAngleVelFilter) + (targetTurretAngle - lastTurretTarget) / robot.sensors.loopTime * targetTurretAngleVelFilter;
         targetTurretAngleVel = Utils.minMaxClip(targetTurretAngleVel, -150, 150);
         lastTurretTarget = targetTurretAngle;
-
-
-
-        turret.setTargetAngle(targetTurretAngle);
+        turret.setTargetAngle(targetTurretAngle + targetTurretAngleVel * robot.sensors.loopTime * targetPredictNumLoops);
 
         TelemetryUtil.packet.put("Turret : Target Angle (deg)", Math.toDegrees(targetTurretAngle));
         TelemetryUtil.packet.put("Turret : servo predicted current angle", Math.toDegrees(turret.getCurrentAngle()));

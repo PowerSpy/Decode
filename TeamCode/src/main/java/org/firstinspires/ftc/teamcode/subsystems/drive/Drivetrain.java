@@ -199,6 +199,7 @@ public class Drivetrain {
 
                 long segmentStartTime = 5000;
                 int lastSegmentIndex = 0;
+                // FIXME Values set to segmentStartTime and lastSegmentIndex are unused
                 if (data.index != lastSegmentIndex) {
                     lastSegmentIndex = data.index;
                     segmentStartTime = System.currentTimeMillis();
@@ -316,9 +317,10 @@ public class Drivetrain {
         }
     }
 
-    private double lastMoveVectorX = 0;
-    public static double noWheelieAccelForward = 5, noWheelieDecelForward = 3, noWheelieAccelReverse = 4, noWheelieDecelReverse = 4, wheelieThresh = 1;
+    //private double lastMoveVectorX = 0;
+    //public static double noWheelieAccelForward = 5, noWheelieDecelForward = 3, noWheelieAccelReverse = 4, noWheelieDecelReverse = 4, wheelieThresh = 1;
     public void setMoveVector(Vector2 moveVector, double turn) {
+        /*
         double moveVectorXLimited = moveVector.x;
         if (Math.abs(moveVector.x) > wheelieThresh || Math.abs(lastMoveVectorX) > wheelieThresh) {
             if ((moveVector.x - lastMoveVectorX) * Math.signum(lastMoveVectorX) > 0)
@@ -327,18 +329,19 @@ public class Drivetrain {
                 moveVectorXLimited = Utils.minMaxClip(moveVector.x, lastMoveVectorX - noWheelieDecelForward * sensors.loopTime, lastMoveVectorX + noWheelieDecelReverse * sensors.loopTime);
         }
         lastMoveVectorX = moveVectorXLimited;
+        */
         double[] powers = {
-                moveVectorXLimited - turn - moveVector.y,
-                moveVectorXLimited - turn + moveVector.y,
-                moveVectorXLimited + turn - moveVector.y,
-                moveVectorXLimited + turn + moveVector.y
+                moveVector.x - turn - moveVector.y,
+                moveVector.x - turn + moveVector.y,
+                moveVector.x + turn - moveVector.y,
+                moveVector.x + turn + moveVector.y
         };
         normalizeArray(powers);
 
         setMotorPowers(powers[0], powers[1], powers[2], powers[3]);
 
         TelemetryUtil.packet.put("Drivetrain : moveVector x", moveVector.x);
-        TelemetryUtil.packet.put("Drivetrain : moveVector x limited", moveVectorXLimited);
+        //TelemetryUtil.packet.put("Drivetrain : moveVector x limited", moveVectorXLimited);
         TelemetryUtil.packet.put("Drivetrain : moveVector y", moveVector.y);
         TelemetryUtil.packet.put("Drivetrain : moveVector turn", turn);
     }

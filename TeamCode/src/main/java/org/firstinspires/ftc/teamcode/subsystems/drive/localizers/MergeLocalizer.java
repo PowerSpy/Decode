@@ -24,7 +24,7 @@ import java.util.Locale;
 
 @Config
 public class MergeLocalizer extends Localizer {
-    public MergeLocalizer (HardwareMap hardwareMap, Sensors sensors, Drivetrain drivetrain, String color, String expectedColor){
+    public MergeLocalizer (HardwareMap hardwareMap, Sensors sensors, Drivetrain drivetrain, String color, String expectedColor) {
         super(sensors, drivetrain, color, expectedColor);
 
         pinpoint = hardwareMap.get(GoBildaPinpointDriver.class, "pinpoint");
@@ -33,6 +33,7 @@ public class MergeLocalizer extends Localizer {
         pinpoint.setEncoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD);
         pinpoint.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.FORWARD, GoBildaPinpointDriver.EncoderDirection.REVERSED);
 
+        lastPinpointPollNanos = System.nanoTime();
         pinpoint.update();
         Pose2d p = new Pose2d (pinpoint.getPosX(), pinpoint.getPosY(), pinpoint.getHeading());
         TelemetryUtil.packet.put("Pinpoint start", String.format(Locale.US, "%.3f %.3f %.3f", p.x, p.y, p.heading));
@@ -44,9 +45,11 @@ public class MergeLocalizer extends Localizer {
     // Pinpoint
     private final GoBildaPinpointDriver pinpoint;
     private Pose2d lastPinpointPose, lastPinpointMergePose;
+    private long lastPinpointPollNanos;
     public static boolean constantCorrection = false;
     public static boolean usePinpoint = true;
-    public static double pinpointPollDist = 6;
+    public static double pinpointPollDist = 12;
+    public static long pinpointPollGapMs = 500;
 
     // Camera
     private Pose2d estimatedCameraPose = new Pose2d(0,0,0);
@@ -63,9 +66,9 @@ public class MergeLocalizer extends Localizer {
     public static int cameraSearch = 25; // number of loops
 
     public void update() {
-        long currentTime = System.nanoTime();
-        double loopTime = (double)(currentTime - lastTime)/1.0E9;
-        lastTime = currentTime;
+        long currentTimeNanos = System.nanoTime();
+        double loopTime = (double)(currentTimeNanos - lastTime)/1.0E9;
+        lastTime = currentTimeNanos;
 
         // 3 WHEEL ODOMETRY
 
@@ -89,8 +92,9 @@ public class MergeLocalizer extends Localizer {
 
         // PINPOINT
 
-        if ((usePinpoint && lastPinpointPose != null && currentPose.getDistanceFromPoint(lastPinpointMergePose) >= pinpointPollDist) || constantCorrection) {
+        if ((usePinpoint && (currentTimeNanos - lastPinpointPollNanos >= pinpointPollGapMs * 1000_000 || currentPose.getDistanceFromPoint(lastPinpointMergePose) >= pinpointPollDist)) || constantCorrection) {
             Log.i("Localization Test", "pinpoint in use");
+            lastPinpointPollNanos = currentTimeNanos;
             pinpoint.update();
 
             Pose2d globalPinpointEstimate = offsetPoseUsingGlobalDelta(lastPinpointMergePose, lastPinpointPose, new Pose2d(pinpoint.getPosX(), pinpoint.getPosY(), pinpoint.getHeading()));
@@ -102,10 +106,6 @@ public class MergeLocalizer extends Localizer {
             clipPoseToField(currentPose);
         }
 
-        if (lastPinpointPose != null) {
-            Canvas fieldOverlay = TelemetryUtil.packet.fieldOverlay();
-            DashboardUtil.drawRobot(fieldOverlay, lastPinpointPose, this.expectedColor);
-        }
         /*
         if (useCamera) {
             if (drivetrain.vision.visionPortal != null) {
@@ -132,11 +132,7 @@ public class MergeLocalizer extends Localizer {
             drivetrain.vision.visionPortal.setProcessorEnabled(drivetrain.vision.aprilTagProcessor, currentPose.heading % (Math.PI * 2) > Math.PI / 2 && currentPose.heading % (Math.PI * 2) < Math.PI * 3 / 2);
             Log.i("Vision", "Heading is good stuff " + (currentPose.heading % (Math.PI * 2) > Math.PI / 2 && currentPose.heading % (Math.PI * 2) < Math.PI * 3 / 2));
         }
-
-
          */
-
-
 
         TelemetryUtil.packet.put("Vision is not null", drivetrain.vision != null);
 
@@ -186,13 +182,13 @@ public class MergeLocalizer extends Localizer {
                     );
                     Pose2d newPose = offsetPoseUsingGlobalDelta(currentPose, interpolatedPastPose, smoothCameraPose);
 
+                    if (Math.hypot(newPose.x - currentPose.x, newPose.y - currentPose.y) > 10) LogUtil.drivePositionReset = true;
                     currentPose = newPose;
                     lastPinpointMergePose = offsetPoseUsingGlobalDelta(lastPinpointMergePose, interpolatedPastPose, smoothCameraPose);
                     poseHistory.replaceAll(now -> offsetPoseUsingGlobalDelta(now, interpolatedPastPose, smoothCameraPose));
 
                     numberOfTimesRelocalizedWithCamera++;
 
-                    if (Math.abs(Math.hypot(newPose.x - interpolatedPastPose.x, newPose.y - interpolatedPastPose.y)) > 10) LogUtil.drivePositionReset = true;
 
                     TelemetryUtil.packet.put("Vision : estimatedCameraPose", estimatedCameraPose);
                     TelemetryUtil.packet.put("Vision : pastPose", interpolatedPastPose);
@@ -211,7 +207,7 @@ public class MergeLocalizer extends Localizer {
         heading = currentPose.heading;
 
         relHistory.add(0,relDelta);
-        nanoTimes.add(0, currentTime);
+        nanoTimes.add(0, currentTimeNanos);
         poseHistory.add(0, currentPose.clone());
 
         updateVelocity();
@@ -280,6 +276,7 @@ public class MergeLocalizer extends Localizer {
 
         Canvas fieldOverlay = TelemetryUtil.packet.fieldOverlay();
         DashboardUtil.drawRobot(fieldOverlay, currentPose, this.color); // blue
-        DashboardUtil.drawPoseHistory(fieldOverlay, poseHistory);
+        DashboardUtil.drawRobot(fieldOverlay, lastPinpointPose, this.expectedColor);
+        //DashboardUtil.drawPoseHistory(fieldOverlay, poseHistory);
     }
 }
