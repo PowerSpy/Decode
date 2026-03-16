@@ -52,7 +52,11 @@ public class RobotEKF {
         theta  = AngleUnit.normalizeRadians(theta + omega * dt);
 
         //Since there is no correlation between the x,y, and theta and each of them act indpendently F · P · Fᵀ  +  Q becomes P + Q as F is the identity matrix bc of no correlations
-        add3x3(P, Q);
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 3; j++) {
+                P[i][j] += Q[i][j] * dt;
+            }
+        }
     }
 
     //feeding the sensors into the covariance matrix
