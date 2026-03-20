@@ -99,32 +99,35 @@ public class Path {
 
     public Pose2d getLastPose() { return lastPose.clone(); }
 
-    public static double k_p = 0.1666; // 1 / 6
+    public static double k_p = 0.200; // 1 / 5 (i.e. corrective vector will become relevant after 5 inches of error)
 
+    // Multiply both v_p & v_r my v_t.mag() to normalize the two vectors to the current spline segment. otherwise, they are operating on different arbitrary time units
     private GuidingVectors calculate(PathSegment currSegment, Pose2d robot) {
         Spline s = currSegment.spline;
         double tau = s.getT(robot);
 
         Vector2 v_t = s.getVel(tau);
+        double mag = v_t.mag();
 
         Vector2 v_p = new Vector2(s.getPos(tau).x - robot.x, s.getPos(tau).y - robot.y);
         v_p.mul(k_p);
+        v_p.mul(mag);
 
         Vector2 v_r = new Vector2(0, 0);
         for(RepulsionPoint rp : repulsion) {
             v_r.add(rp.getInfluence(robot));
         }
-
+        v_r.mul(mag);
 
         return new GuidingVectors(v_t, v_p, v_r);
     }
 
     private int lastIndex = 0;
+    private double proceedThresh = 0.95;
 
     public PathData update(Pose2d robot) {
         int index = lastIndex;
-        // TODO Check intended index bounds behavior
-        while (index < segments.size() && segments.get(index).spline.getT(robot) > 0.99) {
+        while (index < segments.size() && segments.get(index).spline.getT(robot) > proceedThresh) {
             index++;
         }
 
@@ -132,14 +135,13 @@ public class Path {
 
         lastIndex = index;
 
+        // Blend between splines; table for now
+        /*
         PathSegment currSeg = segments.get(index);
         GuidingVectors currentGVF = calculate(currSeg, robot);
         double t = currSeg.spline.getT(robot);
         double blendThreshold = 0.95;
         Vector2 finalVel = currentGVF.theoreticalVel();
-
-        GuidingVectors current;
-        GuidingVectors predict;
 
         if (index < segments.size() - 1 && t > blendThreshold) {
             PathSegment nextSeg = segments.get(index + 1);
@@ -155,6 +157,10 @@ public class Path {
         }
 
         finalVel = currentGVF.theoreticalVel();
+        */
+
+        GuidingVectors current;
+        GuidingVectors predict;
         current = calculate(segments.get(index), robot);
         predict = calculate(segments.get(index), new Pose2d(robot.x + current.theoreticalVel().x * 0.001, robot.y + current.theoreticalVel().y * 0.001));
 
