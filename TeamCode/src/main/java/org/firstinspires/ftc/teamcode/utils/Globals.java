@@ -30,7 +30,7 @@ public class Globals {
 
     // drivetrain
     public static boolean DRIVETRAIN_ENABLED = true;
-    public static double TRACK_WIDTH = 11.7;
+    public static double TRACK_WIDTH = 11.27;
     //robot width includes bumpers
     public static double ROBOT_WIDTH = 16.04;
     public static double ROBOT_LENGTH = 18.0;

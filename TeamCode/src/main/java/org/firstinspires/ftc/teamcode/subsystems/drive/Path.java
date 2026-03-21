@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode.subsystems.drive;
 
+import android.util.Log;
+
 import org.firstinspires.ftc.teamcode.utils.Pose2d;
 import org.firstinspires.ftc.teamcode.utils.Vector2;
 
@@ -33,6 +35,9 @@ class PathData {
         decel = dec;
         index = ind;
     }
+
+    public String toString() {
+        return velocity.toString() + ", " + acceleration.toString() + ", " + radius + ", " + power + ", " + reversed + ", " + decel + ", " + index;    }
 }
 
 class GuidingVectors {
@@ -164,15 +169,17 @@ public class Path {
         current = calculate(segments.get(index), robot);
         predict = calculate(segments.get(index), new Pose2d(robot.x + current.theoreticalVel().x * 0.001, robot.y + current.theoreticalVel().y * 0.001));
 
-        return new PathData(
-            current.theoreticalVel(),
-            current.getAccel(predict),
-            current.getRadius(predict),
-            segments.get(index).power,
-            segments.get(index).reversed,
-            segments.get(index).decel,
-            index
-        );
+        PathData pd = new PathData(current.theoreticalVel(),
+                current.getAccel(predict),
+                current.getRadius(predict),
+                segments.get(index).power,
+                segments.get(index).reversed,
+                segments.get(index).decel,
+                index);
+
+        Log.i("GVF", pd.toString());
+
+        return pd;
     }
 }
 

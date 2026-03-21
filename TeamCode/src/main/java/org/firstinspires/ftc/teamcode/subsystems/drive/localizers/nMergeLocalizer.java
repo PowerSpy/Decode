@@ -34,7 +34,7 @@ public class nMergeLocalizer extends Localizer {
 
     private Pose2d lastPinpointCorrectedPose = null;
 
-    public static double pinpointPollDist = 12;
+    public static double pinpointPollDist = 6;
 
     // EKF
     private final RobotEKF ekf;

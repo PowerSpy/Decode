@@ -166,7 +166,7 @@ public class Drivetrain {
     private double turnPow = 0;
 
     // TODO: Tune these values
-    public static double correctScalar = 1.0, decelThresh = 8.0;
+    public static double correctScalar = 1.0, decelThresh = 16.0;
 
     private Pose2d targetPoint = new Pose2d (0, 0, 0);
     public static PID xPID = new PID (0.05, 0.0, 0.005);
@@ -228,7 +228,7 @@ public class Drivetrain {
 
                 // Tune decel split to be a smoother transition into PID to point
                 if (data.decel & ROBOT_POSITION.getDistanceFromPoint(path.getSegLast(data.index)) < decelThresh) {
-                    moveVector.mul(0.4 + 0.6 * Math.sqrt(ROBOT_POSITION.getDistanceFromPoint(path.getSegLast(data.index)) / decelThresh));
+                    moveVector.mul(0.2 + 0.6 * Math.sqrt(ROBOT_POSITION.getDistanceFromPoint(path.getSegLast(data.index)) / decelThresh));
                 }
                 moveVector.mul(data.power);
 
@@ -268,6 +268,8 @@ public class Drivetrain {
         segmentStartTime = System.currentTimeMillis();
         lastSegmentIndex = 0;
     }
+
+    public Pose2d getCurrentPathTarget() { return path.getSegLast(lastSegmentIndex); }
 
     private void calculateErrors() {
         double deltaX = (targetPoint.x - ROBOT_POSITION.x);
