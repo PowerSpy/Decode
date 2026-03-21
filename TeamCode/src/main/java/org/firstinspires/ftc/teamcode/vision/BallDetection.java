@@ -90,7 +90,6 @@ public class BallDetection {
         //we also weight the balls higher if there are balls near it in terms of x
         //weights are clamped between 1 and 0 with 1 being the perfect ball with there being 0 x differnce and two balls directly adjacent to it
         double[] weights = new double[ballPoses.size()];
-
         for(int i = 0; i < weights.length; i++) {
             double xDifference = Math.abs(ROBOT_POSITION.x - ballPoses.get(i).x);
             //linear function where 0 x diff corresponds to weighting of 0.5 and x-diff of 48 corresponds to weighting of 0

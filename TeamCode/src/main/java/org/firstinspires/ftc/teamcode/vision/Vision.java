@@ -88,6 +88,9 @@ public class Vision {
             Log.i("Vision", String.valueOf(detections.size()));
 
             detections = (ArrayList<AprilTagDetection>) detections.clone();
+            if(detections.get(0).id != 20 && detections.get(0).id != 24){
+                Globals.BALL_PATTERN = detections.get(0).id;
+            }
             detections.removeIf(detection -> detection.id != 24 && detection.id != 20);
 
             if (detections.size() >= 2 && Globals.fullField) {
