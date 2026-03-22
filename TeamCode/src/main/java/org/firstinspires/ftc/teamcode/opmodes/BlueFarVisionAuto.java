@@ -72,7 +72,7 @@ public class BlueFarVisionAuto extends LinearOpMode {
         robot.intake.reqOff(true);
     }
 
-    private void intake() {
+    private void intake(double x, double y) {
         robot.drivetrain.goToPoint(new Pose2d(x, -22, -Math.PI / 2), 1);
         robot.waitWhile(() -> robot.drivetrain.state != Drivetrain.State.WAIT);
         robot.intake.reqIntake(true);

@@ -37,19 +37,21 @@ public class Sensors {
 
     //public AnalogInput turretAnalogEncoder;
     private double turretAngle;
-    private double turretAngleEncoderOffset, turretAngleEncoderPosition;
+    private double turretAngleEncoderPosition;
     //public static double turretAnalogEncoderOffsetDeg = 148;
     public static double turretAngleFilter = 0.6;
     public static double turretLimitLeft = Math.toRadians(295), turretLimitRight = Math.toRadians(-25), turretWrapMid = Math.toRadians(135);
     //public static boolean resetTurretAngleEncoder = true;
     //private double turretAnalogEncoderVoltage;
-    public static double lastTurretAngle = 0.0;
+    public static double turretAngleEncoderOffset = 0.0;
 
     private double lightSensorFilteredVoltage = 0;
     public static double lightSensorFilter = 0.5;
     public AnalogInput lightSensor0;
     public final LEDWrapper light0G, light0P;
     private boolean isGreen = false, isPurple = false;
+
+    private double intakeCurrent;
 
     private double voltage;
     public static long voltageUpdateTime = 5000, colorSensorUpdateTime = 250;
@@ -65,7 +67,8 @@ public class Sensors {
         voltage = voltageSensor.getVoltage();
 
         //turretAnalogEncoder = robot.hardwareMap.get(AnalogInput.class, "turret_encoder");
-        turretAngleEncoderOffset = turretAngleEncoderPosition = turretAngle = 0;
+        turretAngleEncoderPosition = turretAngleEncoderOffset;
+        turretAngle = 0;
         //resetTurretAngleEncoder = true;
 
         lightSensor0 = robot.hardwareMap.get(AnalogInput.class, "lightSensor0");
@@ -95,7 +98,7 @@ public class Sensors {
         odoWheelPositions[1] = robot.drivetrain.rightFront.motor[0].getCurrentPosition(); // right
         odoWheelPositions[2] = robot.drivetrain.leftRear.motor[0].getCurrentPosition(); // back
 
-        double flywheelAngularVel = robot.drivetrain.rightRear.motor[0].getVelocity() / 28.0; // [* 14 / 20 for belt ratio] rotations per second
+        double flywheelAngularVel = robot.drivetrain.rightRear.motor[0].getVelocity() / 28.0 * 16 / 20; // rotations per second
         flywheelVelocity = flywheelAngularVel * 3.0 * Math.PI;
 
         robot.drivetrain.localizer.updateEncoders(odoWheelPositions);
@@ -118,7 +121,7 @@ public class Sensors {
                 if (Globals.RUNMODE != RunMode.TESTER) resetTurretAngleEncoder = false;
             }
         }*/
-        lastTurretAngle = turretAngle = turretAngle * (1 - turretAngleFilter) + newTurretAngle * turretAngleFilter;
+        turretAngle = turretAngle * (1 - turretAngleFilter) + newTurretAngle * turretAngleFilter;
 
         if (Globals.RUNMODE != RunMode.AUTO && currentTime - lastColorSensorUpdatedTime > colorSensorUpdateTime * 1e6) {
             double lightSensorRawVoltage = lightSensor0.getVoltage();
@@ -134,6 +137,8 @@ public class Sensors {
             lastColorSensorUpdatedTime = currentTime;
         }
 
+        intakeCurrent = robot.intake.roller.getCurrent();
+
         if (currentTime - lastVoltageUpdatedTime > voltageUpdateTime * 1e6) {
             voltage = voltageSensor.getVoltage();
             lastVoltageUpdatedTime = currentTime;
@@ -146,6 +151,7 @@ public class Sensors {
         //TelemetryUtil.packet.put("Turret : turretAnalogEncoderVoltage", turretAnalogEncoderVoltage);
         TelemetryUtil.packet.put("Shooter : Hood launch angle (deg)", Math.toDegrees(robot.shooter.hood.getCurrentAngle() / Shooter.hoodGearRatio + Shooter.hoodSweep));
         TelemetryUtil.packet.put("Intake : Ball Color", isPurple ? "purple" : isGreen ? "green" : "none");
+        TelemetryUtil.packet.put("Intake : current (AMPS)", intakeCurrent);
 
         Canvas fieldOverlay = TelemetryUtil.packet.fieldOverlay();
         DashboardUtil.drawRobot(fieldOverlay, ROBOT_POSITION, "#00ff00", turretAngle, "#00e000c0", robot.shooter.turret.getTargetAngle(), "#8000ff");
@@ -159,8 +165,9 @@ public class Sensors {
 
     private double getTurretAngleRaw() { return robot.intake.feed.motor[0].getCurrentPosition() * (Math.PI) / -8192 / 2; }
     public void resetTurretAngleEncoder() {
-        if (Globals.RUNMODE != RunMode.TELEOP) lastTurretAngle = 0;
-        turretAngleEncoderOffset = turretAngleEncoderPosition = getTurretAngleRaw() - lastTurretAngle;
+        if (Globals.RUNMODE != RunMode.TELEOP) {
+            turretAngleEncoderOffset = turretAngleEncoderPosition = getTurretAngleRaw();
+        }
     }
 
     public double getFlywheelVelocity() { return flywheelVelocity; }

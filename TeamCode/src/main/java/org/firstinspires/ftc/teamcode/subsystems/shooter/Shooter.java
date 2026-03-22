@@ -126,13 +126,7 @@ public class Shooter {
             case IDLE: {
                 stopRequest = false;
                 predictGoal2AxisInterpolate();
-
-                if(forceUpdateVelBool) {
-                    flywheel.setTargetVelocity(forceUpdateVel);
-                } else {
-                    flywheel.setTargetVelocity(Dist.CLOSE.flywheelVel);
-                }
-
+                flywheel.setTargetVelocity(forceUpdateVelBool ? forceUpdateVel : Dist.CLOSE.flywheelVel);
                 setHoodAngle(0.0);
                 setShooterBlocker(true);
 
@@ -157,13 +151,7 @@ public class Shooter {
                 if (turretResult && this.atVel() && hood.inPosition()) {
                     state = State.READY;
                 }
-
-                if(forceUpdateVelBool) {
-                    flywheel.setTargetVelocity(forceUpdateVel);
-                } else {
-                    flywheel.setTargetVelocity(minFlywheelVelocity);
-                }
-
+                flywheel.setTargetVelocity(forceUpdateVelBool ? forceUpdateVel : minFlywheelVelocity);
                 setHoodAngle(targetHoodAngle);
 
                 if (stopRequest) {
@@ -183,13 +171,13 @@ public class Shooter {
 
                 predictGoal2AxisInterpolate();
 
-                if(forceUpdateVelBool) {
-                    flywheel.setTargetVelocity(forceUpdateVel);
-                } else {
-                    flywheel.setTargetVelocity(minFlywheelVelocity);
-                }
-
+                flywheel.setTargetVelocity(forceUpdateVelBool ? forceUpdateVel : minFlywheelVelocity);
                 setHoodAngle(targetHoodAngle);
+
+                if (Globals.RUNMODE != RunMode.AUTO) {
+                    robot.sensors.light0G.set(true);
+                    robot.sensors.light0P.set(true);
+                }
 
                 if (shootRequest /* && (isRobotInZone(0,0,-72,72,-72,-72) || isRobotInZone(48,0,72,24,72,-24)) */) {
                     setShooterBlocker(false);

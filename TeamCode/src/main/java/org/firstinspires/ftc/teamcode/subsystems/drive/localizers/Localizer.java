@@ -193,40 +193,40 @@ public class Localizer {
         currentPowerVector.heading = turn;
     }
 
-    public void updateVelocity() {
+    private int velCalcLastIndex;
+    private Pose2d calcVel(ArrayList<Pose2d> history) {
         double actualVelTime = 0;
         double relDeltaXTotal = 0;
         double relDeltaYTotal = 0;
         double totalTime = 0;
-        int lastIndex = 0;
-        long start = nanoTimes.size() != 0 ? nanoTimes.get(0) : 0;
-        for (int i = 0; i < nanoTimes.size(); i++){
+        velCalcLastIndex = 0;
+        long start = !nanoTimes.isEmpty() ? nanoTimes.get(0) : 0;
+        for (int i = 0; i < nanoTimes.size(); i++) {
             totalTime = (double)(start - nanoTimes.get(i)) / 1.0E9;
-            if (totalTime <= targetVelTimeEstimate){
+            if (totalTime <= targetVelTimeEstimate) {
                 actualVelTime = totalTime;
-                relDeltaXTotal += relHistory.get(i).getX();
-                relDeltaYTotal += relHistory.get(i).getY();
-                lastIndex = i;
+                relDeltaXTotal += history.get(i).getX();
+                relDeltaYTotal += history.get(i).getY();
+                velCalcLastIndex = i;
             }
         }
-        if (actualVelTime != 0) {
-            relCurrentVel = new Pose2d(
-                    (relDeltaXTotal) / actualVelTime,
-                    (relDeltaYTotal) / actualVelTime,
-                    Utils.headingClip(poseHistory.get(0).getHeading() - poseHistory.get(lastIndex).getHeading()) / actualVelTime
-            );
+        if (actualVelTime == 0) return new Pose2d(0, 0, 0);
+        return new Pose2d(
+            (relDeltaXTotal) / actualVelTime,
+            (relDeltaYTotal) / actualVelTime,
+            Utils.headingClip(poseHistory.get(0).getHeading() - poseHistory.get(velCalcLastIndex).getHeading()) / actualVelTime
+        );
+    }
 
-            currentVel = new Pose2d(
-                    relCurrentVel.x*Math.cos(heading) - relCurrentVel.y*Math.sin(heading),
-                    relCurrentVel.x*Math.sin(heading) + relCurrentVel.y*Math.cos(heading),
-                    relCurrentVel.heading
-            );
-        }
-        else {
-            currentVel = new Pose2d(0, 0, 0);
-            relCurrentVel = new Pose2d(0, 0, 0);
-        }
-        while (lastIndex + 1 < nanoTimes.size()){
+    public void updateVelocity() {
+        relCurrentVel = calcVel(relHistory);
+        currentVel = new Pose2d(
+            relCurrentVel.x * Math.cos(heading) - relCurrentVel.y * Math.sin(heading),
+            relCurrentVel.x * Math.sin(heading) + relCurrentVel.y * Math.cos(heading),
+            relCurrentVel.heading
+        );
+
+        while (velCalcLastIndex + 1 < nanoTimes.size()) {
             nanoTimes.remove(nanoTimes.size() - 1);
             relHistory.remove(relHistory.size() - 1);
             poseHistory.remove(poseHistory.size() - 1);

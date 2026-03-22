@@ -5,7 +5,6 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.Servo;
 
-import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit;
 import org.firstinspires.ftc.teamcode.Robot;
 import org.firstinspires.ftc.teamcode.utils.LogUtil;
 import org.firstinspires.ftc.teamcode.utils.TelemetryUtil;
@@ -29,8 +28,6 @@ public class Intake {
         SHOOT_FEED,
         TEST
     }
-
-    public double intakeCurrent;
 
     public State state = State.IDLE;
 
@@ -66,13 +63,8 @@ public class Intake {
         );
 
         robot.hardwareQueue.addDevices(roller, feed, rindex, lindex);
-
-        roller.motor[0].setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        roller.motor[0].setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        feed.motor[0].setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
     }
 
-    long launchTime = System.currentTimeMillis();
     long turnedOffTime = 0;
 
     public void update() {
@@ -140,8 +132,6 @@ public class Intake {
             }
         }
 
-        //intakeCurrent = roller.getCurrent();
-
         this.updateTelemetry();
     }
 
@@ -158,11 +148,11 @@ public class Intake {
     public void setRollerDirection(boolean reversed) { this.reversed = reversed; }
 
     public void setRightBlocker(boolean on) {
-        rindex.setTargetAngle(0.5 * (on ? 1 : 0));
+        rindex.setTargetAngle(on ? 0.5 : 0);
     }
 
     public void setLeftBlocker(boolean on) {
-        lindex.setTargetAngle(0.5 * (on ? 1 : 0));
+        lindex.setTargetAngle(on ? 0.5 : 0);
     }
 
     private void updateTelemetry() {
@@ -170,8 +160,5 @@ public class Intake {
         LogUtil.intakeState.set(this.state.toString());
         TelemetryUtil.packet.put("Intake : reversed", reversed);
         LogUtil.intakeReversed.set(reversed);
-        //TelemetryUtil.packet.put("Intake : current (AMPS)", intakeCurrent);
-        //LogUtil.intakeReversed.set(reversed);
-
     }
 }

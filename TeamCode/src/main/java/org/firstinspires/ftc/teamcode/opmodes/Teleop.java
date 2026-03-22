@@ -3,8 +3,6 @@ package org.firstinspires.ftc.teamcode.opmodes;
 import static org.firstinspires.ftc.teamcode.utils.Globals.ROBOT_POSITION;
 import static org.firstinspires.ftc.teamcode.utils.Globals.isRed;
 
-import android.util.Log;
-
 import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
@@ -169,7 +167,7 @@ public class Teleop extends LinearOpMode {
                     gamepad2.rumble(100);
                     atSpeedRumble = false;
                 }
-                if (robot.shooter.atVel()) {
+                if (robot.shooter.atVel() && flywheelOn) {
                     robot.sensors.light0G.set(true);
                     robot.sensors.light0P.set(true);
                 }
@@ -183,18 +181,18 @@ public class Teleop extends LinearOpMode {
                     robot.intake.reqOff(true);
                 }
             } else {
+                x1.isClicked(gamepad1.x);
+                b1.isClicked(gamepad1.b);
 
-                if(gamepad2.right_bumper) {
+                if (gamepad2.right_bumper) {
                     Shooter.forceUpdateVelBool = true;
                     Shooter.forceUpdateVel = 580;
-                } else if(gamepad2.left_bumper) {
+                } else if (gamepad2.left_bumper) {
                     Shooter.forceUpdateVelBool = true;
                     Shooter.forceUpdateVel = 400;
                 } else {
                     Shooter.forceUpdateVelBool = false;
                 }
-
-                x1.isClicked(gamepad1.x);
 
                 if (y1.isClicked(gamepad1.y)) {
                     robot.shooter.reqAim(true);
@@ -222,14 +220,14 @@ public class Teleop extends LinearOpMode {
                     confirmation = true;
                 }
 
-                if (lt1.isClicked(gamepad1.left_trigger > triggerThresh) || b1.isClicked(gamepad1.b)) {
+                if (lt1.isClicked(gamepad1.left_trigger > triggerThresh)) {
                     robot.shooter.reqStop(true);
                 }
             }
 
             // LOCALIZER
 
-            if (x2.isHeld(gamepad2.x,1500)) { // localize to origin
+            if (x2.isHeld(gamepad2.x, 500)) { // localize to origin
                 robot.drivetrain.setPoseEstimate(new Pose2d(0,0,0));
                 gamepad1.rumble(1200);
                 gamepad2.rumble(1200);

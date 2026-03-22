@@ -87,15 +87,18 @@ public class Vision {
         if (detections != null && !detections.isEmpty()) {
             Log.i("Vision", String.valueOf(detections.size()));
 
-            detections = (ArrayList<AprilTagDetection>) detections.clone();
-            if(detections.get(0).id != 20 && detections.get(0).id != 24){
-                Globals.BALL_PATTERN = detections.get(0).id;
+            ArrayList<AprilTagDetection> positionTagDetections = new ArrayList<>();
+            for (AprilTagDetection detection: detections) {
+                if (detection.id != 20 && detection.id != 24) {
+                    Globals.BALL_PATTERN = detections.get(0).id;
+                } else {
+                    positionTagDetections.add(detection);
+                }
             }
-            detections.removeIf(detection -> detection.id != 24 && detection.id != 20);
 
-            if (detections.size() >= 2 && Globals.fullField) {
-                AprilTagDetection detection1 = detections.get(0);
-                AprilTagDetection detection2 = detections.get(1);
+            if (positionTagDetections.size() >= 2 && Globals.fullField) {
+                AprilTagDetection detection1 = positionTagDetections.get(0);
+                AprilTagDetection detection2 = positionTagDetections.get(1);
 
                 frameAcquisitionNanoTime = detection1.frameAcquisitionNanoTime;
 
@@ -113,8 +116,8 @@ public class Vision {
                     p.heading += Math.PI / 2;
                     return p;
                 }
-            } else if (!detections.isEmpty()) {
-                AprilTagDetection detection = detections.get(0);
+            } else if (!positionTagDetections.isEmpty()) {
+                AprilTagDetection detection = positionTagDetections.get(0);
 
                 TelemetryUtil.packet.put("Vision : Decision Margin", String.valueOf(detection.decisionMargin));
                 if (detection.decisionMargin < decisionMarginLimit) return null;

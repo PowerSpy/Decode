@@ -294,8 +294,9 @@ public class Drivetrain {
 
         setMinPowersToOvercomeFriction(1.0);
 
-        Vector2 move = new Vector2(fwd + moveVector.x * Math.pow(Math.E, -1 * (System.currentTimeMillis() - lastGVFTime)), strafe + moveVector.y * Math.pow(Math.E, -1 * (System.currentTimeMillis() - lastGVFTime)));
-        setMoveVector(move, h + turnPow * Math.pow(Math.E, -1 * (System.currentTimeMillis() - lastGVFTime)));
+        double k = Math.exp(-(System.currentTimeMillis() - lastGVFTime));
+        Vector2 move = new Vector2(fwd + moveVector.x * k, strafe + moveVector.y * k);
+        setMoveVector(move, h + turnPow * k);
     }
 
     private boolean atPoint() {

@@ -33,7 +33,8 @@ public class nMergeLocalizer extends Localizer {
     public static boolean useCamera = true;
 
     private Pose2d lastPinpointCorrectedPose = null;
-
+    private long lastPinpointPollNanos;
+    public static long pinpointPollGapMs = 500;
     public static double pinpointPollDist = 6;
 
     // EKF
@@ -61,6 +62,7 @@ public class nMergeLocalizer extends Localizer {
         pinpoint.setEncoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD);
         pinpoint.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.FORWARD, GoBildaPinpointDriver.EncoderDirection.REVERSED);
 
+        lastPinpointPollNanos = System.nanoTime();
         pinpoint.update();
         Pose2d p = new Pose2d(pinpoint.getPosX(), pinpoint.getPosY(), pinpoint.getHeading());
         TelemetryUtil.packet.put("Pinpoint start", String.format(Locale.US, "%.3f %.3f %.3f", p.x, p.y, p.heading));
@@ -71,9 +73,9 @@ public class nMergeLocalizer extends Localizer {
     }
 
     public void update() {
-        long currentTime = System.nanoTime();
-        double loopTime = (double)(currentTime - lastTime) / 1.0E9;
-        lastTime = currentTime;
+        long currentTimeNanos = System.nanoTime();
+        double loopTime = (double)(currentTimeNanos - lastTime) / 1.0E9;
+        lastTime = currentTimeNanos;
 
         // 3 WHEEL ODOMETRY
 
@@ -112,8 +114,9 @@ public class nMergeLocalizer extends Localizer {
 
         // EKF UPDATE — PINPOINT
         if (lastPinpointCorrectedPose != null) {
-            if ((usePinpoint && currentPose.getDistanceFromPoint(lastPinpointCorrectedPose) >= pinpointPollDist) || constantCorrection) {
+            if (usePinpoint && (currentTimeNanos - lastPinpointPollNanos >= pinpointPollGapMs * 1000_000 || currentPose.getDistanceFromPoint(lastPinpointCorrectedPose) >= pinpointPollDist) || constantCorrection) {
                 Log.i("Localization Test", "pinpoint in use");
+                lastPinpointPollNanos = currentTimeNanos;
                 pinpoint.update();
                 ekf.updatePinpoint(pinpoint.getPosX(), pinpoint.getPosY(), pinpoint.getHeading());
 
@@ -202,7 +205,7 @@ public class nMergeLocalizer extends Localizer {
         heading = currentPose.heading;
 
         relHistory.add(0, relDelta);
-        nanoTimes.add(0, currentTime);
+        nanoTimes.add(0, currentTimeNanos);
         poseHistory.add(0, currentPose.clone());
 
         updateVelocity();
