@@ -3,6 +3,8 @@ package org.firstinspires.ftc.teamcode;
 import static org.firstinspires.ftc.teamcode.utils.Globals.GET_LOOP_TIME;
 import static org.firstinspires.ftc.teamcode.utils.Globals.START_LOOP;
 
+import android.util.Log;
+
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
 import com.acmerobotics.dashboard.canvas.Canvas;
@@ -59,15 +61,18 @@ public class Robot {
         if (this.stopChecker != null && this.stopChecker.getAsBoolean()) return;
 
         sensors.update();
+        Log.i("LoopTime", "sensors " + GET_LOOP_TIME());
 
         drivetrain.update();
         intake.update();
         shooter.update();
         park.update();
+        Log.i("LoopTime", "subsystems " + GET_LOOP_TIME());
 
         if (this.stopChecker != null && this.stopChecker.getAsBoolean()) return;
 
         hardwareQueue.update();
+        Log.i("LoopTime", "hardwareQueue " + GET_LOOP_TIME());
         this.updateTelemetry();
     }
 

@@ -15,13 +15,12 @@ public class IntakeTester extends LinearOpMode {
     public static double feedPower = 0.0, intakePower = 0.0;
     public static boolean updateValues = false;
     public static double indexServoAngle = 0;
+
     public void runOpMode() {
         Globals.RUNMODE = RunMode.TESTER;
         Robot robot = new Robot(hardwareMap);
         Intake intake = robot.intake;
         intake.state = Intake.State.TEST;
-
-
 
         while (opModeInInit()) {
             robot.update();

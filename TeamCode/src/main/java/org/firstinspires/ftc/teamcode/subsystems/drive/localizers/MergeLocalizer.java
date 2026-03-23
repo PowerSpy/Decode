@@ -215,7 +215,7 @@ public class MergeLocalizer extends Localizer {
         updateField();
     }
 
-    private Pose2d offsetPoseUsingGlobalDelta(Pose2d now, Pose2d offPrev, Pose2d offCurr) {
+    public static Pose2d offsetPoseUsingGlobalDelta(Pose2d now, Pose2d offPrev, Pose2d offCurr) {
         Pose2d globalDelta = new Pose2d (
             offCurr.x - offPrev.x,
             offCurr.y - offPrev.y,

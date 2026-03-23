@@ -40,7 +40,7 @@ public class Sensors {
     private double turretAngleEncoderPosition;
     //public static double turretAnalogEncoderOffsetDeg = 148;
     public static double turretAngleFilter = 0.6;
-    public static double turretLimitLeft = Math.toRadians(295), turretLimitRight = Math.toRadians(-25), turretWrapMid = Math.toRadians(135);
+    public static double turretLimitLeft = Math.toRadians(293), turretLimitRight = Math.toRadians(-23), turretWrapMid = Math.toRadians(135);
     //public static boolean resetTurretAngleEncoder = true;
     //private double turretAnalogEncoderVoltage;
     public static double turretAngleEncoderOffset = 0.0;
@@ -51,11 +51,12 @@ public class Sensors {
     public final LEDWrapper light0G, light0P;
     private boolean isGreen = false, isPurple = false;
 
-    private double intakeCurrent;
+    //private double intakeCurrent;
 
     private double voltage;
-    public static long voltageUpdateTime = 5000, colorSensorUpdateTime = 250;
+    public static long voltageUpdateTime = 5000, turretSensorUpdateTime = 250, colorSensorUpdateTime = 250;
     private long lastVoltageUpdatedTime = 0;
+    private long lastTurretSensorUpdatedTime = 0;
     private long lastColorSensorUpdatedTime = 0;
     private final VoltageSensor voltageSensor;
 
@@ -111,8 +112,9 @@ public class Sensors {
         ROBOT_GLOBAL_VELOCITY = robot.drivetrain.mergeLocalizer.getGlobalVelocity();
 
         //if (currentTime - initialTime < 500_000_000) resetTurretAngleEncoder = true;
-        turretAngleEncoderPosition = getTurretAngleRaw();
-        double newTurretAngle = turretAngleEncoderPosition - turretAngleEncoderOffset;
+        if (currentTime - lastTurretSensorUpdatedTime > turretSensorUpdateTime * 1e6) {
+            turretAngleEncoderPosition = getTurretAngleRaw();
+            double newTurretAngle = turretAngleEncoderPosition - turretAngleEncoderOffset;
         /*if (resetTurretAngleEncoder) {
             turretAnalogEncoderVoltage = turretAnalogEncoder.getVoltage();
             if (turretAnalogEncoderVoltage > 0.1) {
@@ -121,7 +123,9 @@ public class Sensors {
                 if (Globals.RUNMODE != RunMode.TESTER) resetTurretAngleEncoder = false;
             }
         }*/
-        turretAngle = turretAngle * (1 - turretAngleFilter) + newTurretAngle * turretAngleFilter;
+            turretAngle = turretAngle * (1 - turretAngleFilter) + newTurretAngle * turretAngleFilter;
+            lastTurretSensorUpdatedTime = currentTime;
+        }
 
         if (Globals.RUNMODE != RunMode.AUTO && currentTime - lastColorSensorUpdatedTime > colorSensorUpdateTime * 1e6) {
             double lightSensorRawVoltage = lightSensor0.getVoltage();
@@ -137,7 +141,7 @@ public class Sensors {
             lastColorSensorUpdatedTime = currentTime;
         }
 
-        intakeCurrent = robot.intake.roller.getCurrent();
+        //intakeCurrent = robot.intake.roller.getCurrent();
 
         if (currentTime - lastVoltageUpdatedTime > voltageUpdateTime * 1e6) {
             voltage = voltageSensor.getVoltage();
@@ -151,7 +155,7 @@ public class Sensors {
         //TelemetryUtil.packet.put("Turret : turretAnalogEncoderVoltage", turretAnalogEncoderVoltage);
         TelemetryUtil.packet.put("Shooter : Hood launch angle (deg)", Math.toDegrees(robot.shooter.hood.getCurrentAngle() / Shooter.hoodGearRatio + Shooter.hoodSweep));
         TelemetryUtil.packet.put("Intake : Ball Color", isPurple ? "purple" : isGreen ? "green" : "none");
-        TelemetryUtil.packet.put("Intake : current (AMPS)", intakeCurrent);
+        //TelemetryUtil.packet.put("Intake : current (AMPS)", intakeCurrent);
 
         Canvas fieldOverlay = TelemetryUtil.packet.fieldOverlay();
         DashboardUtil.drawRobot(fieldOverlay, ROBOT_POSITION, "#00ff00", turretAngle, "#00e000c0", robot.shooter.turret.getTargetAngle(), "#8000ff");

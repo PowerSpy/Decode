@@ -18,7 +18,7 @@ import org.firstinspires.ftc.teamcode.utils.TelemetryUtil;
 @Config
 @TeleOp(group = "Test")
 public class ShooterTester extends LinearOpMode {
-    public static double turretTargetDeg = 0.0, hoodAngle = 0.5, flywheelVelocity = 0.0, rollerPower = 0.8, feedPower = 0.7;
+    public static double turretTargetDeg = 0.0, hoodAngle = 40, flywheelVelocity = 0.0, rollerPower = 0.8, feedPower = 0.7;
     public static boolean hoodUsesLaunchAngle = true;
 
     public void runOpMode() {

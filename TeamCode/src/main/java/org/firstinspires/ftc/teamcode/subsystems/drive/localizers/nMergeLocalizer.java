@@ -1,10 +1,11 @@
 package org.firstinspires.ftc.teamcode.subsystems.drive.localizers;
 
+import static org.firstinspires.ftc.teamcode.utils.Globals.GET_LOOP_TIME;
+
 import android.util.Log;
 
 import com.acmerobotics.dashboard.canvas.Canvas;
 import com.acmerobotics.dashboard.config.Config;
-import com.google.ar.core.Pose;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
@@ -15,7 +16,6 @@ import org.firstinspires.ftc.teamcode.subsystems.drive.Drivetrain;
 import org.firstinspires.ftc.teamcode.utils.DashboardUtil;
 import org.firstinspires.ftc.teamcode.utils.Globals;
 import org.firstinspires.ftc.teamcode.utils.Lerp;
-import org.firstinspires.ftc.teamcode.utils.LogUtil;
 import org.firstinspires.ftc.teamcode.utils.Pose2d;
 import org.firstinspires.ftc.teamcode.utils.TelemetryUtil;
 import org.firstinspires.ftc.teamcode.utils.Utils;
@@ -30,12 +30,11 @@ public class nMergeLocalizer extends Localizer {
     private final GoBildaPinpointDriver pinpoint;
     public static boolean constantCorrection = false;
     public static boolean usePinpoint = true;
-    public static boolean useOdometry = true;
     public static boolean useCamera = true;
 
-    private Pose2d lastPinpointCorrectedPose = null;
+    private Pose2d lastPinpointPose;
     private long lastPinpointPollNanos;
-    public static long pinpointPollGapMs = 500;
+    public static long pinpointPollGapMs = 2000;
     public static double pinpointPollDist = 6;
 
     // EKF
@@ -68,6 +67,7 @@ public class nMergeLocalizer extends Localizer {
         Pose2d p = new Pose2d(pinpoint.getPosX(), pinpoint.getPosY(), pinpoint.getHeading());
         TelemetryUtil.packet.put("Pinpoint start", String.format(Locale.US, "%.3f %.3f %.3f", p.x, p.y, p.heading));
         super.setPoseEstimate(p);
+        lastPinpointPose = p;
 
         ekf = new RobotEKF(p, Q_X, Q_Y, Q_THETA);
         currentPose = p.clone();
@@ -99,32 +99,23 @@ public class nMergeLocalizer extends Localizer {
         ekf.predict(relDeltaX,relDeltaY,deltaHeading);
 
         // EKF UPDATE — PINPOINT
-        if (lastPinpointCorrectedPose != null) {
-            if (usePinpoint && (currentTimeNanos - lastPinpointPollNanos >= pinpointPollGapMs * 1000_000 || currentPose.getDistanceFromPoint(lastPinpointCorrectedPose) >= pinpointPollDist) || constantCorrection) {
-                Log.i("Localization Test", "pinpoint in use");
-                findPastInterpolatedPose(lastPinpointPollNanos);
-                pinpoint.update();
-                Pose2d currpinpoint = new Pose2d(pinpoint.getPosX(),pinpoint.getPosY(),pinpoint.getHeading());
-                Pose2d newpinpoint = new Pose2d (interpolatedPastPose.x + currpinpoint.x - lastPinpointCorrectedPose.x,
-                        interpolatedPastPose.y + currpinpoint.y - lastPinpointCorrectedPose.y,
-                        interpolatedPastPose.heading + currpinpoint.heading - lastPinpointCorrectedPose.heading);
-                ekf.updatePinpoint(newpinpoint.getX(), newpinpoint.getY(), newpinpoint.getHeading());
-                lastPinpointCorrectedPose = currpinpoint.clone();
-                lastPinpointPollNanos = currentTimeNanos;
-            }
-        } else {
-            Log.i("Localization Test", "pinpoint in use");
+        if (usePinpoint && (currentTimeNanos - lastPinpointPollNanos >= pinpointPollGapMs * 1000_000 || currentPose.getDistanceFromPoint(lastPinpointPose) >= pinpointPollDist) || constantCorrection) {
+            //Log.i("Localization Test", "pinpoint in use");
+            findPastInterpolatedPose(lastPinpointPollNanos);
             pinpoint.update();
-            ekf.updatePinpoint(pinpoint.getPosX(), pinpoint.getPosY(), pinpoint.getHeading());
-            lastPinpointCorrectedPose = currentPose;
+            Pose2d currpinpoint = new Pose2d(pinpoint.getPosX(),pinpoint.getPosY(),pinpoint.getHeading());
+            Pose2d newpinpoint = MergeLocalizer.offsetPoseUsingGlobalDelta(interpolatedPastPose, lastPinpointPose, currpinpoint);
+            ekf.updatePinpoint(newpinpoint.x, newpinpoint.y, newpinpoint.heading);
+            lastPinpointPose = currpinpoint.clone();
             lastPinpointPollNanos = currentTimeNanos;
         }
-
 
         if (usePinpoint) {
             Canvas fieldOverlay = TelemetryUtil.packet.fieldOverlay();
             DashboardUtil.drawRobot(fieldOverlay, new Pose2d(pinpoint.getPosX(), pinpoint.getPosY(), pinpoint.getHeading()), this.expectedColor);
         }
+
+        //Log.i("LoopTime", "sensors after ekf pinpoint " + GET_LOOP_TIME());
 
         // CAMERA
         TelemetryUtil.packet.put("Vision is not null", drivetrain.vision != null);
@@ -184,6 +175,8 @@ public class nMergeLocalizer extends Localizer {
             }
         }
 
+        //Log.i("LoopTime", "sensors after ekf camera " + GET_LOOP_TIME());
+
         Pose2d ekfPose = ekf.getPose();
         ekfPose.x = Utils.minMaxClip(ekfPose.x, -72, 72);
         ekfPose.y = Utils.minMaxClip(ekfPose.y, -72, 72);
@@ -206,7 +199,7 @@ public class nMergeLocalizer extends Localizer {
         super.setPoseEstimate(pose);
         ekf.resetPose(pose);
         pinpoint.setPosition(new Pose2D(DistanceUnit.INCH, pose.x, pose.y, AngleUnit.RADIANS, pose.heading));
-        lastPinpointCorrectedPose = pose.clone();
+        lastPinpointPose = pose.clone();
         estimatedCameraPose = null;
         consecutiveFrames   = 0;
     }

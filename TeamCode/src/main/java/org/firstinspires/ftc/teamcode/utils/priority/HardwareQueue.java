@@ -32,7 +32,6 @@ public class HardwareQueue {
         }
     }
 
-
     public void update() {
         for (PriorityDevice device : devices) {
             device.resetUpdateBoolean();
@@ -56,6 +55,7 @@ public class HardwareQueue {
                 }
             }
             if (bestDevice != 0) { // priority # of motor needing update the most
+                Log.i("HardwareQueue update", devices.get(bestIndex).name + ": " + bestDevice);
                 devices.get(bestIndex).update(); // Resetting the motor priority so that it knows that it updated the motor and setting the motor of the one that most needs it
                 numUpdates++;
             }

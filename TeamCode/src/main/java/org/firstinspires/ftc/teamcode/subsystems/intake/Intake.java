@@ -51,7 +51,7 @@ public class Intake {
                 "rindex", nPriorityServo.ServoType.AXON_MINI,
                 0.0, 1.0, 0.03,
                 new boolean[] {false},
-                3, 7
+                2, 4
         );
 
         lindex = new nPriorityServo(
@@ -59,7 +59,7 @@ public class Intake {
                 "lindex", nPriorityServo.ServoType.AXON_MINI,
                 0.51, 0.8, 0.78,
                 new boolean[] {false},
-                3, 7
+                2, 4
         );
 
         robot.hardwareQueue.addDevices(roller, feed, rindex, lindex);

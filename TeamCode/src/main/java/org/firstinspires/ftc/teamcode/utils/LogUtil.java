@@ -80,7 +80,7 @@ public class LogUtil {
 
     private static long timeAtNextWrite;
 
-    public static boolean DISABLED = false;
+    public static boolean DISABLED = true;
     public static boolean stateTransition = false;
     public static boolean drivePositionReset = false;
 

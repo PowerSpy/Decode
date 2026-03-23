@@ -23,7 +23,7 @@ public class Globals {
     //true if full field
     public static boolean fullField = false;
     public static double LLHeight = 10; //Todo - Change
-    public static double LlAngle = 10; //Todo - Change - Angle the limelight is looking below from the horizontal - Degrees
+    public static double LlAngle = 20; //Todo - Change - Angle the limelight is looking below from the horizontal - Degrees
     public static double ballRadius = 2.5;
 
 
