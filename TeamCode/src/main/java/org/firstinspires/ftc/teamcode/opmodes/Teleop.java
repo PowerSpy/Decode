@@ -345,7 +345,7 @@ public class Teleop extends LinearOpMode {
 
             telemetry.addData("Robot position (deg)", String.format(Locale.US, "(%.2f, %.2f, %.2f)", ROBOT_POSITION.x, ROBOT_POSITION.y, Math.toDegrees(ROBOT_POSITION.heading)));
             telemetry.addData("CAT", LogUtil.DISABLED ? "DISABLED" : "ENABLED");
-            telemetry.addData("Vision : relocalize count", robot.drivetrain.mergeLocalizer.numberOfTimesRelocalizedWithCamera);
+            telemetry.addData("Vision : relocalize count", robot.drivetrain.nMergeLocalizer.numberOfTimesRelocalizedWithCamera);
             telemetry.addData("Vision : use camera", MergeLocalizer.useCamera);
 
             telemetry.update();
