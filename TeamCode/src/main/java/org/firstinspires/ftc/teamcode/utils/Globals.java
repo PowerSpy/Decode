@@ -25,6 +25,8 @@ public class Globals {
     public static double LLHeight = 10; //Todo - Change
     public static double LlAngle = 20; //Todo - Change - Angle the limelight is looking below from the horizontal - Degrees
     public static double ballRadius = 2.5;
+    //limelight is 8.9 inches in front of the center of the turret
+    public static double LLOffsetForward = 8.9;
 
 
 

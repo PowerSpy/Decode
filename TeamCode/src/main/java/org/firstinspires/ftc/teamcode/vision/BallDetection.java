@@ -1,6 +1,8 @@
 package org.firstinspires.ftc.teamcode.vision;
 
 import static org.firstinspires.ftc.teamcode.utils.Globals.ROBOT_POSITION;
+import static org.firstinspires.ftc.teamcode.utils.Globals.LLOffsetForward;
+
 
 import android.util.Log;
 
@@ -10,6 +12,8 @@ import com.qualcomm.hardware.limelightvision.LLResultTypes;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
+import org.firstinspires.ftc.teamcode.utils.Globals;
+import org.firstinspires.ftc.teamcode.utils.Pose2d;
 import org.firstinspires.ftc.teamcode.utils.Utils;
 import org.firstinspires.ftc.teamcode.utils.Vector2;
 
@@ -19,9 +23,9 @@ import java.util.List;
 
 @Config
 public class BallDetection {
-    private Limelight3A limelight;
+    private final Limelight3A limelight;
 
-    private ArrayList<Vector2> ballPoses = new ArrayList<>();
+    private final ArrayList<Vector2> ballPoses = new ArrayList<>();
 
     public static double stalenessThreshMs = 100;
     public static double confidenceThresh = 0; // Todo - Tune
@@ -42,15 +46,19 @@ public class BallDetection {
     }
 
     public void update() {
+
+        ballPoses.clear();
+
         LLResult result = limelight.getLatestResult();
 
         Log.i("BallDetection limelight connected", "" + limelight.isConnected());
+
         if (result != null) {
             Log.i("BallDetection status", result.isValid() + " " + result.getStaleness());
         }
+
         if (result != null && result.isValid() && result.getStaleness() < stalenessThreshMs) {
             List<LLResultTypes.DetectorResult> detections = result.getDetectorResults();
-            ballPoses.clear();
             Log.i("BallDetection number of Detections", String.valueOf(detections.size()));
 
             for (LLResultTypes.DetectorResult detection : detections) {
@@ -58,11 +66,12 @@ public class BallDetection {
 
                         double tx = detection.getTargetXDegrees();
                         double ty = detection.getTargetYDegrees();
-
                         double ta = detection.getTargetArea();
 
                         if(!Double.isNaN(tx) && !Double.isNaN(ty) && !Double.isNaN(ta)) {
 
+                            Pose2d cameraPos = new Pose2d(ROBOT_POSITION.x + LLOffsetForward * Math.cos(ROBOT_POSITION.heading), ROBOT_POSITION.y + LLOffsetForward * Math.sin(ROBOT_POSITION.heading), ROBOT_POSITION.heading);
+                            Log.i("Camera pos is", cameraPos.toString() + "Robot pos is" + ROBOT_POSITION.toString());
 
                             //lowk in inches
                             double d = 70 - 100 * Math.cbrt(ta - 0.005);
@@ -70,11 +79,10 @@ public class BallDetection {
 
                             //funny polar to cartesian conversion
                             double angle = ROBOT_POSITION.heading + Math.toRadians(tx);
-                            Vector2 ballPos = new Vector2(ROBOT_POSITION.x + d * Math.cos(angle), ROBOT_POSITION.y + d * Math.sin(angle));
-                            //if (ballPos.x >= 0 && ballPos.y * (Globals.isRed ? 1 : -1) >= 0) {
-                            //    ballPoses.add(ballPos);
-                            //}
-                            ballPoses.add(ballPos);
+                            Vector2 ballPos = new Vector2(cameraPos.x + d * Math.cos(angle), cameraPos.y + d * Math.sin(angle));
+                            if (ballPos.x >= 0 && ballPos.y * (Globals.isRed ? 1 : -1) >= 0) {
+                                ballPoses.add(ballPos);
+                            }
 
                         } else {
                             Log.i("Ball", "Number was not a number");
@@ -95,6 +103,9 @@ public class BallDetection {
         //list of criteria - we want the x difference between robot and ball to be as less as possible
         //we also weight the balls higher if there are balls near it in terms of x
         //weights are clamped between 1 and 0 with 1 being the perfect ball with there being 0 x differnce and two balls directly adjacent to it
+        if(ballPoses.isEmpty()) {
+            return new double[0];
+        }
         double[] weights = new double[ballPoses.size()];
         for (int i = 0; i < weights.length; i++) {
             double xDifference = Math.abs(ROBOT_POSITION.x - ballPoses.get(i).x);
@@ -122,17 +133,18 @@ public class BallDetection {
         return (ArrayList<Vector2>) ballPoses.clone();
     }
 
-    public Vector2 getBestBall() {
+    public Vector2 getBestBall() {return getBestBall(this.getBallPoses());}
 
-        this.update();
-        double[] w = this.getWeights(this.ballPoses);
+    public Vector2 getBestBall(ArrayList<Vector2> ballPoses) {
 
-        if (ballPoses.size() == 0) {
+        double[] w = this.getWeights(ballPoses);
+
+        if (ballPoses.isEmpty()) {
             return null;
         } else {
             double min = -1000000;
             int bestIndex = 0;
-            for(int i = 0; i < w.length - 1; i++) {
+            for(int i = 0; i < w.length; i++) {
                 if(w[i] > min) {
                     min = w[i];
                     bestIndex = i;

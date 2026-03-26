@@ -53,6 +53,11 @@ public class BallDetectionTest extends LinearOpMode {
                 //the bigger the radius of the circle, the higher the weight
                 canvas.strokeCircle(p.get(i).x, p.get(i).y, 5);
             }
+            canvas.setStroke("#000000");
+            if(b.getBestBall(p) != null) {
+                canvas.strokeCircle(b.getBestBall(p).x, b.getBestBall(p).y, 5);
+                Log.i("Ball Detection", "Best Ball is" + b.getBestBall(p).toString());
+            }
         }
     }
 }

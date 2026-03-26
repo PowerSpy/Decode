@@ -3,6 +3,8 @@ package org.firstinspires.ftc.teamcode.opmodes;
 import static org.firstinspires.ftc.teamcode.utils.Globals.ROBOT_FORWARD_LENGTH;
 import static org.firstinspires.ftc.teamcode.utils.Globals.ROBOT_WIDTH;
 
+import android.util.Log;
+
 import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
@@ -92,6 +94,7 @@ public class BlueFarVisionAuto extends LinearOpMode {
     }
 
     private void intake(double x, double y) {
+        Log.i("the ball we are aiming for is", visionBall == null ? "The pose is null" : visionBall.toString());
         if(visionBall == null) {
             robot.drivetrain.goToPoint(new Pose2d(x, -22, -Math.PI / 2), 1);
             robot.waitWhileWithTimeout(() -> robot.drivetrain.state != Drivetrain.State.WAIT, intakeMoveTimeout);
