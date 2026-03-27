@@ -189,7 +189,6 @@ public class nPriorityServo extends PriorityDevice {
             if (!(Globals.TESTING_DISABLE_CONTROL && Globals.RUNMODE == RunMode.TESTER)) {
                 update();
             }
-            Log.i(name, currentAngle + " is the value [ Eric's Log ]");
             first = false;
         }
 
@@ -253,7 +252,6 @@ public class nPriorityServo extends PriorityDevice {
 
         if (forceUpdate) priority += 1000;
 
-        Log.i("priority", name + " : " + priority);
         return priority;
     }
 }

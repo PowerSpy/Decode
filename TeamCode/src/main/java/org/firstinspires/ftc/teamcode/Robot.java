@@ -61,18 +61,16 @@ public class Robot {
         if (this.stopChecker != null && this.stopChecker.getAsBoolean()) return;
 
         sensors.update();
-        Log.i("LoopTime", "sensors " + GET_LOOP_TIME());
 
         drivetrain.update();
         intake.update();
         shooter.update();
         park.update();
-        Log.i("LoopTime", "subsystems " + GET_LOOP_TIME());
 
         if (this.stopChecker != null && this.stopChecker.getAsBoolean()) return;
 
         hardwareQueue.update();
-        Log.i("LoopTime", "hardwareQueue " + GET_LOOP_TIME());
+
         this.updateTelemetry();
     }
 

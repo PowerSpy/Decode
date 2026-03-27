@@ -119,12 +119,14 @@ public class BallDetection {
             weights[i] = weights[i] +  -0.00806452 * totalXDiff + 0.580645;
         }
 
-        for (int i = 0; i < weights.length; i++) {
-            weights[i] = Utils.minMaxClip(weights[i], 0, 1);
-        }
+
         //punish the first and last balls
         weights[0] = weights[0] - 0.25;
         weights[weights.length - 1] = weights[weights.length - 1] - 0.25;
+
+        for (int i = 0; i < weights.length; i++) {
+            weights[i] = Utils.minMaxClip(weights[i], 0, 1);
+        }
 
         return weights;
     }

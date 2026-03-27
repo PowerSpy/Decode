@@ -329,7 +329,11 @@ public class Teleop extends LinearOpMode {
                 robot.shooter.turretTrackInManual = false;
                 robot.shooter.turret.setTargetAngle(Math.toRadians(195));
             } else {
-                robot.drivetrain.drive(gamepad1);
+                if (gamepad1.right_trigger > triggerThresh) {
+                    robot.drivetrain.drive(gamepad1, true);
+                } else {
+                    robot.drivetrain.drive(gamepad1, false);
+                }
             }
 
             telemetry.addData("Alliance", Globals.isRed ? "Red" : "Blue");

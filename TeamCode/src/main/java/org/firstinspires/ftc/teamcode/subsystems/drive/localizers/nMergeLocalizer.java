@@ -102,7 +102,6 @@ public class nMergeLocalizer extends Localizer {
         // EKF UPDATE — PINPOINT
 
         if (usePinpoint && (currentTimeNanos - lastPinpointPollNanos >= pinpointPollGapMs * 1000_000 || constantCorrection)) {
-            //Log.i("Localization Test", "pinpoint in use");
             pinpoint.update();
             px = pinpoint.getPosX();
             py = pinpoint.getPosY();
@@ -140,10 +139,6 @@ public class nMergeLocalizer extends Localizer {
         */
 
 
-
-
-        //Log.i("LoopTime", "sensors after ekf pinpoint " + GET_LOOP_TIME());
-
         // CAMERA
         TelemetryUtil.packet.put("Vision is not null", drivetrain.vision != null);
 
@@ -172,7 +167,6 @@ public class nMergeLocalizer extends Localizer {
             }
             if (estimatedCameraPose != null) {
                 long frameAcquisitionNanoTime = drivetrain.vision.frameAcquisitionNanoTime;
-                Log.i("Vision", "After updating pose " + estimatedCameraPose);
                 if (nanoTimes.size() > 5
                         && consecutiveFrames >= frameRequirement
                         && Math.hypot(estimatedCameraPose.x - ekf.getX(), estimatedCameraPose.y - ekf.getY()) < maxVisionErrorThresh) {
@@ -201,8 +195,6 @@ public class nMergeLocalizer extends Localizer {
                 }
             }
         }
-
-        //Log.i("LoopTime", "sensors after ekf camera " + GET_LOOP_TIME());
 
         Pose2d ekfPose = ekf.getPose();
         ekfPose.x = Utils.minMaxClip(ekfPose.x, -72, 72);
