@@ -57,7 +57,7 @@ public class Intake {
         lindex = new nPriorityServo(
                 new Servo[]{robot.hardwareMap.get(Servo.class, "lindex")},
                 "lindex", nPriorityServo.ServoType.AXON_MINI,
-                0.51, 0.8, 0.78,
+                0, 1, 0.1,
                 new boolean[] {false},
                 2, 4
         );
@@ -148,11 +148,11 @@ public class Intake {
     public void setRollerDirection(boolean reversed) { this.reversed = reversed; }
 
     public void setRightBlocker(boolean on) {
-        rindex.setTargetAngle(on ? 0.5 : 0);
+        rindex.setTargetAngle(on ? 0.19 : 0.05);
     }
 
     public void setLeftBlocker(boolean on) {
-        lindex.setTargetAngle(on ? 0.5 : 0);
+        lindex.setTargetAngle(on ? 0.61 : 0.9);
     }
 
     private void updateTelemetry() {

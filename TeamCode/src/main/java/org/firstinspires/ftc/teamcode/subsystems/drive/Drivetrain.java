@@ -20,6 +20,7 @@ import org.firstinspires.ftc.teamcode.subsystems.drive.localizers.Localizer;
 import org.firstinspires.ftc.teamcode.subsystems.drive.localizers.nMergeLocalizer;
 import org.firstinspires.ftc.teamcode.utils.AngleUtil;
 import org.firstinspires.ftc.teamcode.utils.DashboardUtil;
+import org.firstinspires.ftc.teamcode.utils.Globals;
 import org.firstinspires.ftc.teamcode.utils.LogUtil;
 import org.firstinspires.ftc.teamcode.utils.PID;
 import org.firstinspires.ftc.teamcode.utils.Pose2d;
@@ -53,6 +54,12 @@ public class Drivetrain {
     public nMergeLocalizer nMergeLocalizer;
     private final HardwareQueue hardwareQueue;
     private final Sensors sensors;
+
+    //teleop heading lock stuff
+    //tune
+    public static double targetHeading = 135;
+    public static double headingLockDeadzone = 2.5;
+    private boolean wasLocking = false;
 
     public Drivetrain(Robot robot, Vision vision) { this(robot.hardwareMap, robot.sensors, robot.hardwareQueue, vision); }
 
@@ -352,7 +359,6 @@ public class Drivetrain {
 
     public static double smoothPowerK = 0.5;
     public void setMotorPowers(double lf, double lr, double rr, double rf) {
-        Log.i("Drivetrain powers : ", lf + " " + lr + " " + rr + " " + rf);
         leftFront.setTargetPowerSmooth(lf, smoothPowerK);
         leftRear.setTargetPowerSmooth(lr, smoothPowerK);
         rightRear.setTargetPowerSmooth(rr, smoothPowerK);
@@ -375,19 +381,40 @@ public class Drivetrain {
         }
     }
 
-    public void drive(Gamepad gamepad) {
+    public void drive(Gamepad gamepad, boolean lockHeading) {
         resetMinPowersToOvercomeFriction();
         state = State.DRIVE;
 
         double forward = smoothControls(-1 * gamepad.left_stick_y);
         double strafe = smoothControls(-1 * gamepad.left_stick_x);
-        double turn = smoothControls(-gamepad.right_stick_x);
 
         Vector2 drive = new Vector2(forward,strafe);
         if (drive.mag() <= 0.05) {
             drive.mul(0);
         }
-        setMoveVector(drive,turn);
+
+        double turn;
+
+        if(lockHeading) {
+
+            if (!wasLocking) {
+                turnPID.resetIntegral();
+            }
+            wasLocking = true;
+
+            double error = AngleUtil.clipAngle(Math.toRadians(targetHeading) * (Globals.isRed ? 1 : -1) - ROBOT_POSITION.heading);
+            if(Math.abs(error) < Math.toRadians(headingLockDeadzone)) {
+                turn = 0;
+                turnPID.resetIntegral();
+            } else {
+                turn = turnPID.update(error, -maxPower, maxPower) + turnKStatic * Math.signum(error);
+            }
+        } else {
+            wasLocking = false;
+            turn = smoothControls(-gamepad.right_stick_x);
+        }
+
+        setMoveVector(drive, turn);
     }
 
     public double smoothControls(double value) {

@@ -42,10 +42,7 @@ public class Vision {
     public void init(HardwareMap HardwareMap) {
         aprilTagProcessor = new AprilTagProcessor.Builder()
                 .setDrawTagID(true)
-//                .setDrawAxes(true)
-//                .setDrawTagOutline(true)
-//                .setDrawCubeProjection(true)
-                .setNumThreads(3)
+                .setNumThreads(3) //optimize this
                 .setTagFamily(AprilTagProcessor.TagFamily.TAG_36h11)
                 .setTagLibrary(AprilTagGameDatabase.getDecodeTagLibrary())
                 .setOutputUnits(DistanceUnit.INCH, AngleUnit.RADIANS)
@@ -80,12 +77,9 @@ public class Vision {
     }
 
     public Pose2d update() {
-        //visionPortal.setProcessorEnabled(aprilTagProcessor, true);
-        Log.i("Vision", "Updating");
         detections = aprilTagProcessor.getFreshDetections();
 
         if (detections != null && !detections.isEmpty()) {
-            Log.i("Vision", String.valueOf(detections.size()));
 
             ArrayList<AprilTagDetection> positionTagDetections = new ArrayList<>();
             for (AprilTagDetection detection: detections) {
