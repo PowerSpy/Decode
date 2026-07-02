@@ -23,7 +23,8 @@ public class NewIntake {
 
     public enum State {
         IDLE,
-        INTAKE
+        INTAKE,
+        TRANSIT
     }
 
     public State state = State.IDLE;
@@ -35,9 +36,9 @@ public class NewIntake {
                 "roller", 2, 4,
                 new double[] { 1 }, robot.sensors
 
-        feed = new PriorityMotor(
-            new DcMotorEx[] { robot.hardwareMap.get(DcMotorEx.class, "feed")},
-            "feed", 2,4
+        flipper = new nPriorityServo(
+            new DcMotorEx[] { robot.hardwareMap.get(DcMotorEx.class, "flipper")},
+            "flipper", 2,4
             new double[] {1}, robot.sensors
         );
 
@@ -50,7 +51,7 @@ public class NewIntake {
         switch (state) {
             case IDLE: {
                 roller.setTargetPower(0.0);
-                feed.setTargetPower(0.0);
+                flipper.setTargetPower(0.0);
                 if (requestIntake) {
                     requestIntake = false;
                     state = State.INTAKE;
@@ -60,13 +61,17 @@ public class NewIntake {
             }
             case INTAKE: {
                 roller.setTargetPowerSmooth(rollerPower * (reversed ? -1 : 1), 0.1);
-
+                flipper.setTargetPower(0.0);
                 if (requestOff) {
                     requestOff = false;
                     state = State.IDLE;
                 }
 
                 break;
+            }
+            case TRANSIT:{
+                roller.setTargetPowerSmooth(rollerPower * (reversed ? -0.5 : 0.5),0.1);
+                flipper.setTarget
             }
         }
         updateTelemetry();
