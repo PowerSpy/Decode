@@ -1,11 +1,13 @@
-package org.firstinspires.ftc.teamcode;
+package org.firstinspires.ftc.teamcode.subsystems.drive;
+
+
 
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 
-@TeleOp(name = "Homework 1", group = "TeleOp")
-public class Homework_1 extends LinearOpMode {
+@TeleOp(name = "New_Drivetrain", group = "TeleOp")
+public class New_Drivetrain extends LinearOpMode {
 
     private DcMotor frontLeftMotor;
     private DcMotor frontRightMotor;
