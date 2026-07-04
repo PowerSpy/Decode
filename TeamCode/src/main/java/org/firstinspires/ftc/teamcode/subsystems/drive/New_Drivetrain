@@ -1,39 +1,93 @@
 package org.firstinspires.ftc.teamcode.subsystems.drive;
 
-
-
-import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
-import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.Gamepad;
+import com.qualcomm.robotcore.hardware.HardwareMap;
 
-@TeleOp(name = "New_Drivetrain", group = "TeleOp")
-public class New_Drivetrain extends LinearOpMode {
+import org.firstinspires.ftc.teamcode.sensors.Sensors;
+import org.firstinspires.ftc.teamcode.utils.priority.HardwareQueue;
+import org.firstinspires.ftc.teamcode.utils.priority.PriorityMotor;
 
-    private DcMotor frontLeftMotor;
-    private DcMotor frontRightMotor;
-    private DcMotor backLeftMotor;
-    private DcMotor backRightMotor;
+import java.util.Arrays;
+import java.util.List;
 
-    @Override
-    public void runOpMode() {
+public class New_Drivetrain {
 
-        frontLeftMotor = hardwareMap.get(DcMotor.class, "frontLeftMotor");
-        frontRightMotor = hardwareMap.get(DcMotor.class, "frontRightMotor");
-        backLeftMotor = hardwareMap.get(DcMotor.class, "backLeftMotor");
-        backRightMotor = hardwareMap.get(DcMotor.class, "backRightMotor");
+    private final PriorityMotor frontLeftMotor;
+    private final PriorityMotor frontRightMotor;
+    private final PriorityMotor backLeftMotor;
+    private final PriorityMotor backRightMotor;
 
-        frontLeftMotor.setDirection(DcMotor.Direction.REVERSE);
-        backLeftMotor.setDirection(DcMotor.Direction.REVERSE);
+    private final List<PriorityMotor> motors;
+    private final HardwareQueue hardwareQueue;
 
-        waitForStart();
+    public New_Drivetrain(HardwareMap hardwareMap, Sensors sensors, HardwareQueue hardwareQueue) {
+        this.hardwareQueue = hardwareQueue;
 
-        while (opModeIsActive()) {
-            double forward = -gamepad1.left_stick_y;
-            double strafe = gamepad1.left_stick_x;
-            double turn = gamepad1.right_stick_x;
+        frontLeftMotor = new PriorityMotor(
+                hardwareMap.get(DcMotorEx.class, "frontLeftMotor"),
+                "frontLeftMotor",
+                4,
+                5,
+                1,
+                sensors
+        );
 
-            driveCalculations(forward, strafe, turn);
+        frontRightMotor = new PriorityMotor(
+                hardwareMap.get(DcMotorEx.class, "frontRightMotor"),
+                "frontRightMotor",
+                4,
+                5,
+                1,
+                sensors
+        );
+
+        backLeftMotor = new PriorityMotor(
+                hardwareMap.get(DcMotorEx.class, "backLeftMotor"),
+                "backLeftMotor",
+                4,
+                5,
+                1,
+                sensors
+        );
+
+        backRightMotor = new PriorityMotor(
+                hardwareMap.get(DcMotorEx.class, "backRightMotor"),
+                "backRightMotor",
+                4,
+                5,
+                1,
+                sensors
+        );
+
+        motors = Arrays.asList(
+                frontLeftMotor,
+                frontRightMotor,
+                backLeftMotor,
+                backRightMotor
+        );
+
+        configureMotors();
+    }
+
+    private void configureMotors() {
+        frontLeftMotor.motor[0].setDirection(DcMotor.Direction.REVERSE);
+        backLeftMotor.motor[0].setDirection(DcMotor.Direction.REVERSE);
+
+        for (PriorityMotor motor : motors) {
+            motor.motor[0].setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+            motor.motor[0].setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+            hardwareQueue.addDevice(motor);
         }
+    }
+
+    public void drive(Gamepad gamepad) {
+        double forward = -gamepad.left_stick_y;
+        double strafe = gamepad.left_stick_x;
+        double turn = gamepad.right_stick_x;
+
+        driveCalculations(forward, strafe, turn);
     }
 
     private void driveCalculations(double forward, double strafe, double turn) {
@@ -56,10 +110,21 @@ public class New_Drivetrain extends LinearOpMode {
         startDriving(frontLeftPower, frontRightPower, backLeftPower, backRightPower);
     }
 
-    private void startDriving(double frontLeft, double frontRight, double backLeft, double backRight) {
-        frontLeftMotor.setPower(frontLeft);
-        frontRightMotor.setPower(frontRight);
-        backLeftMotor.setPower(backLeft);
-        backRightMotor.setPower(backRight);
+    private void startDriving(
+            double frontLeft,
+            double frontRight,
+            double backLeft,
+            double backRight
+    ) {
+        frontLeftMotor.setTargetPower(frontLeft);
+        frontRightMotor.setTargetPower(frontRight);
+        backLeftMotor.setTargetPower(backLeft);
+        backRightMotor.setTargetPower(backRight);
+    }
+
+    public void stopAllMotors() {
+        for (PriorityMotor motor : motors) {
+            motor.setTargetPower(0);
+        }
     }
 }
