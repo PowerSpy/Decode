@@ -56,7 +56,7 @@ public class NewIntake {
         switch (state) {
             case IDLE: {
                 roller.setTargetPower(0.0);
-                flipper.setTargetAngle(flipperRegAngle ,0.0);
+                flipper.setTargetAngle(flipperRegAngle ,0.1);
                 if (requestIntake) {
                     requestIntake = false;
                     state = State.INTAKE;
@@ -66,7 +66,7 @@ public class NewIntake {
             }
             case INTAKE: {
                 roller.setTargetPowerSmooth(rollerPower * (reversed ? -1 : 1), 0.1);
-                flipper.setTargetAngle(flipperRegAngle ,0.0);
+                flipper.setTargetAngle(flipperRegAngle ,0.1);
                 if (requestOff) {
                     requestOff = false;
                     state = State.IDLE;
