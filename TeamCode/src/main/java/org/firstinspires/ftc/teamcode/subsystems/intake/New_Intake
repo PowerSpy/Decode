@@ -39,9 +39,9 @@ public class NewIntake {
                 "roller", 2, 4,
                 new double[] { 1 }, robot.sensors
 
-        flipper = new PriorityCRServo(
-            new CRServo[]{robot.hardwareMap.get(CRServo.class, "flipper1"), robot.hardwareMap.get(CRServo.class, "flipper2")},
-            "flipper", PriorityCRServo.ServoType.AXON_MINI,
+        flipper = new PriorityServo(
+            new Servo[]{robot.hardwareMap.get(CRServo.class, "flipper1"), robot.hardwareMap.get(Servo.class, "flipper2")},
+            "flipper", PriorityServo.ServoType.AXON_MINI,
             new boolean[]{false, true},
             2, 2
         );
