@@ -7,6 +7,7 @@ import static org.firstinspires.ftc.teamcode.utils.Globals.ROBOT_GLOBAL_VELOCITY
 import com.acmerobotics.dashboard.canvas.Canvas;
 import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.robotcore.hardware.AnalogInput;
+import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.VoltageSensor;
 import com.qualcomm.hardware.lynx.LynxModule;
 
@@ -19,6 +20,7 @@ import org.firstinspires.ftc.teamcode.utils.LogUtil;
 import org.firstinspires.ftc.teamcode.utils.RunMode;
 import org.firstinspires.ftc.teamcode.utils.TelemetryUtil;
 import org.firstinspires.ftc.teamcode.utils.Utils;
+import org.firstinspires.ftc.teamcode.utils.priority.PriorityMotor;
 
 import java.util.List;
 
@@ -59,6 +61,11 @@ public class Sensors {
     private long lastTurretSensorUpdatedTime = 0;
     private long lastColorSensorUpdatedTime = 0;
     private final VoltageSensor voltageSensor;
+
+    private static double slidesInchesPerTick = 0.0001; // Placeholder
+    private int slidesPos;
+    private double slidesVel;
+    private int slidesFloatingOrigin;
 
     public Sensors(Robot robot) {
         this.robot = robot;
@@ -110,6 +117,10 @@ public class Sensors {
         ROBOT_POSITION = robot.drivetrain.nMergeLocalizer.getPoseEstimate();
         ROBOT_VELOCITY = robot.drivetrain.nMergeLocalizer.getRelativePoseVelocity();
         ROBOT_GLOBAL_VELOCITY = robot.drivetrain.nMergeLocalizer.getGlobalVelocity();
+
+        PriorityMotor slidesEncoder = (PriorityMotor) robot.hardwareQueue.getDevice("slides_encoder_placeholeder_name");
+        this.slidesPos = slidesEncoder.motor[0].getCurrentPosition();
+        this.slidesVel = slidesEncoder.getVelocity();
 
         //if (currentTime - initialTime < 500_000_000) resetTurretAngleEncoder = true;
         if (currentTime - lastTurretSensorUpdatedTime > turretSensorUpdateTime * 1e6) {
@@ -192,4 +203,19 @@ public class Sensors {
      * @return the wrapped turret angle
      */
     public double getTurretAngle() { return turretAngle; }
+
+    public void zeroSlides()
+    {
+        this.slidesFloatingOrigin = this.slidesPos;
+    }
+
+    public double getSlidesVelocity()
+    {
+        return this.slidesVel*Sensors.slidesInchesPerTick;
+    }
+
+    public double getSlidesPos()
+    {
+        return (this.slidesPos-this.slidesFloatingOrigin)*Sensors.slidesInchesPerTick;
+    }
 }
