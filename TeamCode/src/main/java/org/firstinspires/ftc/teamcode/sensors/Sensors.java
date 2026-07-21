@@ -11,12 +11,17 @@ import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.VoltageSensor;
 import com.qualcomm.hardware.lynx.LynxModule;
 
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 import org.firstinspires.ftc.teamcode.Robot;
+import org.firstinspires.ftc.teamcode.subsystems.drive.localizers.GoBildaPinpointDriver;
 import org.firstinspires.ftc.teamcode.subsystems.shooter.Shooter;
 import org.firstinspires.ftc.teamcode.utils.DashboardUtil;
 import org.firstinspires.ftc.teamcode.utils.Globals;
 import org.firstinspires.ftc.teamcode.utils.LEDWrapper;
 import org.firstinspires.ftc.teamcode.utils.LogUtil;
+import org.firstinspires.ftc.teamcode.utils.Pose2d;
 import org.firstinspires.ftc.teamcode.utils.RunMode;
 import org.firstinspires.ftc.teamcode.utils.TelemetryUtil;
 import org.firstinspires.ftc.teamcode.utils.Utils;
@@ -47,6 +52,10 @@ public class Sensors {
     //private double turretAnalogEncoderVoltage;
     public static double turretAngleEncoderOffset = 0.0;
 
+    public static double odoXOffset = 70, odoYOffset = 65; // Placeholder
+    public static DistanceUnit odoDistanceUnit = DistanceUnit.INCH;
+    public static AngleUnit odoAngleUnit = AngleUnit.RADIANS;
+
     private double lightSensorFilteredVoltage = 0;
     public static double lightSensorFilter = 0.5;
     public AnalogInput lightSensor0;
@@ -67,6 +76,8 @@ public class Sensors {
     private double slidesVel;
     private int slidesFloatingOrigin;
 
+    private GoBildaPinpointDriver odometry;
+
     public Sensors(Robot robot) {
         this.robot = robot;
 
@@ -83,6 +94,11 @@ public class Sensors {
         light0G = new LEDWrapper(robot.hardwareMap, "light0G");
         light0P = new LEDWrapper(robot.hardwareMap, "light0P");
 
+        this.odometry = robot.hardwareMap.get(GoBildaPinpointDriver.class, "pinpoint");
+        this.odometry.setOffsets(Sensors.odoXOffset, Sensors.odoYOffset, Sensors.odoDistanceUnit);
+        this.odometry.setEncoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_SWINGARM_POD);
+        this.odometry.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.REVERSED, GoBildaPinpointDriver.EncoderDirection.REVERSED);
+
         allHubs = robot.hardwareMap.getAll(LynxModule.class);
 
         for (LynxModule hub : allHubs) {
@@ -94,6 +110,8 @@ public class Sensors {
         long lastTime = currentTime;
         currentTime = System.nanoTime();
         loopTime = (currentTime - lastTime) / 1e9;
+
+        this.odometry.update();
 
         for (LynxModule module : allHubs) {
             module.clearBulkCache();
@@ -218,4 +236,32 @@ public class Sensors {
     {
         return (this.slidesPos-this.slidesFloatingOrigin)*Sensors.slidesInchesPerTick;
     }
+
+    public void setOdometryOffsets(double xOffset, double yOffset)
+    {
+        this.odometry.setOffsets(xOffset, yOffset, Sensors.odoDistanceUnit);
+    }
+
+    public void setOdometryPosition(double x, double y, double heading)
+    {
+        this.odometry.setPosition(new Pose2D(Sensors.odoDistanceUnit, x, y, Sensors.odoAngleUnit, heading));
+    }
+
+    public void setOdometryPosition(Pose2D pose)
+    {
+        this.odometry.setPosition(pose);
+    }
+
+    public Pose2D getEstPosition()
+    {
+        Pose2D pos = this.odometry.getPosition();
+        return new Pose2D(Sensors.odoDistanceUnit, pos.getX(Sensors.odoDistanceUnit), pos.getY(Sensors.odoDistanceUnit), Sensors.odoAngleUnit, pos.getHeading(Sensors.odoAngleUnit));
+    }
+
+    public double getOdoHeading()
+    {
+        return this.odometry.getHeading(Sensors.odoAngleUnit);
+    }
+
+
 }
