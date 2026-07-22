@@ -44,6 +44,8 @@ public class PathfollowerDrivetrain
     public static double kR = 0.1; // Placeholder (feedforward for radius of curvature/turn rate)
     public static double posErrorThreshold = 0.1; //Placeholder
     public static double rotErrorThreshold = 0.1; //Placeholder
+    public static double minPower = -1;
+    public static double maxPower = 1;
 
     private boolean requestToTarget = false;
     private boolean requestFollowPath = false;
@@ -56,17 +58,13 @@ public class PathfollowerDrivetrain
     private double targetPosX, targetPosY;
     private Pose2D currentPos;
     private double currentHeading;
-    private double minPower = -1;
-    private double maxPower = 1;
 
     private Path selectedPath;
 
-    public PathfollowerDrivetrain(Robot robot, double minPower, double maxPower)
+    public PathfollowerDrivetrain(Robot robot)
     {
         this.robot = robot;
         this.motors = new PriorityMotor[4];
-        this.minPower = minPower;
-        this.maxPower = maxPower;
         this.motors[MotorIndices.LEFT_FRONT] = new PriorityMotor(
                 this.robot.hardwareMap.get(DcMotorEx.class, "leftFront"),
                 "leftFront", 4, 5,
@@ -146,9 +144,9 @@ public class PathfollowerDrivetrain
             return;
         }
 
-        double rotatePow = rotationPID.update(headingError, this.minPower, this.maxPower);
-        double forwardPow = forwardPID.update(yError, this.minPower, this.maxPower);
-        double strafePow = strafePID.update(xError, this.minPower, this.maxPower);
+        double rotatePow = rotationPID.update(headingError, PathfollowerDrivetrain.minPower, PathfollowerDrivetrain.maxPower);
+        double forwardPow = forwardPID.update(yError, PathfollowerDrivetrain.minPower, PathfollowerDrivetrain.maxPower);
+        double strafePow = strafePID.update(xError, PathfollowerDrivetrain.minPower, PathfollowerDrivetrain.maxPower);
 
         double motorPowX = strafePow*Math.cos(-this.currentHeading)-forwardPow*Math.sin(-this.currentHeading);
         double motorPowY = strafePow*Math.sin(-this.currentHeading)+forwardPow*Math.cos(-this.currentHeading);

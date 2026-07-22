@@ -11,6 +11,8 @@ import com.acmerobotics.dashboard.canvas.Canvas;
 
 import org.firstinspires.ftc.teamcode.sensors.Sensors;
 import org.firstinspires.ftc.teamcode.subsystems.deposit.Deposit;
+import org.firstinspires.ftc.teamcode.subsystems.drive.PathfollowerDrivetrain;
+import org.firstinspires.ftc.teamcode.subsystems.intake.NewIntake;
 import org.firstinspires.ftc.teamcode.subsystems.park.Park;
 import org.firstinspires.ftc.teamcode.subsystems.shooter.Shooter;
 import org.firstinspires.ftc.teamcode.subsystems.intake.Intake;
@@ -31,8 +33,8 @@ public class Robot {
     public HardwareQueue hardwareQueue;
 
     public Sensors sensors;
-    public Drivetrain drivetrain;
-    public Intake intake;
+    public PathfollowerDrivetrain drivetrain;
+    public NewIntake intake;
     public Shooter shooter;
     public Deposit deposit;
     public Park park;
@@ -50,8 +52,8 @@ public class Robot {
         LogUtil.reset();
 
         sensors = new Sensors(this);
-        drivetrain = new Drivetrain(this, useVision ? new Vision(hardwareMap) : null);
-        intake = new Intake(this);
+        drivetrain = new PathfollowerDrivetrain(this);
+        intake = new NewIntake(this);
 //        shooter = new Shooter(this);
         park = new Park(this);
         deposit = new Deposit(this);
