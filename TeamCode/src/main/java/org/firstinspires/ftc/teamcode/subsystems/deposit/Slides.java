@@ -18,6 +18,7 @@ public class Slides
     private PriorityMotor slidesMotor;
 
     private double length, vel, targetLength;
+    private boolean manualOverride = false;
 
     public Slides(Robot robot)
     {
@@ -37,6 +38,11 @@ public class Slides
     {
         this.length = this.robot.sensors.getSlidesPos();
         this.vel = this.robot.sensors.getSlidesVelocity();
+
+        if(this.manualOverride)
+        {
+            return;
+        }
 
         double ffTerms = Slides.kSF * Math.signum(this.vel) + Slides.kG;
         double power = pid.update(this.targetLength-this.length, Slides.minPower, Slides.maxPower) + ffTerms;

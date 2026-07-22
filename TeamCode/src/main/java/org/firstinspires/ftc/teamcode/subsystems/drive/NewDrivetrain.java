@@ -83,6 +83,5 @@ public class NewDrivetrain {
         normalizeArray(powers);
 
         setMotorPowers(powers);
-
     }
 }

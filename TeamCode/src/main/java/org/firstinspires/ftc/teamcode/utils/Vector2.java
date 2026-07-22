@@ -10,6 +10,12 @@ public class Vector2 {
         this.y = y;
     }
 
+    public Vector2(Vector2 other)
+    {
+        this.x = other.x;
+        this.y = other.y;
+    }
+
     public Vector2() {
         x = y = 0;
     }
