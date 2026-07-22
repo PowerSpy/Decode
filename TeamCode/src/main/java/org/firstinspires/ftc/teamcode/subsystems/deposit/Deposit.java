@@ -80,6 +80,11 @@ public class Deposit {
 
     }
 
+    private void updateTelemetry()
+    {
+        TelemetryUtil.packet.put("Drivetrain: state", this.state);
+    }
+
     public void holdPositions()
     {
         this.bucketServo.setTargetAngle(Deposit.holdBucket);
@@ -97,18 +102,14 @@ public class Deposit {
     public void update() {
         switch (this.state) {
             case IDLE: {
-                if (this.requestRaise) {
+                if (this.requestRaise)
+                {
                     this.state = State.RAISE;
                 }
 
                 if(this.requestDown)
                 {
                     this.state = State.LOWER;
-                }
-
-                if(this.requestDump)
-                {
-                    this.state = State.DUMP_WAIT;
                 }
 
                 break;
@@ -119,6 +120,12 @@ public class Deposit {
                 if(Math.abs(this.slides.getLength()-Deposit.slidesRaisedLength) < Deposit.completionThresholdSlides)
                 {
                     this.state = State.IDLE;
+                    this.requestRaise = false;
+                }
+
+                if(this.requestDump)
+                {
+                    this.state = State.DUMP_WAIT;
                 }
                 break;
             }
@@ -127,8 +134,8 @@ public class Deposit {
                 this.bucketArmServos.setTargetAngle(Deposit.prepareDumpBucketArm);
                 this.slides.setTargetLength(Deposit.prepareDumpSlidesLength);
 
-                if(Math.abs(this.bucketServo.getCurrentAngle()-Deposit.prepareDumpBucket) < Deposit.completionThresholdAngle &&
-                        Math.abs(this.bucketArmServos.getCurrentAngle()-Deposit.prepareDumpBucketArm) < Deposit.completionThresholdAngle &&
+                if(this.bucketServo.inPosition() &&
+                        this.bucketArmServos.inPosition() &&
                         Math.abs(this.slides.getLength()-Deposit.prepareDumpSlidesLength) < Deposit.completionThresholdSlides)
                 {
                     this.state = State.DUMP;
@@ -156,6 +163,7 @@ public class Deposit {
                 if(this.inHoldPositions())
                 {
                     this.state = State.IDLE;
+                    this.requestDump = false;
                 }
                 break;
             }
@@ -165,6 +173,7 @@ public class Deposit {
                 if(Math.abs(this.slides.getLength()-Deposit.slidesLoweredLength) < Deposit.completionThresholdSlides)
                 {
                     this.state = State.IDLE;
+                    this.requestDown = false;
                 }
                 break;
             }
@@ -174,6 +183,7 @@ public class Deposit {
 
 
         }
+        this.updateTelemetry();
     }
 }
 

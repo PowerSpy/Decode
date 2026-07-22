@@ -12,6 +12,7 @@ import org.firstinspires.ftc.teamcode.sensors.Sensors;
 import org.firstinspires.ftc.teamcode.utils.AngleUtil;
 import org.firstinspires.ftc.teamcode.utils.PID;
 import org.firstinspires.ftc.teamcode.utils.Pose2d;
+import org.firstinspires.ftc.teamcode.utils.TelemetryUtil;
 import org.firstinspires.ftc.teamcode.utils.Vector2;
 import org.firstinspires.ftc.teamcode.utils.priority.PriorityMotor;
 
@@ -168,10 +169,11 @@ public class PathfollowerDrivetrain
         if(pd == null)
         {
             this.requestFollowPath = false;
-            this.state = State.IDLE;
             PathfollowerDrivetrain.strafePID.resetIntegral();
             PathfollowerDrivetrain.forwardPID.resetIntegral();
             PathfollowerDrivetrain.rotationPID.resetIntegral();
+            Vector2 endPos = this.selectedPath.segments.get(this.selectedPath.segments.size()-1).spline.getPos(1.0);
+            goTo(new Pose2d(endPos.x, endPos.y, 0)); // fallback in case it doesnt fully make it
             return;
         }
 
@@ -195,6 +197,11 @@ public class PathfollowerDrivetrain
         double rearRightPow = motorPowY + motorPowX - rotatePow;
 
         setNormalizedMotorPowers(frontLeftPow, frontRightPow, rearLeftPow, rearRightPow);
+    }
+
+    private void updateTelemetry()
+    {
+        TelemetryUtil.packet.put("Drivetrain: state", this.state);
     }
 
     public void update()
@@ -222,5 +229,6 @@ public class PathfollowerDrivetrain
                 stateFollowPath();
                 break;
         }
+        this.updateTelemetry();
     }
 }
