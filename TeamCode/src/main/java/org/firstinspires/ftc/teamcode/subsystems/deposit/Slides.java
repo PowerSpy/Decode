@@ -4,6 +4,7 @@ import com.qualcomm.robotcore.hardware.DcMotorEx;
 
 import org.firstinspires.ftc.teamcode.Robot;
 import org.firstinspires.ftc.teamcode.utils.PID;
+import org.firstinspires.ftc.teamcode.utils.TelemetryUtil;
 import org.firstinspires.ftc.teamcode.utils.priority.PriorityMotor;
 
 @Config
@@ -20,8 +21,7 @@ public class Slides
     private double length, vel, targetLength;
     private boolean manualOverride = false;
 
-    public Slides(Robot robot)
-    {
+    public Slides(Robot robot) {
         this.robot = robot;
         this.slidesMotor = new PriorityMotor(
                 new DcMotorEx[]{

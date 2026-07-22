@@ -12,6 +12,7 @@ import org.firstinspires.ftc.teamcode.sensors.Sensors;
 import org.firstinspires.ftc.teamcode.utils.AngleUtil;
 import org.firstinspires.ftc.teamcode.utils.PID;
 import org.firstinspires.ftc.teamcode.utils.Pose2d;
+import org.firstinspires.ftc.teamcode.utils.TelemetryUtil;
 import org.firstinspires.ftc.teamcode.utils.Vector2;
 import org.firstinspires.ftc.teamcode.utils.priority.PriorityMotor;
 
@@ -198,6 +199,11 @@ public class PathfollowerDrivetrain
         setNormalizedMotorPowers(frontLeftPow, frontRightPow, rearLeftPow, rearRightPow);
     }
 
+    private void updateTelemetry()
+    {
+        TelemetryUtil.packet.put("Drivetrain: state", this.state);
+    }
+
     public void update()
     {
         this.currentPos = this.robot.sensors.getEstPosition();
@@ -223,5 +229,6 @@ public class PathfollowerDrivetrain
                 stateFollowPath();
                 break;
         }
+        this.updateTelemetry();
     }
 }

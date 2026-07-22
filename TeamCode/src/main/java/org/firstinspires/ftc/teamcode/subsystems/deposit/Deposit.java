@@ -80,6 +80,11 @@ public class Deposit {
 
     }
 
+    private void updateTelemetry()
+    {
+        TelemetryUtil.packet.put("Drivetrain: state", this.state);
+    }
+
     public void holdPositions()
     {
         this.bucketServo.setTargetAngle(Deposit.holdBucket);
@@ -175,6 +180,7 @@ public class Deposit {
 
 
         }
+        this.updateTelemetry();
     }
 }
 
