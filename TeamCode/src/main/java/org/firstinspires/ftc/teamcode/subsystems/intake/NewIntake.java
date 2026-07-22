@@ -23,14 +23,18 @@ public class NewIntake {
     private boolean reversed = false;
 
     private long transferStart = -1;
+    private long transferWaitStart = -1;
 
-    public static double rollerPower = 1.0;
+    public static double rollerPower = 1.0, rollerTransferPower = -0.5;
     public static double flipperPower = 1.0; // Placeholder
     public static long transferTimeMillis = 300; // Placeholder
+    public static long transferWaitMillis = 300; // Placeholder
+
 
     public enum State {
         IDLE,
         INTAKE,
+        TRANSFER_WAIT,
         TRANSFER,
         TEST
     }
@@ -69,7 +73,7 @@ public class NewIntake {
 
                 if (requestTransfer)
                 {
-                    this.state = State.TRANSFER;
+                    this.state = State.TRANSFER_WAIT;
                 }
 
                 break;
@@ -84,19 +88,32 @@ public class NewIntake {
                 }
                 break;
             }
+            case TRANSFER_WAIT: {
+                if(this.transferWaitStart == -1)
+                {
+                    this.transferWaitStart = System.currentTimeMillis();
+                }
+                flipper.setTargetPower(flipperPower);
+                if(System.currentTimeMillis()-this.transferWaitStart >= NewIntake.transferWaitMillis)
+                {
+                    this.state = State.TRANSFER;
+                    this.transferWaitStart = -1;
+                }
+                break;
+            }
             case TRANSFER: {
                 if(this.transferStart == -1)
                 {
                     this.transferStart = System.currentTimeMillis();
                 }
 
-                //roller.setTargetPower(rollerPower * (reversed ? -0.5 : 0.5));
-                flipper.setTargetPower(flipperPower);
+                roller.setTargetPower(rollerTransferPower);
 
                 if(System.currentTimeMillis()-this.transferStart >= NewIntake.transferTimeMillis)
                 {
                     this.state = State.IDLE;
                     this.requestTransfer = false;
+                    this.transferStart = -1;
                 }
             }
         }
