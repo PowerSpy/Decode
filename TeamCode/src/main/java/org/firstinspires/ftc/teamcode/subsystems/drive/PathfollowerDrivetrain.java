@@ -168,10 +168,11 @@ public class PathfollowerDrivetrain
         if(pd == null)
         {
             this.requestFollowPath = false;
-            this.state = State.IDLE;
             PathfollowerDrivetrain.strafePID.resetIntegral();
             PathfollowerDrivetrain.forwardPID.resetIntegral();
             PathfollowerDrivetrain.rotationPID.resetIntegral();
+            Vector2 endPos = this.selectedPath.segments.get(this.selectedPath.segments.size()-1).spline.getPos(1.0);
+            goTo(new Pose2d(endPos.x, endPos.y, 0)); // fallback in case it doesnt fully make it
             return;
         }
 
