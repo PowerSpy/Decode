@@ -1,30 +1,38 @@
 package org.firstinspires.ftc.teamcode.subsystems.intake;
 
 import com.acmerobotics.dashboard.config.Config;
+import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.Servo;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.teamcode.Robot;
 import org.firstinspires.ftc.teamcode.utils.TelemetryUtil;
+import org.firstinspires.ftc.teamcode.utils.priority.PriorityCRServo;
 import org.firstinspires.ftc.teamcode.utils.priority.PriorityMotor;
 import org.firstinspires.ftc.teamcode.utils.priority.nPriorityServo;
 
 @Config
 public class NewIntake {
     private final Robot robot;
-    public final PriorityMotor roller;
-
+    private final PriorityMotor roller;
+    private PriorityCRServo flipper;
     private boolean requestIntake = false;
     private boolean requestOff = false;
+    private boolean requestShootPrepare = false;
     private boolean reversed = false;
 
+    private long shootPrepareStart = -1;
+
     public static double rollerPower = 1.0;
+    public static double flipperPower = 1.0; // Placeholder
+    public static long shootPrepareTimeMillis = 300; // Placeholder
 
     public enum State {
         IDLE,
         INTAKE,
-        TRANSIT
+        PREPARE_SHOOT,
+        TEST
     }
 
     public State state = State.IDLE;
@@ -34,12 +42,12 @@ public class NewIntake {
         roller = new PriorityMotor(
                 new DcMotorEx[] { robot.hardwareMap.get(DcMotorEx.class, "roller") },
                 "roller", 2, 4,
-                new double[] { 1 }, robot.sensors
+                new double[] { 1 }, robot.sensors);
 
         flipper = new PriorityCRServo(
-            new CRServo[]{robot.hardwareMap.get(CRServo.class, "flipper1"), robot.hardwareMap.get(CRServo.class, "flipper2")},
+            new CRServo[] {robot.hardwareMap.get(CRServo.class, "flipper1"), robot.hardwareMap.get(CRServo.class, "flipper2")},
             "flipper", PriorityCRServo.ServoType.AXON_MINI,
-            new boolean[]{false, true},
+            new boolean[] {false, true},
             2, 2
         );
 
@@ -59,32 +67,49 @@ public class NewIntake {
                     state = State.INTAKE;
                 }
 
-                break;
-            }
-            case INTAKE: {
-                roller.setTargetPowerSmooth(rollerPower * (reversed ? -1 : 1), 0.1);
-                flipper.setTargetPower(0.0);
-                if (requestOff) {
-                    requestOff = false;
-                    state = State.IDLE;
+                if (requestShootPrepare)
+                {
+                    this.state = State.PREPARE_SHOOT;
                 }
 
                 break;
             }
-            case TRANSIT:{
-                roller.setTargetPowerSmooth(rollerPower * (reversed ? -0.5 : 0.5),0.1);
-                flipper.setTarget
+            case INTAKE: {
+                roller.setTargetPower(rollerPower * (reversed ? -1 : 1));
+
+                if (requestOff)
+                {
+                    requestOff = false;
+                    state = State.IDLE;
+                }
+                break;
+            }
+            case PREPARE_SHOOT: {
+                if(this.shootPrepareStart == -1)
+                {
+                    this.shootPrepareStart = System.currentTimeMillis();
+                }
+
+                roller.setTargetPower(rollerPower * (reversed ? -0.5 : 0.5));
+                flipper.setTargetPower(flipperPower);
+
+                if(System.currentTimeMillis()-this.shootPrepareStart >= NewIntake.shootPrepareTimeMillis)
+                {
+                    this.state = State.IDLE;
+                }
             }
         }
         updateTelemetry();
     }
 
-    public void requestIntake(boolean req) {
-        requestIntake = req;
+    public void requestIntake()
+    {
+        requestIntake = true;
     }
 
-    public void reqOff(boolean req) {
-        requestOff = req;
+    public void reqOff()
+    {
+        requestOff = true;
         turnedOffTime = System.currentTimeMillis();
     }
 
@@ -93,7 +118,8 @@ public class NewIntake {
         TelemetryUtil.packet.put("NewIntake: reversed", reversed);
     }
 
-    public void setRollerDirection(boolean direction) {
-        reversed = direction;
+    public void setRollerDirection(boolean reverse)
+    {
+        reversed = reverse;
     }
 }
