@@ -136,7 +136,7 @@ public class Sensors {
         ROBOT_VELOCITY = robot.drivetrain.nMergeLocalizer.getRelativePoseVelocity();
         ROBOT_GLOBAL_VELOCITY = robot.drivetrain.nMergeLocalizer.getGlobalVelocity();
 
-        PriorityMotor slidesEncoder = (PriorityMotor) robot.hardwareQueue.getDevice("slides_encoder_placeholeder_name");
+        PriorityMotor slidesEncoder = (PriorityMotor) robot.hardwareQueue.getDevice("slides");
         this.slidesPos = slidesEncoder.motor[0].getCurrentPosition();
         this.slidesVel = slidesEncoder.getVelocity();
 

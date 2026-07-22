@@ -10,6 +10,7 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.acmerobotics.dashboard.canvas.Canvas;
 
 import org.firstinspires.ftc.teamcode.sensors.Sensors;
+import org.firstinspires.ftc.teamcode.subsystems.deposit.Deposit;
 import org.firstinspires.ftc.teamcode.subsystems.park.Park;
 import org.firstinspires.ftc.teamcode.subsystems.shooter.Shooter;
 import org.firstinspires.ftc.teamcode.subsystems.intake.Intake;
@@ -33,6 +34,7 @@ public class Robot {
     public Drivetrain drivetrain;
     public Intake intake;
     public Shooter shooter;
+    public Deposit deposit;
     public Park park;
 
     private BooleanSupplier stopChecker = null;
@@ -50,9 +52,10 @@ public class Robot {
         sensors = new Sensors(this);
         drivetrain = new Drivetrain(this, useVision ? new Vision(hardwareMap) : null);
         intake = new Intake(this);
-        shooter = new Shooter(this);
+//        shooter = new Shooter(this);
         park = new Park(this);
-        sensors.resetTurretAngleEncoder();
+        deposit = new Deposit(this);
+//        sensors.resetTurretAngleEncoder();
     }
 
     public void update() {
@@ -64,7 +67,8 @@ public class Robot {
 
         drivetrain.update();
         intake.update();
-        shooter.update();
+//        shooter.update();
+        deposit.update();
         park.update();
 
         if (this.stopChecker != null && this.stopChecker.getAsBoolean()) return;
