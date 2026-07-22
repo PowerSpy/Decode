@@ -120,6 +120,7 @@ public class Deposit {
                 if(Math.abs(this.slides.getLength()-Deposit.slidesRaisedLength) < Deposit.completionThresholdSlides)
                 {
                     this.state = State.IDLE;
+                    this.requestRaise = false;
                 }
 
                 if(this.requestDump)
@@ -162,6 +163,7 @@ public class Deposit {
                 if(this.inHoldPositions())
                 {
                     this.state = State.IDLE;
+                    this.requestDump = false;
                 }
                 break;
             }
@@ -171,6 +173,7 @@ public class Deposit {
                 if(Math.abs(this.slides.getLength()-Deposit.slidesLoweredLength) < Deposit.completionThresholdSlides)
                 {
                     this.state = State.IDLE;
+                    this.requestDown = false;
                 }
                 break;
             }

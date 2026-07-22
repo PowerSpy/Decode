@@ -19,19 +19,19 @@ public class NewIntake {
     private PriorityCRServo flipper;
     private boolean requestIntake = false;
     private boolean requestOff = false;
-    private boolean requestShootPrepare = false;
+    private boolean requestTransfer = false;
     private boolean reversed = false;
 
-    private long shootPrepareStart = -1;
+    private long transferStart = -1;
 
     public static double rollerPower = 1.0;
     public static double flipperPower = 1.0; // Placeholder
-    public static long shootPrepareTimeMillis = 300; // Placeholder
+    public static long transferTimeMillis = 300; // Placeholder
 
     public enum State {
         IDLE,
         INTAKE,
-        PREPARE_SHOOT,
+        TRANSFER,
         TEST
     }
 
@@ -67,9 +67,9 @@ public class NewIntake {
                     state = State.INTAKE;
                 }
 
-                if (requestShootPrepare)
+                if (requestTransfer)
                 {
-                    this.state = State.PREPARE_SHOOT;
+                    this.state = State.TRANSFER;
                 }
 
                 break;
@@ -84,18 +84,19 @@ public class NewIntake {
                 }
                 break;
             }
-            case PREPARE_SHOOT: {
-                if(this.shootPrepareStart == -1)
+            case TRANSFER: {
+                if(this.transferStart == -1)
                 {
-                    this.shootPrepareStart = System.currentTimeMillis();
+                    this.transferStart = System.currentTimeMillis();
                 }
 
-                roller.setTargetPower(rollerPower * (reversed ? -0.5 : 0.5));
+                //roller.setTargetPower(rollerPower * (reversed ? -0.5 : 0.5));
                 flipper.setTargetPower(flipperPower);
 
-                if(System.currentTimeMillis()-this.shootPrepareStart >= NewIntake.shootPrepareTimeMillis)
+                if(System.currentTimeMillis()-this.transferStart >= NewIntake.transferTimeMillis)
                 {
                     this.state = State.IDLE;
+                    this.requestTransfer = false;
                 }
             }
         }
@@ -111,6 +112,11 @@ public class NewIntake {
     {
         requestOff = true;
         turnedOffTime = System.currentTimeMillis();
+    }
+
+    public void requestTransfer()
+    {
+        this.requestTransfer = true;
     }
 
     private void updateTelemetry() {
