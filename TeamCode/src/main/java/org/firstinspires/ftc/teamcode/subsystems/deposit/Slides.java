@@ -13,7 +13,8 @@ public class Slides
     public static double kSF = 0.0001; // Static friction (placeholder)
     public static double kG = 0.0001; // Gravity value (placeholder)
     public static PID pid = new PID(0.1, 0.1, 0.1); // Placeholders
-    public static double minPower, maxPower;
+    public static double minPower = -1;
+    public static double maxPower = 1;
 
     private Robot robot;
     private PriorityMotor slidesMotor;
@@ -43,6 +44,8 @@ public class Slides
         {
             return;
         }
+
+        pid.clipIntegral(-1, 1);
 
         double ffTerms = Slides.kSF * Math.signum(this.vel) + Slides.kG;
         double power = pid.update(this.targetLength-this.length, Slides.minPower, Slides.maxPower) + ffTerms;
