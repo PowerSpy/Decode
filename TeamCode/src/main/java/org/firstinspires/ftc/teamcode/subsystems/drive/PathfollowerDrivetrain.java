@@ -102,6 +102,11 @@ public class PathfollowerDrivetrain
         }
     }
 
+    public PriorityMotor getMotor(int index)
+    {
+        return this.motors[index];
+    }
+
     public void followPath(Path path)
     {
         this.selectedPath = path;

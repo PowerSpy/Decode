@@ -15,6 +15,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 import org.firstinspires.ftc.teamcode.Robot;
+import org.firstinspires.ftc.teamcode.subsystems.drive.PathfollowerDrivetrain;
 import org.firstinspires.ftc.teamcode.subsystems.drive.localizers.GoBildaPinpointDriver;
 import org.firstinspires.ftc.teamcode.subsystems.shooter.Shooter;
 import org.firstinspires.ftc.teamcode.utils.DashboardUtil;
@@ -120,23 +121,24 @@ public class Sensors {
         light0G.update();
         light0P.update();
 
-        odoWheelPositions[0] = robot.drivetrain.leftFront.motor[0].getCurrentPosition(); // left
-        odoWheelPositions[1] = robot.drivetrain.rightFront.motor[0].getCurrentPosition(); // right
-        odoWheelPositions[2] = robot.drivetrain.leftRear.motor[0].getCurrentPosition(); // back
+        odoWheelPositions[0] = robot.drivetrain.getMotor(PathfollowerDrivetrain.MotorIndices.LEFT_FRONT).motor[0].getCurrentPosition(); // left
+        odoWheelPositions[1] = robot.drivetrain.getMotor(PathfollowerDrivetrain.MotorIndices.RIGHT_FRONT).motor[0].getCurrentPosition(); // right
+        odoWheelPositions[2] = robot.drivetrain.getMotor(PathfollowerDrivetrain.MotorIndices.LEFT_REAR).motor[0].getCurrentPosition(); // back
 
-        double flywheelAngularVel = robot.drivetrain.rightRear.motor[0].getVelocity() / 28.0 * 16 / 20; // rotations per second
+        double flywheelAngularVel = robot.drivetrain.getMotor(PathfollowerDrivetrain.MotorIndices.RIGHT_REAR).motor[0].getVelocity() / 28.0 * 16 / 20; // rotations per second
         flywheelVelocity = flywheelAngularVel * 3.0 * Math.PI;
 
-        robot.drivetrain.localizer.updateEncoders(odoWheelPositions);
+        // TODO: Implement nMergeLocalizer
+        /*robot.drivetrain.localizer.updateEncoders(odoWheelPositions);
         robot.drivetrain.localizer.update();
         robot.drivetrain.nMergeLocalizer.updateEncoders(odoWheelPositions);
-        robot.drivetrain.nMergeLocalizer.update();
+        robot.drivetrain.nMergeLocalizer.update();*/
 
-        ROBOT_POSITION = robot.drivetrain.nMergeLocalizer.getPoseEstimate();
-        ROBOT_VELOCITY = robot.drivetrain.nMergeLocalizer.getRelativePoseVelocity();
-        ROBOT_GLOBAL_VELOCITY = robot.drivetrain.nMergeLocalizer.getGlobalVelocity();
+        ROBOT_POSITION = Pose2d.fromSensorsPose2D(this.getEstPosition()); //robot.drivetrain.nMergeLocalizer.getPoseEstimate();
+        //ROBOT_VELOCITY = robot.drivetrain.nMergeLocalizer.getRelativePoseVelocity();
+        //ROBOT_GLOBAL_VELOCITY = robot.drivetrain.nMergeLocalizer.getGlobalVelocity();
 
-        PriorityMotor slidesEncoder = (PriorityMotor) robot.hardwareQueue.getDevice("placeholder"); // replace with actual slides encoder name
+        PriorityMotor slidesEncoder = (PriorityMotor) robot.hardwareQueue.getDevice("slidesEncoder");
         this.slidesPos = slidesEncoder.motor[0].getCurrentPosition();
         this.slidesVel = slidesEncoder.getVelocity();
 
@@ -196,7 +198,7 @@ public class Sensors {
         LogUtil.driveCurrentAngle.set(ROBOT_POSITION.heading);
     }
 
-    private double getTurretAngleRaw() { return robot.intake.feed.motor[0].getCurrentPosition() * (Math.PI) / -8192 / 2; }
+    private double getTurretAngleRaw() { return -1;/*robot.intake.feed.motor[0].getCurrentPosition() * (Math.PI) / -8192 / 2;*/ }
     public void resetTurretAngleEncoder() {
         if (Globals.RUNMODE != RunMode.TELEOP) {
             turretAngleEncoderOffset = turretAngleEncoderPosition = getTurretAngleRaw();
