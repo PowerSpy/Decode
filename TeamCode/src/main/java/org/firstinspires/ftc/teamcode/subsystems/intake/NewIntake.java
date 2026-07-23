@@ -26,7 +26,7 @@ public class NewIntake {
     private long transferWaitStart = -1;
     private long transferRetractStart = -1;
 
-    public static double rollerPower = 1.0, rollerTransferPower = 1.0, rollerRetractPower = 1.0; // Placeholder
+    public static double rollerPower = 1.0, rollerTransferPower = 1.0; // Placeholder
     public static double flipperTransferPower = 1.0, flipperRetractPower = 1.0; // Placeholder
     public static long transferTimeMillis = 300; // Placeholder
     public static long transferWaitMillis = 300; // Placeholder
@@ -96,7 +96,7 @@ public class NewIntake {
                 {
                     this.transferWaitStart = System.currentTimeMillis();
                 }
-                roller.setTargetPower(NewIntake.rollerTransferPower);
+                flipper.setTargetPower(NewIntake.flipperTransferPower);
                 if(System.currentTimeMillis()-this.transferWaitStart >= NewIntake.transferWaitMillis)
                 {
                     this.state = State.TRANSFER;
@@ -109,7 +109,7 @@ public class NewIntake {
                 {
                     this.transferStart = System.currentTimeMillis();
                 }
-                flipper.setTargetPower(NewIntake.flipperTransferPower);
+                roller.setTargetPower(NewIntake.rollerTransferPower);
                 if(System.currentTimeMillis()-this.transferStart >= NewIntake.transferTimeMillis)
                 {
                     this.state = State.TRANSFER_RETRACT;
@@ -122,7 +122,6 @@ public class NewIntake {
                     this.transferRetractStart = System.currentTimeMillis();
                 }
                 flipper.setTargetPower(NewIntake.flipperRetractPower);
-                roller.setTargetPower(NewIntake.rollerRetractPower);
                 if(System.currentTimeMillis()-this.transferRetractStart >= NewIntake.transferRetractMillis)
                 {
                     this.state = State.IDLE;
