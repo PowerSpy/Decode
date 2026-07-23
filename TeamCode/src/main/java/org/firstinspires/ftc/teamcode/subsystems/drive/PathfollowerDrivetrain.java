@@ -4,6 +4,7 @@ import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.Gamepad;
 
 import org.firstinspires.ftc.robotcontroller.external.samples.SensorOctoQuad;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
@@ -46,6 +47,8 @@ public class PathfollowerDrivetrain
     public static double rotErrorThreshold = 0.1; //Placeholder
     public static double minPower = -1;
     public static double maxPower = 1;
+    public static double driveXCoeff = 1.1;
+    public static double driveYCoeff = 1.0;
 
     private boolean requestToTarget = false;
     private boolean requestFollowPath = false;
@@ -113,18 +116,12 @@ public class PathfollowerDrivetrain
         this.requestToTarget = true;
     }
 
-    private void setNormalizedMotorPowers(double frontLeftPow, double frontRightPow, double rearLeftPow, double rearRightPow)
-    {
+    private void setNormalizedMotorPowers(double frontLeftPow, double frontRightPow, double rearLeftPow, double rearRightPow) {
         double q = Collections.max(Arrays.asList(Math.abs(frontLeftPow), Math.abs(frontRightPow), Math.abs(rearLeftPow), Math.abs(rearRightPow), 1.0));
-        this.motors[MotorIndices.LEFT_FRONT].setTargetPower(frontLeftPow/q);
-        this.motors[MotorIndices.RIGHT_FRONT].setTargetPower(frontRightPow/q);
-        this.motors[MotorIndices.LEFT_REAR].setTargetPower(rearLeftPow/q);
-        this.motors[MotorIndices.RIGHT_REAR].setTargetPower(rearRightPow/q);
-    }
-
-    private Pose2d fromSensorsPose2D(Pose2D pose)
-    {
-        return new Pose2d(pose.getX(Sensors.odoDistanceUnit), pose.getY(Sensors.odoDistanceUnit), pose.getHeading(Sensors.odoAngleUnit));
+        this.motors[MotorIndices.LEFT_FRONT].setTargetPower(frontLeftPow / q);
+        this.motors[MotorIndices.RIGHT_FRONT].setTargetPower(frontRightPow / q);
+        this.motors[MotorIndices.LEFT_REAR].setTargetPower(rearLeftPow / q);
+        this.motors[MotorIndices.RIGHT_REAR].setTargetPower(rearRightPow / q);
     }
 
     private void stateToTarget()
@@ -162,7 +159,7 @@ public class PathfollowerDrivetrain
     private void stateFollowPath()
     {
         // assume radians
-        PathData pd = this.selectedPath.update(fromSensorsPose2D(this.robot.sensors.getEstPosition()));
+        PathData pd = this.selectedPath.update(Pose2d.fromSensorsPose2D(this.robot.sensors.getEstPosition()));
 
         if(pd == null)
         {
@@ -188,6 +185,31 @@ public class PathfollowerDrivetrain
         double rotatePow = rotationPID.update(headingError, minPower, maxPower) + kF_heading;
         double motorPowX = vel.x;
         double motorPowY = vel.y;
+
+        double frontLeftPow = motorPowY + motorPowX + rotatePow;
+        double frontRightPow = motorPowY - motorPowX + rotatePow;
+        double rearLeftPow = motorPowY - motorPowX - rotatePow;
+        double rearRightPow = motorPowY + motorPowX - rotatePow;
+
+        setNormalizedMotorPowers(frontLeftPow, frontRightPow, rearLeftPow, rearRightPow);
+    }
+
+    public void drive(Gamepad gamepad, boolean drive)
+    {
+        if(!drive)
+        {
+            return;
+        }
+
+        double strafePow = gamepad.left_stick_x;
+        double forwardPow = -gamepad.left_stick_y;
+        double rotatePow = gamepad.right_stick_x;
+
+        double motorPowX = strafePow*Math.cos(-this.currentHeading)-forwardPow*Math.sin(-this.currentHeading);
+        double motorPowY = strafePow*Math.sin(-this.currentHeading)+forwardPow*Math.cos(-this.currentHeading);
+
+        motorPowX *= PathfollowerDrivetrain.driveXCoeff;
+        motorPowY *= PathfollowerDrivetrain.driveYCoeff;
 
         double frontLeftPow = motorPowY + motorPowX + rotatePow;
         double frontRightPow = motorPowY - motorPowX + rotatePow;

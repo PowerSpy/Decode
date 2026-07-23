@@ -133,20 +133,25 @@ public class NewIntake {
         updateTelemetry();
     }
 
-    public void requestIntake()
+    public void requestIntake(boolean intake)
     {
-        requestIntake = true;
+        requestIntake = intake;
     }
 
-    public void reqOff()
+    public void reqOff(boolean off)
     {
-        requestOff = true;
+        requestOff = off;
         turnedOffTime = System.currentTimeMillis();
     }
 
-    public void requestTransfer()
+    public double getRollerPower()
     {
-        this.requestTransfer = true;
+        return this.roller.getPower();
+    }
+
+    public void requestTransfer(boolean transfer)
+    {
+        this.requestTransfer = transfer;
     }
 
     private void updateTelemetry() {

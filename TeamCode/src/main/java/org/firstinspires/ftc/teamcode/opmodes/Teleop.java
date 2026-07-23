@@ -10,6 +10,7 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import org.firstinspires.ftc.teamcode.Robot;
 import org.firstinspires.ftc.teamcode.subsystems.drive.localizers.MergeLocalizer;
 import org.firstinspires.ftc.teamcode.subsystems.intake.Intake;
+import org.firstinspires.ftc.teamcode.subsystems.intake.NewIntake;
 import org.firstinspires.ftc.teamcode.subsystems.shooter.Shooter;
 import org.firstinspires.ftc.teamcode.utils.ButtonToggle;
 import org.firstinspires.ftc.teamcode.utils.Globals;
@@ -100,14 +101,14 @@ public class Teleop extends LinearOpMode {
             // INTAKE
 
             if (lb1.isClicked(gamepad1.left_bumper)) {
-                if (robot.intake.state == Intake.State.IDLE) robot.intake.reqIntake(true);
+                if (robot.intake.state == NewIntake.State.IDLE) robot.intake.requestIntake(true);
                 else robot.intake.reqOff(true);
                 robot.intake.setRollerDirection(false);
             }
 
             if (a1.isClicked(gamepad1.a && !gamepad1.start)) {
-                intakeReversed = robot.intake.state == Intake.State.IDLE || !intakeReversed;
-                robot.intake.reqIntake(true);
+                intakeReversed = robot.intake.state == NewIntake.State.IDLE || !intakeReversed;
+                robot.intake.reqOff(true);
                 robot.intake.setRollerDirection(intakeReversed);
             }
 
@@ -175,7 +176,7 @@ public class Teleop extends LinearOpMode {
                 if (gamepad1.right_bumper) {
                     rb1.isReleased(gamepad1.right_bumper);
                     robot.shooter.setShooterBlocker(false);
-                    robot.intake.reqShoot(true);
+                    robot.intake.requestTransfer(true);
                 } else if (rb1.isReleased(gamepad1.right_bumper)) {
                     robot.shooter.setShooterBlocker(true);
                     robot.intake.reqOff(true);
@@ -227,7 +228,7 @@ public class Teleop extends LinearOpMode {
             // LOCALIZER
 
             if (x2.isHeld(gamepad2.x, 500)) { // localize to origin
-                robot.drivetrain.setPoseEstimate(new Pose2d(0,0,0));
+                robot.sensors.setOdometryPosition(Pose2d.fromSensorsPose2d(new Pose2d(0,0,0)));
                 gamepad1.rumble(1200);
                 gamepad2.rumble(1200);
             }
@@ -282,7 +283,7 @@ public class Teleop extends LinearOpMode {
                 else if (h > Math.toRadians(135)) h = Math.PI;
                 else if (h > Math.toRadians(45)) h = Math.PI / 2;
                 else h = 0;
-                robot.drivetrain.setPoseEstimate(new Pose2d(ROBOT_POSITION.x, (ROBOT_POSITION.y > 0 ? 1 : -1) * (71 - 6.5), h));
+                robot.sensors.setOdometryPosition(Pose2d.fromSensorsPose2d(new Pose2d(ROBOT_POSITION.x, (ROBOT_POSITION.y > 0 ? 1 : -1) * (71 - 6.5), h)));
                 gamepad1.rumble(1000);
                 gamepad2.rumble(1000);
             }
@@ -294,7 +295,7 @@ public class Teleop extends LinearOpMode {
                 else if (h > Math.toRadians(135)) h = Math.PI;
                 else if (h > Math.toRadians(45)) h = Math.PI / 2;
                 else h = 0;
-                robot.drivetrain.setPoseEstimate(new Pose2d((ROBOT_POSITION.x > 0 ? 1 : -1) * (71 - 6.5), ROBOT_POSITION.y, h));
+                robot.sensors.setOdometryPosition(Pose2d.fromSensorsPose2d(new Pose2d((ROBOT_POSITION.x > 0 ? 1 : -1) * (71 - 6.5), ROBOT_POSITION.y, h)));
                 gamepad1.rumble(800);
                 gamepad2.rumble(800);
             }
@@ -319,10 +320,10 @@ public class Teleop extends LinearOpMode {
 
             if (gamepad1.dpad_right) {
                 if (Globals.isRed) {
-                    robot.drivetrain.goToPoint(new Pose2d(30, -24, Math.toRadians(135)), 1);
+                    robot.drivetrain.goTo(new Pose2d(30, -24, Math.toRadians(135))); // second argument lost, 1
                     robot.sensors.light0G.set(System.currentTimeMillis() % 250 < 125);
                 } else {
-                    robot.drivetrain.goToPoint(new Pose2d(30, 24, Math.toRadians(-135)), 1);
+                    robot.drivetrain.goTo(new Pose2d(30, 24, Math.toRadians(-135))); // second argument lost, 1
                     robot.sensors.light0P.set(System.currentTimeMillis() % 250 < 125);
                 }
                 robot.shooter.setManual(true);
@@ -334,7 +335,7 @@ public class Teleop extends LinearOpMode {
 
             telemetry.addData("Alliance", Globals.isRed ? "Red" : "Blue");
             telemetry.addData("intakeReversed", intakeReversed);
-            telemetry.addData("intakePower", robot.intake.roller.getPower());
+            telemetry.addData("intakePower", robot.intake.getRollerPower());
             telemetry.addData("shooter state", robot.shooter.state.toString());
             telemetry.addData("turretTrackInManual", robot.shooter.turretTrackInManual);
             telemetry.addData("flywheelOn", flywheelOn);
@@ -344,7 +345,7 @@ public class Teleop extends LinearOpMode {
 
             telemetry.addData("Robot position (deg)", String.format(Locale.US, "(%.2f, %.2f, %.2f)", ROBOT_POSITION.x, ROBOT_POSITION.y, Math.toDegrees(ROBOT_POSITION.heading)));
             telemetry.addData("CAT", LogUtil.DISABLED ? "DISABLED" : "ENABLED");
-            telemetry.addData("Vision : relocalize count", robot.drivetrain.nMergeLocalizer.numberOfTimesRelocalizedWithCamera);
+            //telemetry.addData("Vision : relocalize count", robot.drivetrain.nMergeLocalizer.numberOfTimesRelocalizedWithCamera); TODO: Implement
             telemetry.addData("Vision : use camera", MergeLocalizer.useCamera);
 
             telemetry.update();

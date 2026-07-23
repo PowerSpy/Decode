@@ -5,7 +5,9 @@ import android.annotation.SuppressLint;
 import androidx.annotation.NonNull;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
+import org.firstinspires.ftc.teamcode.sensors.Sensors;
 
 public class Pose2d implements Cloneable {
     public double x;
@@ -86,6 +88,16 @@ public class Pose2d implements Cloneable {
 
     public static Pose2d from3D(Pose3D p) {
         return new Pose2d(p.getPosition().x, p.getPosition().y, p.getOrientation().getYaw(AngleUnit.RADIANS));
+    }
+
+    public static Pose2d fromSensorsPose2D(Pose2D pose)
+    {
+        return new Pose2d(pose.getX(Sensors.odoDistanceUnit), pose.getY(Sensors.odoDistanceUnit), pose.getHeading(Sensors.odoAngleUnit));
+    }
+
+    public static Pose2D fromSensorsPose2d(Pose2d pose)
+    {
+        return new Pose2D(Sensors.odoDistanceUnit, pose.getX(), pose.getY(), Sensors.odoAngleUnit, pose.getHeading());
     }
 
     public Pose2d mirror() {
