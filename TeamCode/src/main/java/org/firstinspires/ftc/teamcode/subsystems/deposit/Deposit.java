@@ -16,7 +16,7 @@ import javax.security.auth.Destroyable;
 public class Deposit {
     public enum State {
         IDLE, // Linear slides down and Bucket in default position
-        RAISE, // Raises up
+        RAISED, // Raises up
         DUMP_WAIT, // Dumps ball
         DUMP, // Dumps ball
         DUMP_RETRACT, // Dumps ball
@@ -116,7 +116,7 @@ public class Deposit {
             case IDLE: {
                 if (this.requestRaise)
                 {
-                    this.state = State.RAISE;
+                    this.state = State.RAISED;
                 }
 
                 if(this.requestDown)
@@ -126,7 +126,7 @@ public class Deposit {
 
                 break;
             }
-            case RAISE: {
+            case RAISED: {
                 this.slides.setTargetLength(Deposit.slidesRaisedLength);
 
                 if(this.requestDump)
@@ -136,7 +136,6 @@ public class Deposit {
 
                 if(Math.abs(this.slides.getLength()-Deposit.slidesRaisedLength) < Deposit.completionThresholdSlides)
                 {
-                    this.state = State.IDLE;
                     this.requestRaise = false;
                 }
                 break;

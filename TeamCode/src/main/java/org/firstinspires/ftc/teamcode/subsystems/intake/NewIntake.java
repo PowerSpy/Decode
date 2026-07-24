@@ -28,6 +28,7 @@ public class NewIntake {
 
     public static double rollerPower = 1.0, rollerTransferPower = 1.0; // Placeholder
     public static double flipperTransferPower = 1.0, flipperRetractPower = 1.0; // Placeholder
+    public static double depositPitchTransferAngle = 1.0, depositPitchRetractAngle; // Placehlder
     public static long transferTimeMillis = 300; // Placeholder
     public static long transferWaitMillis = 300; // Placeholder
     public static long transferRetractMillis = 300; // Placeholder
@@ -110,7 +111,8 @@ public class NewIntake {
                     this.transferStart = System.currentTimeMillis();
                 }
                 flipper.setTargetPower(NewIntake.flipperTransferPower);
-                if(System.currentTimeMillis()-this.transferStart >= NewIntake.transferTimeMillis)
+                this.robot.deposit.bucketPitchServo.setTargetAngle(NewIntake.depositPitchTransferAngle);
+                if(System.currentTimeMillis()-this.transferStart >= NewIntake.transferTimeMillis && this.robot.deposit.bucketPitchServo.inPosition())
                 {
                     this.state = State.TRANSFER_RETRACT;
                     this.transferStart = -1;
@@ -122,7 +124,8 @@ public class NewIntake {
                     this.transferRetractStart = System.currentTimeMillis();
                 }
                 flipper.setTargetPower(NewIntake.flipperRetractPower);
-                if(System.currentTimeMillis()-this.transferRetractStart >= NewIntake.transferRetractMillis)
+                this.robot.deposit.bucketPitchServo.setTargetAngle(NewIntake.depositPitchRetractAngle);
+                if(System.currentTimeMillis()-this.transferRetractStart >= NewIntake.transferRetractMillis && this.robot.deposit.bucketPitchServo.inPosition())
                 {
                     this.state = State.IDLE;
                     this.requestTransfer = false;

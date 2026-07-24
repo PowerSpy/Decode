@@ -113,8 +113,19 @@ public class Teleop extends LinearOpMode {
                 robot.intake.setRollerDirection(intakeReversed);
             }
 
-            // SHOOTER
+            if (rb1.isClicked(gamepad1.right_bumper)) {
+                if (robot.deposit.state == Deposit.State.RAISED)
+                {
+                    robot.deposit.requestDump = true;
+                }
+                else if(robot.deposit.state == Deposit.State.IDLE)
+                {
+                    robot.intake.requestTransfer(true);
+                }
+            }
 
+            // SHOOTER
+            /*
             if (a2.isClicked(gamepad2.a)) {
                 robot.shooter.setManual(true);
                 robot.shooter.turretTrackInManual = false;
@@ -225,6 +236,7 @@ public class Teleop extends LinearOpMode {
                     robot.shooter.reqStop(true);
                 }
             }
+            */
 
             // LOCALIZER
 
@@ -310,7 +322,7 @@ public class Teleop extends LinearOpMode {
 
 
              */
-
+            /*
             if (gamepad1.dpad_up) {
                 robot.park.setPower(1);
                 robot.shooter.setManual(true);
@@ -333,7 +345,7 @@ public class Teleop extends LinearOpMode {
             } else {
                 robot.drivetrain.drive(gamepad1, gamepad1.right_trigger > triggerThresh);
             }
-
+            */
             telemetry.addData("Alliance", Globals.isRed ? "Red" : "Blue");
             telemetry.addData("intakeReversed", intakeReversed);
             telemetry.addData("intakePower", robot.intake.getRollerPower());
