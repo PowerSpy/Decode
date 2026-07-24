@@ -35,7 +35,7 @@ public class Robot {
     public Sensors sensors;
     public PathfollowerDrivetrain drivetrain;
     public NewIntake intake;
-    public Shooter shooter;
+    //public Shooter shooter;
     public Deposit deposit;
     public Park park;
 

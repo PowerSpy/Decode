@@ -11,6 +11,8 @@ import org.firstinspires.ftc.teamcode.utils.TelemetryUtil;
 import org.firstinspires.ftc.teamcode.utils.priority.PriorityMotor;
 import org.firstinspires.ftc.teamcode.utils.priority.nPriorityServo;
 
+import javax.security.auth.Destroyable;
+
 public class Deposit {
     public enum State {
         IDLE, // Linear slides down and Bucket in default position
@@ -25,11 +27,11 @@ public class Deposit {
     public static double slidesLoweredLength = 0.0; // Placeholder
     public static double slidesRaisedLength = 1.0; // Placeholder
     public static double completionThresholdSlides = 0.1, completionThresholdAngle = 0.1; // Placeholder
-    public static double holdBucketArm = 0.1, holdBucket = 0.1, holdSlides = 0.1; // Placeholder
+    public static double holdBucketArm = 0.1, holdBucket = 0.1, holdSlides = 0.1, holdBucketPitch = 0.1; // Placeholder
     public static double prepareDumpBucketArm = 0.1; // Placeholder
     public static double prepareDumpBucket = 0.1; // Placeholder
+    public static double prepareDumpBucketPitch = 0.1; // Placeholder
     public static double dumpBucket = 0.1; // Placeholder
-    public static double prepareDumpSlidesLength = 0.1; // Placeholder
     public static long dumpBucketTimeMillis = 300; // Placeholder
 
 
@@ -39,6 +41,7 @@ public class Deposit {
     public final Slides slides;
     public final nPriorityServo bucketArmServos; // Controls arm connected to bucket
     public final nPriorityServo bucketServo; // This one controls the bucket
+    public final nPriorityServo bucketPitchServo; // This one controls the bucket
     public boolean requestRaise = false, requestDump = false, requestDown = false;
 
     private long dumpStartTime = -1;
@@ -73,6 +76,14 @@ public class Deposit {
                 0, 0.5, 0, new boolean[]{false}, 2, 3
         );
 
+        bucketPitchServo = new nPriorityServo( // TODO: Numbers need to be calibrated
+                new Servo[]{
+                        robot.hardwareMap.get(Servo.class, "bucketPitchServo1")
+                },
+                "bucket", nPriorityServo.ServoType.AXON_MINI,
+                0, 0.5, 0, new boolean[]{false}, 2, 3
+        );
+
         slides = new Slides(this.robot);
 
         robot.hardwareQueue.addDevices(bucketArmServos);
@@ -90,13 +101,14 @@ public class Deposit {
         this.bucketServo.setTargetAngle(Deposit.holdBucket);
         this.bucketArmServos.setTargetAngle(Deposit.holdBucketArm);
         this.slides.setTargetLength(Deposit.holdSlides);
+        this.bucketPitchServo.setTargetAngle(Deposit.holdBucketPitch);
     }
 
     public boolean inHoldPositions()
     {
         return (Math.abs(this.bucketServo.getCurrentAngle() - Deposit.holdBucket) < Deposit.completionThresholdAngle) &&
                 (Math.abs(this.bucketArmServos.getCurrentAngle() - Deposit.holdBucketArm) < Deposit.completionThresholdAngle) &&
-                (Math.abs(this.slides.getLength() - Deposit.holdSlides) < Deposit.completionThresholdSlides);
+                (Math.abs(this.slides.getLength() - Deposit.holdSlides) < Deposit.completionThresholdSlides) && (Math.abs(this.bucketPitchServo.getCurrentAngle()-Deposit.holdBucketPitch) < Deposit.completionThresholdAngle);
     }
 
     public void update() {
@@ -117,26 +129,27 @@ public class Deposit {
             case RAISE: {
                 this.slides.setTargetLength(Deposit.slidesRaisedLength);
 
+                if(this.requestDump)
+                {
+                    this.state = State.DUMP_WAIT;
+                }
+
                 if(Math.abs(this.slides.getLength()-Deposit.slidesRaisedLength) < Deposit.completionThresholdSlides)
                 {
                     this.state = State.IDLE;
                     this.requestRaise = false;
-                }
-
-                if(this.requestDump)
-                {
-                    this.state = State.DUMP_WAIT;
                 }
                 break;
             }
             case DUMP_WAIT: {
                 this.bucketServo.setTargetAngle(Deposit.prepareDumpBucket);
                 this.bucketArmServos.setTargetAngle(Deposit.prepareDumpBucketArm);
-                this.slides.setTargetLength(Deposit.prepareDumpSlidesLength);
+                this.slides.setTargetLength(Deposit.slidesRaisedLength);
+                this.bucketPitchServo.setTargetAngle(Deposit.prepareDumpBucketPitch);
 
                 if(this.bucketServo.inPosition() &&
-                        this.bucketArmServos.inPosition() &&
-                        Math.abs(this.slides.getLength()-Deposit.prepareDumpSlidesLength) < Deposit.completionThresholdSlides)
+                        this.bucketArmServos.inPosition() && this.bucketPitchServo.inPosition() &&
+                        Math.abs(this.slides.getLength()-Deposit.slidesRaisedLength) < Deposit.completionThresholdSlides)
                 {
                     this.state = State.DUMP;
                 }

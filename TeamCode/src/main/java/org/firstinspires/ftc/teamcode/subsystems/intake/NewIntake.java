@@ -96,7 +96,7 @@ public class NewIntake {
                 {
                     this.transferWaitStart = System.currentTimeMillis();
                 }
-                flipper.setTargetPower(NewIntake.flipperTransferPower);
+                roller.setTargetPower(NewIntake.rollerTransferPower);
                 if(System.currentTimeMillis()-this.transferWaitStart >= NewIntake.transferWaitMillis)
                 {
                     this.state = State.TRANSFER;
@@ -109,7 +109,7 @@ public class NewIntake {
                 {
                     this.transferStart = System.currentTimeMillis();
                 }
-                roller.setTargetPower(NewIntake.rollerTransferPower);
+                flipper.setTargetPower(NewIntake.flipperTransferPower);
                 if(System.currentTimeMillis()-this.transferStart >= NewIntake.transferTimeMillis)
                 {
                     this.state = State.TRANSFER_RETRACT;

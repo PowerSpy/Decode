@@ -8,6 +8,7 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
 import org.firstinspires.ftc.teamcode.Robot;
+import org.firstinspires.ftc.teamcode.subsystems.deposit.Deposit;
 import org.firstinspires.ftc.teamcode.subsystems.drive.localizers.MergeLocalizer;
 import org.firstinspires.ftc.teamcode.subsystems.intake.Intake;
 import org.firstinspires.ftc.teamcode.subsystems.intake.NewIntake;
@@ -33,12 +34,12 @@ public class Teleop extends LinearOpMode {
         //robot.drivetrain.vision.start();
         robot.setStopChecker(this::isStopRequested);
 
-        robot.shooter.state = Shooter.State.TEST;
-        robot.shooter.turretTrackInManual = true;
+        robot.deposit.state = Deposit.State.IDLE;
+        //robot.shooter.turretTrackInManual = true;
 
         //robot.drivetrain.setPoseEstimate(AUTO_ENDING_POSE);
 
-        robot.shooter.setShooterBlocker(true);
+        //robot.shooter.setShooterBlocker(true);
 
         ButtonToggle lb1 = new ButtonToggle();
         ButtonToggle rb1 = new ButtonToggle();
@@ -89,7 +90,7 @@ public class Teleop extends LinearOpMode {
         LogUtil.drivePositionReset = true;
 
         //robot.drivetrain.vision.start();
-        robot.shooter.setManual(false);
+        //robot.shooter.setManual(false);
 
         while (!isStopRequested()) {
             robot.update();
@@ -336,11 +337,11 @@ public class Teleop extends LinearOpMode {
             telemetry.addData("Alliance", Globals.isRed ? "Red" : "Blue");
             telemetry.addData("intakeReversed", intakeReversed);
             telemetry.addData("intakePower", robot.intake.getRollerPower());
-            telemetry.addData("shooter state", robot.shooter.state.toString());
-            telemetry.addData("turretTrackInManual", robot.shooter.turretTrackInManual);
+            telemetry.addData("deposit state", robot.deposit.state.toString());
+            //telemetry.addData("turretTrackInManual", robot.shooter.turretTrackInManual);
             telemetry.addData("flywheelOn", flywheelOn);
-            telemetry.addData("flywheelAtVel", robot.shooter.atVel());
-            telemetry.addData("turretInPosition", robot.shooter.turret.inPosition() ? "yes" : "aw no its not happy yet");
+            //telemetry.addData("flywheelAtVel", robot.shooter.atVel());
+            //telemetry.addData("turretInPosition", robot.shooter.turret.inPosition() ? "yes" : "aw no its not happy yet");
             telemetry.addData("Shooter auto shoot when in zone", Shooter.autoShootIfInZone);
 
             telemetry.addData("Robot position (deg)", String.format(Locale.US, "(%.2f, %.2f, %.2f)", ROBOT_POSITION.x, ROBOT_POSITION.y, Math.toDegrees(ROBOT_POSITION.heading)));
