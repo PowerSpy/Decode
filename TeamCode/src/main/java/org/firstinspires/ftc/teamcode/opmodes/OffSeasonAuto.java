@@ -1,7 +1,36 @@
 package org.firstinspires.ftc.teamcode.opmodes;
 
 import com.acmerobotics.dashboard.config.Config;
+import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+
+import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
+import org.firstinspires.ftc.teamcode.Robot;
+import org.firstinspires.ftc.teamcode.subsystems.deposit.Deposit;
+import org.firstinspires.ftc.teamcode.subsystems.drive.Path;
+import org.firstinspires.ftc.teamcode.utils.Globals;
+import org.firstinspires.ftc.teamcode.utils.RunMode;
 
 @Config
-public class OffSeasonAuto {
+@Autonomous(name = "Offseason 2026 Team 2 Auto", group = "Auto")
+public class OffSeasonAuto extends LinearOpMode {
+    private Robot robot;
+    private Pose2D[] intakingPoses;
+    private Pose2D[] depositingPoses;
+
+    @Override
+    public void runOpMode() throws InterruptedException {
+        Globals.RUNMODE = RunMode.AUTO;
+        this.robot = new Robot(this.hardwareMap);
+
+        this.robot.deposit.state = Deposit.State.IDLE;
+
+        while (opModeInInit()) {
+            robot.update();
+            robot.sensors.light0G.set(System.currentTimeMillis() % 500 < 350);
+        }
+        robot.sensors.light0G.set(false);
+
+        assert intakingPoses.length == depositingPoses.length;
+    }
 }
