@@ -55,7 +55,7 @@ public class PathfollowerDrivetrain
 
     private Robot robot;
     private PriorityMotor[] motors;
-    private State state = State.IDLE;
+    public State state = State.IDLE;
 
     private double targetHeading;
     private double targetPosX, targetPosY;

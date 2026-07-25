@@ -8,7 +8,10 @@ import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 import org.firstinspires.ftc.teamcode.Robot;
 import org.firstinspires.ftc.teamcode.subsystems.deposit.Deposit;
 import org.firstinspires.ftc.teamcode.subsystems.drive.Path;
+import org.firstinspires.ftc.teamcode.subsystems.drive.PathfollowerDrivetrain;
+import org.firstinspires.ftc.teamcode.subsystems.intake.NewIntake;
 import org.firstinspires.ftc.teamcode.utils.Globals;
+import org.firstinspires.ftc.teamcode.utils.Pose2d;
 import org.firstinspires.ftc.teamcode.utils.RunMode;
 
 @Config
@@ -32,5 +35,17 @@ public class OffSeasonAuto extends LinearOpMode {
         robot.sensors.light0G.set(false);
 
         assert intakingPoses.length == depositingPoses.length;
+
+        for(int i = 0;i < intakingPoses.length;i++)
+        {
+            robot.drivetrain.goTo(Pose2d.fromSensorsPose2D(intakingPoses[i]));
+            robot.waitWhile(() -> robot.drivetrain.state != PathfollowerDrivetrain.State.IDLE);
+            robot.intake.requestIntake(true);
+            robot.waitWhile(() -> robot.intake.state != NewIntake.State.IDLE);
+            robot.drivetrain.goTo(Pose2d.fromSensorsPose2D(depositingPoses[i]));
+            robot.waitWhile(() -> robot.drivetrain.state != PathfollowerDrivetrain.State.IDLE);
+            robot.deposit.requestDump = true;
+            robot.waitWhile(() -> robot.deposit.state != Deposit.State.IDLE);
+        }
     }
 }
