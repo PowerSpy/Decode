@@ -88,6 +88,7 @@ public class Deposit {
 
         robot.hardwareQueue.addDevices(bucketArmServos);
         robot.hardwareQueue.addDevices(bucketServo);
+        robot.hardwareQueue.addDevices(bucketPitchServo);
 
     }
 
@@ -132,6 +133,10 @@ public class Deposit {
                 if(this.requestDump)
                 {
                     this.state = State.DUMP_WAIT;
+                }
+
+                if(this.requestDown) {
+                    this.state = State.LOWER;
                 }
 
                 if(Math.abs(this.slides.getLength()-Deposit.slidesRaisedLength) < Deposit.completionThresholdSlides)

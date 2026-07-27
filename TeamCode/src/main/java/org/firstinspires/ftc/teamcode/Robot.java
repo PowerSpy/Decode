@@ -57,6 +57,10 @@ public class Robot {
 //        shooter = new Shooter(this);
         park = new Park(this);
         deposit = new Deposit(this);
+
+        // Run the sensor read on slides by updating sensors
+        sensors.update();
+        sensors.zeroSlides();
 //        sensors.resetTurretAngleEncoder();
     }
 
