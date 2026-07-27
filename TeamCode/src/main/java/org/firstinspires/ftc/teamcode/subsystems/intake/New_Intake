@@ -173,7 +173,7 @@ public class Intake_homework {
 
     private boolean shooterReadyForTransfer() {
 
-        return robot.deposit.state == Deposit.State.READY;
+        return robot.deposit.state == Deposit.State.IDLE;
     }
 
     private void updateTelemetry() {
