@@ -4,16 +4,16 @@ import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.Servo;
 
-import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.teamcode.Robot;
 import org.firstinspires.ftc.teamcode.utils.TelemetryUtil;
 import org.firstinspires.ftc.teamcode.utils.priority.PriorityMotor;
 import org.firstinspires.ftc.teamcode.utils.priority.nPriorityServo;
 
 @Config
-public class New_Intake {
+public class Intake_homework {
     private final Robot robot;
     public final PriorityMotor roller;
+    public final nPriorityServo flipper;
 
     private boolean requestIntake = false;
     private boolean requestOff = false;
@@ -21,29 +21,36 @@ public class New_Intake {
 
     public static double rollerPower = 1.0;
 
-    public static double flipperRegAngle = 0.0
-    private static double flipperTransitAngle=135.0    
+    public static double flipperRegAngle = 0.0;
+    private static double flipperTransitAngle = Math.toRadians(135.0);
 
     public enum State {
         IDLE,
         INTAKE,
-        TRANSIT
+        TRANSIT,
+        CHECK,
+        TEST
     }
 
     public State state = State.IDLE;
 
-    public New_Intake(Robot robot) {
+    public Intake_homework(Robot robot) {
         this.robot = robot;
         roller = new PriorityMotor(
                 new DcMotorEx[] { robot.hardwareMap.get(DcMotorEx.class, "roller") },
                 "roller", 2, 4,
                 new double[] { 1 }, robot.sensors
+        );
 
-        flipper = new PriorityServo(
-            new Servo[]{robot.hardwareMap.get(CRServo.class, "flipper1"), robot.hardwareMap.get(Servo.class, "flipper2")},
-            "flipper", PriorityServo.ServoType.AXON_MINI,
-            new boolean[]{false, true},
-            2, 2
+        flipper = new nPriorityServo(
+                new Servo[] {
+                        robot.hardwareMap.get(Servo.class, "flipper1"),
+                        robot.hardwareMap.get(Servo.class, "flipper2")
+                },
+                "flipper", nPriorityServo.ServoType.AXON_MINI,
+                0.0, 1.0, 0.5,
+                new boolean[] {false, true},
+                2, 2
         );
 
         this.robot.hardwareQueue.addDevices(flipper);
@@ -56,7 +63,7 @@ public class New_Intake {
         switch (state) {
             case IDLE: {
                 roller.setTargetPower(0.0);
-                flipper.setTargetAngle(flipperRegAngle ,0.1);
+                flipper.setTargetAngle(flipperRegAngle, 0.1);
                 if (requestIntake) {
                     requestIntake = false;
                     state = State.INTAKE;
@@ -66,7 +73,7 @@ public class New_Intake {
             }
             case INTAKE: {
                 roller.setTargetPowerSmooth(rollerPower * (reversed ? -1 : 1), 0.1);
-                flipper.setTargetAngle(flipperRegAngle ,0.1);
+                flipper.setTargetAngle(flipperRegAngle, 0.1);
                 if (requestOff) {
                     requestOff = false;
                     state = State.IDLE;
@@ -74,22 +81,17 @@ public class New_Intake {
 
                 break;
             }
-            case TRANSIT:{
-                roller.setTargetPowerSmooth(rollerPower * (0.5),0.1);
-                flipper.setTargetAngle(flipperTransitAngle ,1.0)
+            case TRANSIT: {
+                roller.setTargetPowerSmooth(rollerPower * 0.5, 0.1);
+                flipper.setTargetAngle(flipperTransitAngle, 1.0);
+                break;
             }
-
-            case CHECK:{
-                if(flipper.positon == flipperTransitAngle){
-                    break;
-                }
-                else{
+            case CHECK: {
+                if (!flipper.inPosition()) {
                     flipper.setTargetAngle(flipperTransitAngle);
-                    break;
                 }
-            }       
-                
- 
+                break;
+            }
             case TEST: {
                 break;
             }
