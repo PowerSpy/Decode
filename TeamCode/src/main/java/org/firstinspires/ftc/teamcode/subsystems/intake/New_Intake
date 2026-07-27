@@ -11,7 +11,7 @@ import org.firstinspires.ftc.teamcode.utils.priority.PriorityMotor;
 import org.firstinspires.ftc.teamcode.utils.priority.nPriorityServo;
 
 @Config
-public class NewIntake {
+public class New_Intake {
     private final Robot robot;
     public final PriorityMotor roller;
 
@@ -32,7 +32,7 @@ public class NewIntake {
 
     public State state = State.IDLE;
 
-    public NewIntake(Robot robot) {
+    public New_Intake(Robot robot) {
         this.robot = robot;
         roller = new PriorityMotor(
                 new DcMotorEx[] { robot.hardwareMap.get(DcMotorEx.class, "roller") },
