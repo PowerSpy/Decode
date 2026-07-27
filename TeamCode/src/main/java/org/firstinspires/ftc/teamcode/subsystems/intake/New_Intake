@@ -5,6 +5,7 @@ import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.Servo;
 
 import org.firstinspires.ftc.teamcode.Robot;
+import org.firstinspires.ftc.teamcode.subsystems.shooter.Shooter;
 import org.firstinspires.ftc.teamcode.utils.TelemetryUtil;
 import org.firstinspires.ftc.teamcode.utils.priority.PriorityMotor;
 import org.firstinspires.ftc.teamcode.utils.priority.nPriorityServo;
@@ -16,10 +17,12 @@ public class Intake_homework {
     public final nPriorityServo flipper;
 
     private boolean requestIntake = false;
+    private boolean requestTransfer = false;
     private boolean requestOff = false;
     private boolean reversed = false;
 
     public static double rollerPower = 1.0;
+    public static double transferRollerPower = 0.5;
 
     public static double flipperRegAngle = 0.0;
     private static double flipperTransitAngle = Math.toRadians(135.0);
@@ -29,6 +32,7 @@ public class Intake_homework {
         INTAKE,
         TRANSIT,
         CHECK,
+        TRANSFER,
         TEST
     }
 
@@ -62,18 +66,50 @@ public class Intake_homework {
     public void update() {
         switch (state) {
             case IDLE: {
+                requestOff = false;
+
                 roller.setTargetPower(0.0);
                 flipper.setTargetAngle(flipperRegAngle, 0.1);
+
                 if (requestIntake) {
                     requestIntake = false;
                     state = State.INTAKE;
                 }
 
+                if (requestTransfer) {
+                    requestTransfer = false;
+                    state = State.TRANSIT;
+                }
+
                 break;
             }
             case INTAKE: {
+                requestIntake = false;
+
                 roller.setTargetPowerSmooth(rollerPower * (reversed ? -1 : 1), 0.1);
                 flipper.setTargetAngle(flipperRegAngle, 0.1);
+
+                if (requestTransfer) {
+                    requestTransfer = false;
+                    state = State.TRANSIT;
+                }
+
+                if (requestOff) {
+                    requestOff = false;
+                    requestTransfer = false;
+                    state = State.IDLE;
+                }
+
+                break;
+            }
+            case TRANSIT: {
+                roller.setTargetPower(0.0);
+                flipper.setTargetAngle(flipperTransitAngle, 1.0);
+
+                if (flipper.inPosition()) {
+                    state = State.CHECK;
+                }
+
                 if (requestOff) {
                     requestOff = false;
                     state = State.IDLE;
@@ -81,15 +117,34 @@ public class Intake_homework {
 
                 break;
             }
-            case TRANSIT: {
-                roller.setTargetPowerSmooth(rollerPower * 0.5, 0.1);
+            case CHECK: {
+                roller.setTargetPower(0.0);
                 flipper.setTargetAngle(flipperTransitAngle, 1.0);
+
+                if (intakeReadyForTransfer() && shooterReadyForTransfer()) {
+                    state = State.TRANSFER;
+                }
+
+                if (requestOff) {
+                    requestOff = false;
+                    state = State.IDLE;
+                }
+
                 break;
             }
-            case CHECK: {
-                if (!flipper.inPosition()) {
-                    flipper.setTargetAngle(flipperTransitAngle);
+            case TRANSFER: {
+                flipper.setTargetAngle(flipperTransitAngle, 1.0);
+                roller.setTargetPowerSmooth(transferRollerPower * (reversed ? -1 : 1), 0.1);
+
+                if (!intakeReadyForTransfer() || !shooterReadyForTransfer()) {
+                    state = State.CHECK;
                 }
+
+                if (requestOff) {
+                    requestOff = false;
+                    state = State.IDLE;
+                }
+
                 break;
             }
             case TEST: {
@@ -103,17 +158,29 @@ public class Intake_homework {
         requestIntake = req;
     }
 
+    public void requestTransfer(boolean req) {
+        requestTransfer = req;
+    }
+
     public void reqOff(boolean req) {
         requestOff = req;
         turnedOffTime = System.currentTimeMillis();
     }
 
+    private boolean intakeReadyForTransfer() {
+        return flipper.inPosition();
+    }
+
+    private boolean shooterReadyForTransfer() {
+
+        return robot.deposit.state == Deposit.State.READY;
+    }
+
     private void updateTelemetry() {
         TelemetryUtil.packet.put("NewIntake: state", this.state);
         TelemetryUtil.packet.put("NewIntake: reversed", reversed);
+        TelemetryUtil.packet.put("NewIntake: intake ready", intakeReadyForTransfer());
+        TelemetryUtil.packet.put("NewIntake: shooter ready", shooterReadyForTransfer());
     }
 
-    public void setRollerDirection(boolean direction) {
-        reversed = direction;
-    }
 }
