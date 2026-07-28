@@ -186,6 +186,8 @@ public class Sensors {
 //        TelemetryUtil.packet.put("Shooter : Hood launch angle (deg)", Math.toDegrees(robot.shooter.hood.getCurrentAngle() / Shooter.hoodGearRatio + Shooter.hoodSweep));
         TelemetryUtil.packet.put("Intake : Ball Color", isPurple ? "purple" : isGreen ? "green" : "none");
         //TelemetryUtil.packet.put("Intake : current (AMPS)", intakeCurrent);
+        TelemetryUtil.packet.put("Slides : Length (in)", getSlidesPos());
+        TelemetryUtil.packet.put("Slides : Velocity (in/s)", getSlidesVelocity());
 
         Canvas fieldOverlay = TelemetryUtil.packet.fieldOverlay();
         DashboardUtil.drawRobot(fieldOverlay, ROBOT_POSITION, "#00ff00");
