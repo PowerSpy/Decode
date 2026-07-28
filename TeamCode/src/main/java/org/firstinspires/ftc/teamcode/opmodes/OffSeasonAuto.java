@@ -19,11 +19,10 @@ import org.firstinspires.ftc.teamcode.utils.TelemetryUtil;
 @Autonomous(name = "Offseason 2026 Team 2 Auto", group = "Auto")
 public class OffSeasonAuto extends LinearOpMode {
     private Robot robot;
-    private Pose2D[] intakingPoses;
-    private Pose2D[] depositingPoses;
-
-    private Path[] intakingPath;
-    private Path[] depositingPaths;
+    public static Pose2D[] intakingPoses;
+    public static Pose2D[] depositingPoses;
+    public static Path[] intakingPath;
+    public static Path[] depositingPaths;
 
     public boolean pointToPointMode = true;
 
