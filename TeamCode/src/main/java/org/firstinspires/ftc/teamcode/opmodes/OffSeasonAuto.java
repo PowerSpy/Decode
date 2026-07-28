@@ -20,9 +20,10 @@ public class OffSeasonAuto extends LinearOpMode {
     private Robot robot;
     private Pose2D[] intakingPoses;
     private Pose2D[] depositingPoses;
+    public boolean pointToPointMode = true;
 
-    @Override
-    public void runOpMode() throws InterruptedException {
+    public void pointTopointAuto()
+    {
         Globals.RUNMODE = RunMode.AUTO;
         this.robot = new Robot(this.hardwareMap);
 
@@ -47,5 +48,16 @@ public class OffSeasonAuto extends LinearOpMode {
             robot.deposit.requestDump = true;
             robot.waitWhile(() -> robot.deposit.state != Deposit.State.IDLE);
         }
+    }
+
+    public void pathFollowerAuto()
+    {
+
+    }
+
+    @Override
+    public void runOpMode() throws InterruptedException {
+        if(pointToPointMode) pointTopointAuto();
+        else pathFollowerAuto();
     }
 }
