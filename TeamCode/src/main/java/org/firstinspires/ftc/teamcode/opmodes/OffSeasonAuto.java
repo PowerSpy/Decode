@@ -13,6 +13,7 @@ import org.firstinspires.ftc.teamcode.subsystems.intake.NewIntake;
 import org.firstinspires.ftc.teamcode.utils.Globals;
 import org.firstinspires.ftc.teamcode.utils.Pose2d;
 import org.firstinspires.ftc.teamcode.utils.RunMode;
+import org.firstinspires.ftc.teamcode.utils.TelemetryUtil;
 
 @Config
 @Autonomous(name = "Offseason 2026 Team 2 Auto", group = "Auto")
@@ -40,8 +41,9 @@ public class OffSeasonAuto extends LinearOpMode {
         robot.sensors.light0G.set(false);
     }
 
-    public void pointTopointAuto()
+    public void pointToPointAuto()
     {
+        long startTime = System.currentTimeMillis();
         this.initializeAuto();
 
         assert intakingPoses.length == depositingPoses.length;
@@ -50,17 +52,22 @@ public class OffSeasonAuto extends LinearOpMode {
         {
             robot.drivetrain.goTo(Pose2d.fromSensorsPose2D(intakingPoses[i]));
             robot.waitWhile(() -> robot.drivetrain.state != PathfollowerDrivetrain.State.IDLE);
+            TelemetryUtil.packet.put("autoAchievedPose : ", Pose2d.fromSensorsPose2D(intakingPoses[i]));
             robot.intake.requestIntake(true);
             robot.waitWhile(() -> robot.intake.state != NewIntake.State.IDLE);
             robot.drivetrain.goTo(Pose2d.fromSensorsPose2D(depositingPoses[i]));
             robot.waitWhile(() -> robot.drivetrain.state != PathfollowerDrivetrain.State.IDLE);
+            TelemetryUtil.packet.put("autoAchievedPose : ", Pose2d.fromSensorsPose2D(depositingPoses[i]));
             robot.deposit.requestDump = true;
             robot.waitWhile(() -> robot.deposit.state != Deposit.State.IDLE);
         }
+
+        TelemetryUtil.packet.put("Time : ", System.currentTimeMillis()-startTime);
     }
 
     public void pathFollowerAuto()
     {
+        long startTime = System.currentTimeMillis();
         this.initializeAuto();
 
         assert intakingPath.length == depositingPaths.length;
@@ -69,18 +76,22 @@ public class OffSeasonAuto extends LinearOpMode {
         {
             robot.drivetrain.followPath(intakingPath[i]);
             robot.waitWhile(() -> robot.drivetrain.state != PathfollowerDrivetrain.State.IDLE);
+            TelemetryUtil.packet.put("autoFollowedPath : ", intakingPath[i]);
             robot.intake.requestIntake(true);
             robot.waitWhile(() -> robot.intake.state != NewIntake.State.IDLE);
             robot.drivetrain.followPath(depositingPaths[i]);
             robot.waitWhile(() -> robot.drivetrain.state != PathfollowerDrivetrain.State.IDLE);
+            TelemetryUtil.packet.put("autoFollowedPath : ", depositingPaths[i]);
             robot.deposit.requestDump = true;
             robot.waitWhile(() -> robot.deposit.state != Deposit.State.IDLE);
         }
+
+        TelemetryUtil.packet.put("Time : ", System.currentTimeMillis()-startTime);
     }
 
     @Override
     public void runOpMode() throws InterruptedException {
-        if(pointToPointMode) pointTopointAuto();
+        if(pointToPointMode) pointToPointAuto();
         else pathFollowerAuto();
     }
 }
