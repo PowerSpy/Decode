@@ -26,7 +26,7 @@ public class OffSeasonAuto extends LinearOpMode {
 
     public boolean pointToPointMode = true;
 
-    public void pointTopointAuto()
+    void initializeAuto()
     {
         Globals.RUNMODE = RunMode.AUTO;
         this.robot = new Robot(this.hardwareMap);
@@ -38,6 +38,11 @@ public class OffSeasonAuto extends LinearOpMode {
             robot.sensors.light0G.set(System.currentTimeMillis() % 500 < 350);
         }
         robot.sensors.light0G.set(false);
+    }
+
+    public void pointTopointAuto()
+    {
+        this.initializeAuto();
 
         assert intakingPoses.length == depositingPoses.length;
 
@@ -56,16 +61,7 @@ public class OffSeasonAuto extends LinearOpMode {
 
     public void pathFollowerAuto()
     {
-        Globals.RUNMODE = RunMode.AUTO;
-        this.robot = new Robot(this.hardwareMap);
-
-        this.robot.deposit.state = Deposit.State.IDLE;
-
-        while (opModeInInit()) {
-            robot.update();
-            robot.sensors.light0G.set(System.currentTimeMillis() % 500 < 350);
-        }
-        robot.sensors.light0G.set(false);
+        this.initializeAuto();
 
         assert intakingPath.length == depositingPaths.length;
 
