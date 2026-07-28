@@ -35,11 +35,6 @@ public class Teleop extends LinearOpMode {
         robot.setStopChecker(this::isStopRequested);
 
         robot.deposit.state = Deposit.State.IDLE;
-        //robot.shooter.turretTrackInManual = true;
-
-        //robot.drivetrain.setPoseEstimate(AUTO_ENDING_POSE);
-
-        //robot.shooter.setShooterBlocker(true);
 
         ButtonToggle lb1 = new ButtonToggle();
         ButtonToggle rb1 = new ButtonToggle();
@@ -124,120 +119,6 @@ public class Teleop extends LinearOpMode {
                 }
             }
 
-            // SHOOTER
-            /*
-            if (a2.isClicked(gamepad2.a)) {
-                robot.shooter.setManual(true);
-                robot.shooter.turretTrackInManual = false;
-                gamepad1.rumble(500);
-                gamepad2.rumble(500);
-            }
-
-            if (b2.isClicked(gamepad2.b && !gamepad2.start)) {
-                robot.shooter.setManual(false);
-                robot.shooter.setShooter(Shooter.Dist.OFF);
-                gamepad1.rumble(500);
-                gamepad2.rumble(500);
-            }
-
-            if (y2.isClicked(gamepad2.y)) {
-                robot.shooter.turretTrackInManual = true;
-                robot.shooter.setManual(true);
-                gamepad1.rumble(500);
-                gamepad2.rumble(500);
-            }
-
-            if (robot.shooter.state == Shooter.State.TEST) {
-                rb1.isClicked(gamepad1.right_bumper);
-
-                if (lt1.isClicked(gamepad1.left_trigger > triggerThresh) || rt1.isClicked(gamepad1.right_trigger > triggerThresh) || b1.isHeld(gamepad1.b, 500)
-                        || y1.isHeld(gamepad1.y, 500)
-                        || x1.isHeld(gamepad1.x, 500)) { // Off
-                    flywheelOn = false;
-                    robot.shooter.setShooter(Shooter.Dist.OFF);
-                    atSpeedRumble = false;
-                } else if (b1.isClicked(gamepad1.b)) { // Close
-                    flywheelOn = true;
-                    robot.shooter.setShooter(Shooter.Dist.CLOSE);
-                    atSpeedRumble = true;
-                    confirmation = true;
-                } else if (y1.isClicked(gamepad1.y)) { // Middle
-                    flywheelOn = true;
-                    robot.shooter.setShooter(Shooter.Dist.MID);
-                    atSpeedRumble = true;
-                    confirmation = true;
-                } else if (x1.isClicked(gamepad1.x)) { // Far
-                    flywheelOn = true;
-                    robot.shooter.setShooter(Shooter.Dist.FAR);
-                    atSpeedRumble = true;
-                    confirmation = true;
-                }
-
-                if (atSpeedRumble && confirmation) {
-                    confirmation = false;
-                } else if (atSpeedRumble && robot.shooter.atVel()) {
-                    gamepad1.rumble(100);
-                    gamepad2.rumble(100);
-                    atSpeedRumble = false;
-                }
-                if (robot.shooter.atVel() && flywheelOn) {
-                    robot.sensors.light0G.set(true);
-                    robot.sensors.light0P.set(true);
-                }
-
-                if (gamepad1.right_bumper) {
-                    rb1.isReleased(gamepad1.right_bumper);
-                    robot.shooter.setShooterBlocker(false);
-                    robot.intake.requestTransfer(true);
-                } else if (rb1.isReleased(gamepad1.right_bumper)) {
-                    robot.shooter.setShooterBlocker(true);
-                    robot.intake.reqOff(true);
-                }
-            } else {
-                x1.isClicked(gamepad1.x);
-                b1.isClicked(gamepad1.b);
-
-                if (gamepad2.right_bumper) {
-                    Shooter.forceUpdateVelBool = true;
-                    Shooter.forceUpdateVel = 580;
-                } else if (gamepad2.left_bumper) {
-                    Shooter.forceUpdateVelBool = true;
-                    Shooter.forceUpdateVel = 400;
-                } else {
-                    Shooter.forceUpdateVelBool = false;
-                }
-
-                if (y1.isClicked(gamepad1.y)) {
-                    robot.shooter.reqAim(true);
-                }
-
-                if (rb1.isClicked(gamepad1.right_bumper)) {
-                    rb1.isReleased(gamepad1.right_bumper);
-                    if (robot.shooter.state == Shooter.State.READY) robot.shooter.reqShoot(true);
-                } else if (rb1.isReleased(gamepad1.right_bumper)) {
-                    rb1.isClicked(gamepad1.right_bumper);
-                    if (robot.shooter.state == Shooter.State.SHOOT) {
-                        robot.shooter.reqStop(true);
-                        robot.shooter.reqAim(true);
-                    }
-                }
-
-                if (robot.shooter.state == Shooter.State.READY) {
-                    if (confirmation) {
-                        gamepad1.rumble(150);
-                        gamepad2.rumble(150);
-                        confirmation = false;
-                    }
-                } else {
-                    confirmation = true;
-                }
-
-                if (lt1.isClicked(gamepad1.left_trigger > triggerThresh)) {
-                    robot.shooter.reqStop(true);
-                }
-            }
-            */
-
             // LOCALIZER
 
             if (x2.isHeld(gamepad2.x, 500)) { // localize to origin
@@ -245,49 +126,6 @@ public class Teleop extends LinearOpMode {
                 gamepad1.rumble(1200);
                 gamepad2.rumble(1200);
             }
-
-            /*
-
-            if (guide2.isClicked(gamepad2.guide)) { // camera
-                MergeLocalizer.useCamera = !MergeLocalizer.useCamera;
-                if (MergeLocalizer.useCamera) {
-                    gamepad1.rumble(250);
-                    gamepad2.rumble(250);
-                } else {
-                    gamepad1.rumble(100);
-                    gamepad2.rumble(100);
-                }
-            }
-
-             */
-
-            /*
-
-            if (gamepad2.right_bumper) {
-                MergeLocalizer.useCamera = true;
-                Log.i("Vision", String.valueOf(MergeLocalizer.useCamera));
-            } else {
-                MergeLocalizer.useCamera = false;
-                Log.i("Vision", String.valueOf(MergeLocalizer.useCamera));
-            }
-
-
-             */
-
-            /*
-
-            if (lb2.isClicked(gamepad2.left_bumper)) {
-                Shooter.autoShootIfInZone = !Shooter.autoShootIfInZone;
-                if (Shooter.autoShootIfInZone) {
-                    gamepad1.rumble(250);
-                    gamepad2.rumble(250);
-                } else {
-                    gamepad1.rumble(100);
-                    gamepad2.rumble(100);
-                }
-            }
-
-             */
 
             if (h2.isClicked(gamepad2.dpad_left || gamepad2.dpad_right)) { // localize to left/right edge (unchanged x, auto y, auto h)
                 double h = Utils.headingClip(ROBOT_POSITION.heading);
@@ -312,48 +150,11 @@ public class Teleop extends LinearOpMode {
                 gamepad1.rumble(800);
                 gamepad2.rumble(800);
             }
-
-            // MISC
-
-            /*
-
-            if (lb2.isClicked(gamepad2.left_bumper)) LogUtil.event.add("ballMiss");
-            else if (rb2.isClicked(gamepad2.right_bumper)) LogUtil.event.add("ballHit");
-
-
-             */
-            /*
-            if (gamepad1.dpad_up) {
-                robot.park.setPower(1);
-                robot.shooter.setManual(true);
-                robot.shooter.turretTrackInManual = false;
-                robot.shooter.turret.setTargetAngle(Math.toRadians(195));
-            } else if (gamepad1.dpad_down) robot.park.setPower(-1);
-            else robot.park.setPower(0);
-
-            if (gamepad1.dpad_right) {
-                if (Globals.isRed) {
-                    robot.drivetrain.goTo(new Pose2d(30, -24, Math.toRadians(135))); // second argument lost, 1
-                    robot.sensors.light0G.set(System.currentTimeMillis() % 250 < 125);
-                } else {
-                    robot.drivetrain.goTo(new Pose2d(30, 24, Math.toRadians(-135))); // second argument lost, 1
-                    robot.sensors.light0P.set(System.currentTimeMillis() % 250 < 125);
-                }
-                robot.shooter.setManual(true);
-                robot.shooter.turretTrackInManual = false;
-                robot.shooter.turret.setTargetAngle(Math.toRadians(195));
-            } else {
-                robot.drivetrain.drive(gamepad1, gamepad1.right_trigger > triggerThresh);
-            }
-            */
             telemetry.addData("Alliance", Globals.isRed ? "Red" : "Blue");
             telemetry.addData("intakeReversed", intakeReversed);
             telemetry.addData("intakePower", robot.intake.getRollerPower());
             telemetry.addData("deposit state", robot.deposit.state.toString());
-            //telemetry.addData("turretTrackInManual", robot.shooter.turretTrackInManual);
             telemetry.addData("flywheelOn", flywheelOn);
-            //telemetry.addData("flywheelAtVel", robot.shooter.atVel());
-            //telemetry.addData("turretInPosition", robot.shooter.turret.inPosition() ? "yes" : "aw no its not happy yet");
             telemetry.addData("Shooter auto shoot when in zone", Shooter.autoShootIfInZone);
 
             telemetry.addData("Robot position (deg)", String.format(Locale.US, "(%.2f, %.2f, %.2f)", ROBOT_POSITION.x, ROBOT_POSITION.y, Math.toDegrees(ROBOT_POSITION.heading)));

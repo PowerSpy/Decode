@@ -24,7 +24,7 @@ import org.firstinspires.ftc.teamcode.utils.priority.nPriorityServo;
 
 import java.util.List;
 
-@Config
+Config
 public class Shooter {
     public enum State {
         IDLE,
