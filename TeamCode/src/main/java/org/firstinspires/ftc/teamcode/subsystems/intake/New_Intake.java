@@ -5,13 +5,13 @@ import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.Servo;
 
 import org.firstinspires.ftc.teamcode.Robot;
-import org.firstinspires.ftc.teamcode.subsystems.shooter.Shooter;
+import org.firstinspires.ftc.teamcode.subsystems.deposit.Deposit;
 import org.firstinspires.ftc.teamcode.utils.TelemetryUtil;
 import org.firstinspires.ftc.teamcode.utils.priority.PriorityMotor;
 import org.firstinspires.ftc.teamcode.utils.priority.nPriorityServo;
 
 @Config
-public class Intake_homework {
+public class New_Intake {
     private final Robot robot;
     public final PriorityMotor roller;
     public final nPriorityServo flipper;
@@ -38,7 +38,7 @@ public class Intake_homework {
 
     public State state = State.IDLE;
 
-    public Intake_homework(Robot robot) {
+    public New_Intake(Robot robot) {
         this.robot = robot;
         roller = new PriorityMotor(
                 new DcMotorEx[] { robot.hardwareMap.get(DcMotorEx.class, "roller") },
@@ -121,7 +121,7 @@ public class Intake_homework {
                 roller.setTargetPower(0.0);
                 flipper.setTargetAngle(flipperTransitAngle, 1.0);
 
-                if (intakeReadyForTransfer() && shooterReadyForTransfer()) {
+                if (intakeReadyForTransfer() && depositReadyForTransfer()) {
                     state = State.TRANSFER;
                 }
 
@@ -136,7 +136,7 @@ public class Intake_homework {
                 flipper.setTargetAngle(flipperTransitAngle, 1.0);
                 roller.setTargetPowerSmooth(transferRollerPower * (reversed ? -1 : 1), 0.1);
 
-                if (!intakeReadyForTransfer() || !shooterReadyForTransfer()) {
+                if (!intakeReadyForTransfer() || !depositReadyForTransfer()) {
                     state = State.CHECK;
                 }
 
@@ -171,7 +171,7 @@ public class Intake_homework {
         return flipper.inPosition();
     }
 
-    private boolean shooterReadyForTransfer() {
+    private boolean depositReadyForTransfer() {
 
         return robot.deposit.state == Deposit.State.IDLE;
     }
@@ -180,7 +180,7 @@ public class Intake_homework {
         TelemetryUtil.packet.put("NewIntake: state", this.state);
         TelemetryUtil.packet.put("NewIntake: reversed", reversed);
         TelemetryUtil.packet.put("NewIntake: intake ready", intakeReadyForTransfer());
-        TelemetryUtil.packet.put("NewIntake: shooter ready", shooterReadyForTransfer());
+        TelemetryUtil.packet.put("NewIntake: deposit ready", depositReadyForTransfer());
     }
 
 }

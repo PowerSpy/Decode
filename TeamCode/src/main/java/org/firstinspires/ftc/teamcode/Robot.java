@@ -14,14 +14,13 @@ import org.firstinspires.ftc.teamcode.subsystems.deposit.Deposit;
 import org.firstinspires.ftc.teamcode.subsystems.drive.PathfollowerDrivetrain;
 import org.firstinspires.ftc.teamcode.subsystems.intake.NewIntake;
 import org.firstinspires.ftc.teamcode.subsystems.park.Park;
-import org.firstinspires.ftc.teamcode.subsystems.shooter.Shooter;
 import org.firstinspires.ftc.teamcode.subsystems.intake.Intake;
 import org.firstinspires.ftc.teamcode.utils.Globals;
 import org.firstinspires.ftc.teamcode.utils.LogUtil;
 import org.firstinspires.ftc.teamcode.utils.RunMode;
 import org.firstinspires.ftc.teamcode.utils.TelemetryUtil;
 import org.firstinspires.ftc.teamcode.utils.priority.HardwareQueue;
-import org.firstinspires.ftc.teamcode.subsystems.drive.Drivetrain;
+import org.firstinspires.ftc.teamcode.subsystems.drive.PathfollowerDrivetrain;
 import org.firstinspires.ftc.teamcode.vision.Vision;
 
 import java.util.ArrayList;
@@ -61,7 +60,6 @@ public class Robot {
         // Run the sensor read on slides by updating sensors
         sensors.update();
         sensors.zeroSlides();
-//        sensors.resetTurretAngleEncoder();
     }
 
     public void update() {

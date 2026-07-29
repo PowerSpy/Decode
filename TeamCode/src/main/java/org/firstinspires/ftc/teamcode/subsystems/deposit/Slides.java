@@ -17,7 +17,7 @@ public class Slides
     public static double maxPower = 1;
 
     private Robot robot;
-    private PriorityMotor slidesMotor;
+    public PriorityMotor slidesMotor;
 
     private double length, vel, targetLength;
     private boolean manualOverride = false;

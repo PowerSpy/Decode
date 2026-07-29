@@ -25,7 +25,7 @@ public class Deposit {
     }
 
     public static double slidesLoweredLength = 0.0; // Placeholder
-    public static double slidesRaisedLength = 1.0; // Placeholder
+    public static double slidesRaisedLength = 20.0; // Placeholder
     public static double completionThresholdSlides = 0.1, completionThresholdAngle = 0.1; // Placeholder
     public static double holdBucketArm = 0.1, holdBucket = 0.1, holdSlides = 0.1, holdBucketPitch = 0.1; // Placeholder
     public static double prepareDumpBucketArm = 0.1; // Placeholder
@@ -115,14 +115,9 @@ public class Deposit {
     public void update() {
         switch (this.state) {
             case IDLE: {
-                if (this.requestRaise)
-                {
+                if (this.requestRaise) {
                     this.state = State.RAISED;
-                }
-
-                if(this.requestDown)
-                {
-                    this.state = State.LOWER;
+                    this.requestRaise = false;
                 }
 
                 break;
@@ -133,10 +128,12 @@ public class Deposit {
                 if(this.requestDump)
                 {
                     this.state = State.DUMP_WAIT;
+                    this.requestDump = false;
                 }
 
                 if(this.requestDown) {
                     this.state = State.LOWER;
+                    this.requestDown = false;
                 }
 
                 if(Math.abs(this.slides.getLength()-Deposit.slidesRaisedLength) < Deposit.completionThresholdSlides)
@@ -180,7 +177,6 @@ public class Deposit {
                 if(this.inHoldPositions())
                 {
                     this.state = State.IDLE;
-                    this.requestDump = false;
                 }
                 break;
             }
@@ -190,7 +186,6 @@ public class Deposit {
                 if(Math.abs(this.slides.getLength()-Deposit.slidesLoweredLength) < Deposit.completionThresholdSlides)
                 {
                     this.state = State.IDLE;
-                    this.requestDown = false;
                 }
                 break;
             }
