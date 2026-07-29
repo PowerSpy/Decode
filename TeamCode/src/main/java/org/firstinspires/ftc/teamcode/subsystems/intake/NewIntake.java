@@ -97,6 +97,22 @@ public class NewIntake {
                 }
                 break;
             }
+            case CHECK: {
+                roller.setTargetPower(0.0);
+                flipper.setTargetAngle(flipperTransitAngle, 1.0);
+
+                if (intakeReadyForTransfer() && depositReadyForTransfer()) {
+                    state = State.TRANSFER;
+                }
+
+                if (requestOff) {
+                    requestOff = false;
+                    state = State.IDLE;
+                }
+
+                break;
+            }
+            
             case TRANSFER_WAIT: {
                 if(this.transferWaitStart == -1)
                 {
