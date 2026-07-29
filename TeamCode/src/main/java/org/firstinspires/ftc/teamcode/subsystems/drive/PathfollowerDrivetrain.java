@@ -27,6 +27,7 @@ public class PathfollowerDrivetrain
     public enum State
     {
         IDLE,
+        DRIVE,
         TO_TARGET,
         FOLLOW_PATH,
         TEST
@@ -52,6 +53,7 @@ public class PathfollowerDrivetrain
 
     private boolean requestToTarget = false;
     private boolean requestFollowPath = false;
+    private boolean requestDrive = false;
 
     private Robot robot;
     private PriorityMotor[] motors;
@@ -61,7 +63,7 @@ public class PathfollowerDrivetrain
     private double targetPosX, targetPosY;
     private Pose2D currentPos;
     private double currentHeading;
-
+    private double leftFrontPow, rightFrontPow, leftRearPow, rightRearPow;
     private Path selectedPath;
 
     public PathfollowerDrivetrain(Robot robot)
@@ -123,10 +125,14 @@ public class PathfollowerDrivetrain
 
     private void setNormalizedMotorPowers(double frontLeftPow, double frontRightPow, double rearLeftPow, double rearRightPow) {
         double q = Collections.max(Arrays.asList(Math.abs(frontLeftPow), Math.abs(frontRightPow), Math.abs(rearLeftPow), Math.abs(rearRightPow), 1.0));
-        this.motors[MotorIndices.LEFT_FRONT].setTargetPower(frontLeftPow / q);
-        this.motors[MotorIndices.RIGHT_FRONT].setTargetPower(frontRightPow / q);
-        this.motors[MotorIndices.LEFT_REAR].setTargetPower(rearLeftPow / q);
-        this.motors[MotorIndices.RIGHT_REAR].setTargetPower(rearRightPow / q);
+        this.leftFrontPow = frontLeftPow / q;
+        this.rightFrontPow = frontRightPow / q;
+        this.leftRearPow = rearLeftPow / q;
+        this.rightRearPow = rearRightPow / q;
+        this.motors[MotorIndices.LEFT_FRONT].setTargetPower(this.leftFrontPow);
+        this.motors[MotorIndices.RIGHT_FRONT].setTargetPower(this.rightFrontPow);
+        this.motors[MotorIndices.LEFT_REAR].setTargetPower(this.leftRearPow);
+        this.motors[MotorIndices.RIGHT_REAR].setTargetPower(this.rightRearPow);
     }
 
     private void stateToTarget()
@@ -201,7 +207,8 @@ public class PathfollowerDrivetrain
 
     public void drive(Gamepad gamepad, boolean drive)
     {
-        if(!drive)
+        this.requestDrive = drive;
+        if(!drive && this.state == State.DRIVE)
         {
             return;
         }
@@ -227,6 +234,13 @@ public class PathfollowerDrivetrain
     private void updateTelemetry()
     {
         TelemetryUtil.packet.put("Drivetrain: state", this.state);
+        TelemetryUtil.packet.put("Drivetrain: targetPosX", this.targetPosX);
+        TelemetryUtil.packet.put("Drivetrain: targetPosX", this.targetPosY);
+        TelemetryUtil.packet.put("Drivetrain: targetHeading", this.targetHeading);
+        TelemetryUtil.packet.put("Drivetrain: leftFrontPower", this.leftFrontPow);
+        TelemetryUtil.packet.put("Drivetrain: rightFrontPower", this.rightFrontPow);
+        TelemetryUtil.packet.put("Drivetrain: leftRearPower", this.leftRearPow);
+        TelemetryUtil.packet.put("Drivetrain: rightRearPower", this.rightRearPow);
     }
 
     public void update()
@@ -236,6 +250,8 @@ public class PathfollowerDrivetrain
 
         switch(this.state)
         {
+            case DRIVE:
+                break;
             case IDLE:
                 if(this.requestToTarget)
                 {
@@ -245,6 +261,11 @@ public class PathfollowerDrivetrain
                 if(this.requestFollowPath)
                 {
                     this.state = State.FOLLOW_PATH;
+                }
+
+                if(this.requestDrive)
+                {
+                    this.state = State.DRIVE;
                 }
                 break;
             case TO_TARGET:

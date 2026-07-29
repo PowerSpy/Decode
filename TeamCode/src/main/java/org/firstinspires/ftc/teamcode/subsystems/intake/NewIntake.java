@@ -7,6 +7,7 @@ import com.qualcomm.robotcore.hardware.Servo;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.teamcode.Robot;
+import org.firstinspires.ftc.teamcode.subsystems.deposit.Deposit;
 import org.firstinspires.ftc.teamcode.utils.TelemetryUtil;
 import org.firstinspires.ftc.teamcode.utils.priority.PriorityCRServo;
 import org.firstinspires.ftc.teamcode.utils.priority.PriorityMotor;
@@ -16,7 +17,7 @@ import org.firstinspires.ftc.teamcode.utils.priority.nPriorityServo;
 public class NewIntake {
     private final Robot robot;
     private final PriorityMotor roller;
-    private PriorityCRServo flipper;
+    private nPriorityServo flipper;
     private boolean requestIntake = false;
     private boolean requestOff = false;
     private boolean requestTransfer = false;
@@ -27,7 +28,7 @@ public class NewIntake {
     private long transferRetractStart = -1;
 
     public static double rollerPower = 1.0, rollerTransferPower = 1.0; // Placeholder
-    public static double flipperTransferPower = 1.0, flipperRetractPower = 1.0; // Placeholder
+    public static double flipperTransferAngle = 1.0, flipperTransitAngle = 1.0,flipperRetractPower = 1.0; // Placeholder
     public static double depositPitchTransferAngle = 1.0, depositPitchRetractAngle; // Placehlder
     public static long transferTimeMillis = 300; // Placeholder
     public static long transferWaitMillis = 300; // Placeholder
@@ -52,11 +53,15 @@ public class NewIntake {
                 "roller", 2, 4,
                 new double[] { 1 }, robot.sensors);
 
-        flipper = new PriorityCRServo(
-            new CRServo[] {robot.hardwareMap.get(CRServo.class, "flipper1"), robot.hardwareMap.get(CRServo.class, "flipper2")},
-            "flipper", PriorityCRServo.ServoType.AXON_MINI,
-            new boolean[] {false, true},
-            2, 2
+        flipper = new nPriorityServo(
+                new Servo[] {
+                        robot.hardwareMap.get(Servo.class, "flipper1"),
+                        robot.hardwareMap.get(Servo.class, "flipper2")
+                },
+                "flipper", nPriorityServo.ServoType.AXON_MINI,
+                0.0, 1.0, 0.5,
+                new boolean[] {false, true},
+                2, 2
         );
 
         this.robot.hardwareQueue.addDevices(flipper);
@@ -69,7 +74,7 @@ public class NewIntake {
         switch (state) {
             case IDLE: {
                 roller.setTargetPower(0.0);
-                flipper.setTargetPower(0.0);
+                //flipper(0.0);
                 if (requestIntake) {
                     requestIntake = false;
                     state = State.INTAKE;
@@ -97,8 +102,8 @@ public class NewIntake {
                 {
                     this.transferWaitStart = System.currentTimeMillis();
                 }
-                roller.setTargetPower(NewIntake.rollerTransferPower);
-                if(System.currentTimeMillis()-this.transferWaitStart >= NewIntake.transferWaitMillis)
+                //roller.setTargetPower(NewIntake.rollerTransferPower);
+                if(System.currentTimeMillis()-this.transferWaitStart >= NewIntake.transferWaitMillis && intakeReadyForTransfer() && depositReadyForTransfer())
                 {
                     this.state = State.TRANSFER;
                     this.transferWaitStart = -1;
@@ -110,7 +115,8 @@ public class NewIntake {
                 {
                     this.transferStart = System.currentTimeMillis();
                 }
-                flipper.setTargetPower(NewIntake.flipperTransferPower);
+                roller.setTargetPower(NewIntake.rollerTransferPower);
+                flipper.setTargetAngle(NewIntake.flipperTransferAngle);
                 this.robot.deposit.bucketPitchServo.setTargetAngle(NewIntake.depositPitchTransferAngle);
                 if(System.currentTimeMillis()-this.transferStart >= NewIntake.transferTimeMillis && this.robot.deposit.bucketPitchServo.inPosition())
                 {
@@ -123,7 +129,7 @@ public class NewIntake {
                 {
                     this.transferRetractStart = System.currentTimeMillis();
                 }
-                flipper.setTargetPower(NewIntake.flipperRetractPower);
+                flipper.setTargetAngle(NewIntake.flipperTransitAngle);
                 this.robot.deposit.bucketPitchServo.setTargetAngle(NewIntake.depositPitchRetractAngle);
                 if(System.currentTimeMillis()-this.transferRetractStart >= NewIntake.transferRetractMillis && this.robot.deposit.bucketPitchServo.inPosition())
                 {
@@ -134,6 +140,15 @@ public class NewIntake {
             }
         }
         updateTelemetry();
+    }
+
+    private boolean intakeReadyForTransfer() {
+        return flipper.inPosition();
+    }
+
+    private boolean depositReadyForTransfer() {
+
+        return robot.deposit.state == Deposit.State.IDLE;
     }
 
     public void requestIntake(boolean intake)
@@ -160,6 +175,8 @@ public class NewIntake {
     private void updateTelemetry() {
         TelemetryUtil.packet.put("NewIntake: state", this.state);
         TelemetryUtil.packet.put("NewIntake: reversed", reversed);
+        TelemetryUtil.packet.put("NewIntake: intake ready", intakeReadyForTransfer());
+        TelemetryUtil.packet.put("NewIntake: deposit ready", depositReadyForTransfer());
     }
 
     public void setRollerDirection(boolean reverse)

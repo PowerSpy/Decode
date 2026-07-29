@@ -89,6 +89,7 @@ public class Teleop extends LinearOpMode {
 
         while (!isStopRequested()) {
             robot.update();
+            robot.drivetrain.drive(gamepad1, true);
 
             if (back2.isClicked(gamepad2.back)) {
                 isRed = !isRed;
@@ -154,8 +155,8 @@ public class Teleop extends LinearOpMode {
             telemetry.addData("intakeReversed", intakeReversed);
             telemetry.addData("intakePower", robot.intake.getRollerPower());
             telemetry.addData("deposit state", robot.deposit.state.toString());
-            telemetry.addData("flywheelOn", flywheelOn);
-            telemetry.addData("Shooter auto shoot when in zone", Shooter.autoShootIfInZone);
+            //telemetry.addData("flywheelOn", flywheelOn);
+            //telemetry.addData("Shooter auto shoot when in zone", Shooter.autoShootIfInZone);
 
             telemetry.addData("Robot position (deg)", String.format(Locale.US, "(%.2f, %.2f, %.2f)", ROBOT_POSITION.x, ROBOT_POSITION.y, Math.toDegrees(ROBOT_POSITION.heading)));
             telemetry.addData("CAT", LogUtil.DISABLED ? "DISABLED" : "ENABLED");
@@ -164,7 +165,7 @@ public class Teleop extends LinearOpMode {
 
             telemetry.update();
         }
-
+        robot.drivetrain.drive(gamepad1, false);
         Globals.AUTO_ENDING_POSE = Globals.ROBOT_POSITION.clone();
         robot.waitWhile(() -> {
             Globals.AUTO_ENDING_POSE = Globals.ROBOT_POSITION.clone();
