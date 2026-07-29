@@ -155,8 +155,8 @@ public class Teleop extends LinearOpMode {
             telemetry.addData("intakeReversed", intakeReversed);
             telemetry.addData("intakePower", robot.intake.getRollerPower());
             telemetry.addData("deposit state", robot.deposit.state.toString());
-            telemetry.addData("flywheelOn", flywheelOn);
-            telemetry.addData("Shooter auto shoot when in zone", Shooter.autoShootIfInZone);
+            //telemetry.addData("flywheelOn", flywheelOn);
+            //telemetry.addData("Shooter auto shoot when in zone", Shooter.autoShootIfInZone);
 
             telemetry.addData("Robot position (deg)", String.format(Locale.US, "(%.2f, %.2f, %.2f)", ROBOT_POSITION.x, ROBOT_POSITION.y, Math.toDegrees(ROBOT_POSITION.heading)));
             telemetry.addData("CAT", LogUtil.DISABLED ? "DISABLED" : "ENABLED");
