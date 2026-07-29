@@ -27,6 +27,7 @@ public class PathfollowerDrivetrain
     public enum State
     {
         IDLE,
+        DRIVE,
         TO_TARGET,
         FOLLOW_PATH,
         TEST
@@ -52,6 +53,7 @@ public class PathfollowerDrivetrain
 
     private boolean requestToTarget = false;
     private boolean requestFollowPath = false;
+    private boolean requestDrive = false;
 
     private Robot robot;
     private PriorityMotor[] motors;
@@ -201,7 +203,8 @@ public class PathfollowerDrivetrain
 
     public void drive(Gamepad gamepad, boolean drive)
     {
-        if(!drive)
+        this.requestDrive = drive;
+        if(!drive && this.state == State.DRIVE)
         {
             return;
         }
@@ -236,6 +239,8 @@ public class PathfollowerDrivetrain
 
         switch(this.state)
         {
+            case DRIVE:
+                break;
             case IDLE:
                 if(this.requestToTarget)
                 {
@@ -245,6 +250,11 @@ public class PathfollowerDrivetrain
                 if(this.requestFollowPath)
                 {
                     this.state = State.FOLLOW_PATH;
+                }
+
+                if(this.requestDrive)
+                {
+                    this.state = State.DRIVE;
                 }
                 break;
             case TO_TARGET:

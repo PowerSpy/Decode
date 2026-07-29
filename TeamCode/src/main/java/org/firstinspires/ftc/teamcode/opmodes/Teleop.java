@@ -89,6 +89,7 @@ public class Teleop extends LinearOpMode {
 
         while (!isStopRequested()) {
             robot.update();
+            robot.drivetrain.drive(gamepad1, true);
 
             if (back2.isClicked(gamepad2.back)) {
                 isRed = !isRed;
@@ -164,7 +165,7 @@ public class Teleop extends LinearOpMode {
 
             telemetry.update();
         }
-
+        robot.drivetrain.drive(gamepad1, false);
         Globals.AUTO_ENDING_POSE = Globals.ROBOT_POSITION.clone();
         robot.waitWhile(() -> {
             Globals.AUTO_ENDING_POSE = Globals.ROBOT_POSITION.clone();
